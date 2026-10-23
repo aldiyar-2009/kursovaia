@@ -1,0 +1,65 @@
+name: Build iOS App
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/ios.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/ios.yml'
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    name: Build iOS IPA & App Bundle
+    runs-on: macos-14
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Verify Flutter Installation
+        run: flutter doctor -v
+
+      - name: Install Dependencies
+        working-directory: mobile
+        run: flutter pub get
+
+      - name: Run Code Generation (Drift / Build Runner)
+        working-directory: mobile
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Build iOS (Release, No Code Sign)
+        working-directory: mobile
+        run: flutter build ios --release --no-codesign
+
+      - name: Package Payload into IPA
+        working-directory: mobile
+        run: |
+          mkdir -p Payload
+          cp -r build/ios/iphoneos/Runner.app Payload/
+          zip -r -q StudyPlan-iOS-Unsigned.ipa Payload
+          cd build/ios/iphoneos
+          zip -r -q ../../../StudyPlan-Runner.app.zip Runner.app
+
+      - name: Upload iOS Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: StudyPlan-iOS-Build
+          path: |
+            mobile/StudyPlan-iOS-Unsigned.ipa
+            mobile/StudyPlan-Runner.app.zip
+          retention-days: 14
