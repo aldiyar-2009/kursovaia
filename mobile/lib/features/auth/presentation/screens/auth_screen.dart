@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:studyplan/core/database/app_database.dart';
 import 'package:studyplan/core/network/api_client.dart';
 import 'package:studyplan/core/settings/app_settings.dart';
+import 'package:studyplan/core/sync/sync_bloc.dart';
 import 'package:studyplan/core/theme/app_theme.dart';
 import 'package:studyplan/core/theme/theme_ext.dart';
 import 'package:studyplan/core/widgets/server_config_dialog.dart';
@@ -145,6 +146,10 @@ class _AuthScreenState extends State<AuthScreen> {
           await prefs.remove(AuthScreen.pendingInviteKey);
         }
       }
+      // Pull everything for this account from scratch, including group tasks
+      // published before a sign-up with an invite code; the shell starts
+      // the sync right after it appears.
+      await resetSyncCursor();
       widget.apiClient.updateToken(token);
 
       if (widget.onLoginSuccess != null) {
