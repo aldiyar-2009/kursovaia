@@ -1,0 +1,13 @@
+{
+  "@@locale": "kk",
+  "map_hint": "Astana IT University, EXPO. Сипаттаманы көру үшін нүктені басыңыз",
+  "map_mainTitle": "Бас ғимарат (C1)",
+  "map_mainDesc": "Ректорат, акт залы, C1.1.200–C1.3.350 аудиториялары",
+  "map_labsTitle": "C2 блогы",
+  "map_labsDesc": "Cisco және Huawei ICT зертханалары, C2.2.100–C2.3.250 аудиториялары",
+  "map_libraryTitle": "Кітапхана және коворкинг",
+  "map_libraryDesc": "Тыныш оқу аймағы, open space, келіссөз бөлмелері",
+  "map_sportTitle": "Спорт кешені және фудкорт",
+  "map_sportDesc": "Спорт секциялары, асхана, кофехана",
+  "map_attribution": "© OpenStreetMap"
+}
