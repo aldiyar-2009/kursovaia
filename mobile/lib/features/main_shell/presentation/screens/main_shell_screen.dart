@@ -112,9 +112,12 @@ class _MainShellScreenState extends State<MainShellScreen> {
           ),
         );
       case AppTab.schedule:
-        return Scaffold(
-          appBar: AppBar(title: Text(l10n.nav_schedule)),
-          body: ScheduleCalendarScreen(db: widget.db, userId: userId),
+        final semesterStart = widget.group?['semester_start'];
+        return ScheduleScreen(
+          db: widget.db,
+          userId: userId,
+          semesterStart:
+              semesterStart is String ? DateTime.tryParse(semesterStart) : null,
         );
       case AppTab.tasks:
         return Scaffold(
