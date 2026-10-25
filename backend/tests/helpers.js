@@ -26,6 +26,8 @@ export const authed = (token) => ({
   get: (url) => request(app).get(url).set('Authorization', `Bearer ${token}`),
   post: (url) => request(app).post(url).set('Authorization', `Bearer ${token}`),
   patch: (url) => request(app).patch(url).set('Authorization', `Bearer ${token}`),
+  del: (url) => request(app).delete(url).set('Authorization', `Bearer ${token}`),
+  delete: (url) => request(app).delete(url).set('Authorization', `Bearer ${token}`),
 });
 
 export { db, request };

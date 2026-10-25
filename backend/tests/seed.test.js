@@ -14,7 +14,7 @@ test('demo seed: both accounts log in and get timetable, deadlines and chat', as
     // eslint-disable-next-line no-await-in-loop
     const login = await request(app).post('/api/auth/login').send({ email, password: 'password123' });
     assert.equal(login.status, 200, email);
-    assert.equal(login.body.group.title, 'ИВТ-21');
+    assert.equal(login.body.group.title, 'BDA-2601');
     // eslint-disable-next-line no-await-in-loop
     const sync = await authed(login.body.token).post('/api/sync').send({ last_synced_at: 0 });
     assert.equal(sync.body.changes.subjects.length, 6);

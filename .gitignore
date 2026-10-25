@@ -34,3 +34,10 @@ backend/coverage/
 .DS_Store
 Thumbs.db
 *.log
+
+# HAR-дампы браузера (содержат cookie сессий и личные данные)
+*.har
+
+# Локальные артефакты инструментов
+.playwright-mcp/
+/~/

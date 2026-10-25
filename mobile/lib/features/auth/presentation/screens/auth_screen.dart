@@ -38,7 +38,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   final _registerFormKey = GlobalKey<FormState>();
   final _registerNameController = TextEditingController();
   final _registerEmailController = TextEditingController();
-  final _registerInviteController = TextEditingController(text: 'IVT21A');
+  final _registerInviteController = TextEditingController(text: 'AITU26');
   final _registerPasswordController = TextEditingController();
   final _registerConfirmPasswordController = TextEditingController();
   bool _registerObscure = true;
@@ -385,19 +385,40 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                     const Divider(color: AppColors.border),
                     const SizedBox(height: 12),
 
-                    // Demo Accounts Quick Fill (Ideal for defense & grading criteria #14)
+                    // Demo Accounts Quick Fill
                     const Text(
-                      'Демо-аккаунты для быстрой проверки:',
+                      'Тестовый вход без ввода пароля:',
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 11, color: AppColors.textMuted),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     Row(
                       children: [
                         Expanded(
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.accent.withValues(alpha: 0.2),
+                              foregroundColor: AppColors.accent,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              side: const BorderSide(color: AppColors.accent, width: 1.2),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            icon: const Icon(Icons.school_rounded, size: 16),
+                            label: const Text('Студент', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                            onPressed: _isLoading
+                                ? null
+                                : () => _handleLogin(
+                                      preEmail: 'student@studyplan.dev',
+                                      prePassword: 'password123',
+                                    ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
                           child: OutlinedButton.icon(
                             style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              padding: const EdgeInsets.symmetric(vertical: 10),
                               side: const BorderSide(color: AppColors.border),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                             ),
@@ -407,24 +428,6 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                                 ? null
                                 : () => _handleLogin(
                                       preEmail: 'headman@studyplan.dev',
-                                      prePassword: 'password123',
-                                    ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              side: const BorderSide(color: AppColors.border),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                            icon: const Icon(Icons.person_rounded, size: 16, color: AppColors.accent),
-                            label: const Text('Студент', style: TextStyle(fontSize: 12, color: AppColors.textPrimary)),
-                            onPressed: _isLoading
-                                ? null
-                                : () => _handleLogin(
-                                      preEmail: 'student@studyplan.dev',
                                       prePassword: 'password123',
                                     ),
                           ),

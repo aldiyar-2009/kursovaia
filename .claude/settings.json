@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Bash(npm test:*)",
+      "Bash(npm run:*)",
+      "Bash(node --test:*)",
+      "Bash(npx knex:*)",
+      "Bash(flutter pub get:*)",
+      "Bash(flutter analyze:*)",
+      "Bash(flutter test:*)",
+      "Bash(dart format:*)",
+      "Bash(dart run build_runner:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)",
+      "PowerShell(npm test:*)",
+      "PowerShell(npm run:*)",
+      "PowerShell(node --test:*)",
+      "PowerShell(npx knex:*)",
+      "PowerShell(flutter pub get:*)",
+      "PowerShell(flutter analyze:*)",
+      "PowerShell(flutter test:*)",
+      "PowerShell(dart format:*)",
+      "PowerShell(dart run build_runner:*)",
+      "PowerShell(git status:*)",
+      "PowerShell(git diff:*)",
+      "PowerShell(git log:*)",
+      "PowerShell(git show:*)",
+      "PowerShell(git branch:*)",
+      "PowerShell(gh pr view:*)",
+      "PowerShell(gh pr list:*)",
+      "PowerShell(gh run list:*)",
+      "PowerShell(gh run view:*)"
+    ],
+    "deny": [
+      "Bash(git push --force:*)",
+      "Bash(git reset --hard:*)",
+      "PowerShell(git push --force:*)",
+      "PowerShell(git reset --hard:*)"
+    ]
+  }
+}
