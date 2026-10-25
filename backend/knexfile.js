@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { env, ROOT_DIR } from './src/config/env.js';
+import { buildPgConnection, env, ROOT_DIR } from './src/config/env.js';
 
 const migrations = {
   directory: path.join(ROOT_DIR, 'src', 'db', 'migrations'),
@@ -15,12 +15,9 @@ const seeds = {
 /** Builds a Knex config for the currently selected DB_CLIENT. */
 export function buildKnexConfig() {
   if (env.db.client === 'pg') {
-    const connection = env.db.databaseUrl
-      ? { connectionString: env.db.databaseUrl, ssl: env.db.pg.ssl ? { rejectUnauthorized: false } : false }
-      : { ...env.db.pg, ssl: env.db.pg.ssl ? { rejectUnauthorized: false } : false };
     return {
       client: 'pg',
-      connection,
+      connection: buildPgConnection(process.env),
       pool: { min: 1, max: 10 },
       migrations,
       seeds,

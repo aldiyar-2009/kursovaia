@@ -20,6 +20,9 @@ export async function listMaterials(user, query = {}) {
 export async function createMaterial(user, file, body) {
   const { title, subject_code, subject_title, category = 'lecture', description = null } = body;
 
+  if (!user.group_id) {
+    throw badRequest('You are not in a group');
+  }
   if (!title || !title.trim()) {
     throw badRequest('Title is required');
   }
@@ -58,10 +61,16 @@ export async function deleteMaterial(user, id) {
     throw notFound('Material not found');
   }
 
-  if (user.role !== 'headman' && material.uploader_id !== user.id) {
-    throw forbidden('Only the uploader or headman can delete this material');
+  if (material.uploader_id !== user.id) {
+    throw forbidden('Only the uploader can delete this material');
   }
 
   await db('course_materials').where({ id }).del();
   return { success: true };
+}
+
+/** Material whose stored file is `fileName`, only if it belongs to the user's group. */
+export async function findGroupMaterialByFile(user, fileName) {
+  if (!user.group_id) return null;
+  return db('course_materials').where({ file_path: fileName, group_id: user.group_id }).first();
 }

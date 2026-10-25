@@ -2,11 +2,11 @@ import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
 
 /**
- * Demo data: group "ИВТ-21", a headman and a student with a realistic timetable,
- * deadlines and group chat history.
+ * Demo data (tests and manual `npm run seed` only, never seeded on startup):
+ * group "BDA-2601" with two members, a realistic timetable, deadlines and materials.
  *   headman@studyplan.dev / password123   (Староста)
  *   student@studyplan.dev / password123   (Студент)
- * Invite code: IVT21A
+ * Invite code: AITU26
  * @param {import('knex').Knex} knex
  */
 export async function seed(knex) {
@@ -120,42 +120,6 @@ export async function seed(knex) {
     { id: id(), task_id: studentTaskId, user_id: studentId, title: 'Задача 4–6: производные', is_done: true, position: 1, is_deleted: false, updated_at: now, server_updated_at: now },
     { id: id(), task_id: studentTaskId, user_id: studentId, title: 'Задача 7: исследование функции', is_done: false, position: 2, is_deleted: false, updated_at: now, server_updated_at: now },
     { id: id(), task_id: studentTaskId, user_id: studentId, title: 'Оформить и сдать', is_done: false, position: 3, is_deleted: false, updated_at: now, server_updated_at: now },
-  ]);
-
-  const msg = (offsetMin, sender, type, content, payload = null, pinned = false) => ({
-    id: id(),
-    group_id: groupId,
-    sender_id: sender === 'h' ? headmanId : studentId,
-    sender_name: sender === 'h' ? 'Староста' : 'Студент',
-    message_type: type,
-    content,
-    payload_json: payload ? JSON.stringify(payload) : null,
-    is_pinned: pinned,
-    created_at: now - offsetMin * 60_000,
-    server_updated_at: now,
-  });
-
-  const fridayChange = {
-    action: 'move',
-    subject_title: 'Information & Comm. Technologies',
-    day_of_week: 5,
-    start_time: '14:00',
-    end_time: '15:30',
-    classroom: 'Ауд. C1.1.254',
-    lesson_type: 'practice',
-    note: 'Пара перенесена в другую аудиторию',
-  };
-
-  await knex('chat_messages').insert([
-    msg(600, 'h', 'text', 'Всем привет! Это чат группы BDA-2601 в StudyPlan. Здесь публикуются изменения расписания и задания 📌', null, true),
-    msg(420, 's', 'text', 'Привет! Лабораторную по ICT нужно сдавать в электронном виде через LMS?'),
-    msg(410, 'h', 'text', 'Да, преподаватель сказал загрузить PDF-отчёт в LMS AITU до конца недели.'),
-    msg(300, 'h', 'homework', 'Лабораторная №3: Сети и протоколы', {
-      task_id: groupTaskId, subject_title: 'Information & Comm. Technologies', title: 'Лабораторная №3: Сети и протоколы',
-      description: 'Выполнить задания 1–12 из методички, оформить отчёт в PDF.', due_date: now + 3 * DAY, priority: 1,
-    }),
-    msg(120, 'h', 'schedule_update', 'Изменение в расписании на Пт: ICT перенесена в Ауд. C1.1.254', fridayChange, true),
-    msg(30, 's', 'text', 'Спасибо! Добавил себе в задачи 👍'),
   ]);
 
   await knex('course_materials').insert([
