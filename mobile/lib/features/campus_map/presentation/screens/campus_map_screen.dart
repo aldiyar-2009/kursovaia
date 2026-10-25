@@ -1,118 +1,111 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:studyplan/core/theme/app_colors.dart';
+import 'package:studyplan/core/theme/app_theme.dart';
+import 'package:studyplan/core/theme/theme_ext.dart';
+import 'package:studyplan/l10n/generated/app_localizations.dart';
 
-class CampusMapScreen extends StatefulWidget {
-  const CampusMapScreen({super.key});
+/// Reference points of the AITU campus (EXPO, Astana).
+enum _CampusPlace {
+  main(LatLng(51.0907, 71.4184)),
+  labs(LatLng(51.0913, 71.4192)),
+  library(LatLng(51.0902, 71.4176)),
+  sport(LatLng(51.0898, 71.4195));
 
-  @override
-  State<CampusMapScreen> createState() => _CampusMapScreenState();
+  const _CampusPlace(this.point);
+  final LatLng point;
+
+  String title(AppLocalizations l10n) => switch (this) {
+        main => l10n.map_mainTitle,
+        labs => l10n.map_labsTitle,
+        library => l10n.map_libraryTitle,
+        sport => l10n.map_sportTitle,
+      };
+
+  String description(AppLocalizations l10n) => switch (this) {
+        main => l10n.map_mainDesc,
+        labs => l10n.map_labsDesc,
+        library => l10n.map_libraryDesc,
+        sport => l10n.map_sportDesc,
+      };
 }
 
-class _CampusMapScreenState extends State<CampusMapScreen> {
-  // Astana IT University (AITU) coordinates in EXPO, Astana (51.0907, 71.4184)
-  final LatLng _aituCenter = const LatLng(51.0907, 71.4184);
+class CampusMapScreen extends StatelessWidget {
+  const CampusMapScreen({super.key});
 
-  final List<({String title, String desc, LatLng point, Color color})> _aituLocations = [
-    (
-      title: 'AITU Главный кампус (C1)',
-      desc: 'Ректорат, Актовый зал, Ауд. C1.1.200 - C1.3.350',
-      point: const LatLng(51.0907, 71.4184),
-      color: AppColors.accent,
-    ),
-    (
-      title: 'Блок C2 (Лаборатории)',
-      desc: 'Лаборатории Cisco, Huawei ICT, Ауд. C2.2.100 - C2.3.250',
-      point: const LatLng(51.0913, 71.4192),
-      color: AppColors.accentCyan,
-    ),
-    (
-      title: 'AITU Библиотека & Coworking',
-      desc: 'Зона тихой учебы, Open Space, Meeting Rooms',
-      point: const LatLng(51.0902, 71.4176),
-      color: AppColors.warning,
-    ),
-    (
-      title: 'Спорткомплекс & Food Court',
-      desc: 'Спортивные секции, Столовая AITU, Coffee Point',
-      point: const LatLng(51.0898, 71.4195),
-      color: AppColors.success,
-    ),
-  ];
+  static const _center = LatLng(51.0907, 71.4184);
+
+  void _showPlace(BuildContext context, _CampusPlace place) {
+    final l10n = context.l10n;
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(place.title(l10n), style: ctx.text.titleMedium),
+              const SizedBox(height: 8),
+              Text(
+                place.description(l10n),
+                style: ctx.text.bodyMedium!
+                    .copyWith(color: ctx.palette.textSecondary),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+    final l10n = context.l10n;
     return Stack(
       children: [
         FlutterMap(
-          options: MapOptions(
-            initialCenter: _aituCenter,
-            initialZoom: 16.5,
-          ),
+          options: const MapOptions(initialCenter: _center, initialZoom: 16.5),
           children: [
             TileLayer(
               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
               userAgentPackageName: 'com.studyplan.app',
             ),
             MarkerLayer(
-              markers: _aituLocations.map((b) {
-                return Marker(
-                  point: b.point,
-                  width: 46,
-                  height: 46,
-                  child: GestureDetector(
-                    onTap: () {
-                      showModalBottomSheet(
-                        context: context,
-                        backgroundColor: AppColors.surface,
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                        ),
-                        builder: (_) => Padding(
-                          padding: const EdgeInsets.all(20.0),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  CircleAvatar(backgroundColor: b.color, radius: 6),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      b.title,
-                                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 10),
-                              Text(b.desc, style: const TextStyle(fontSize: 14, color: AppColors.textSecondary)),
-                              const SizedBox(height: 18),
-                            ],
+              markers: [
+                for (final place in _CampusPlace.values)
+                  Marker(
+                    point: place.point,
+                    width: 44,
+                    height: 44,
+                    child: Semantics(
+                      button: true,
+                      label: place.title(l10n),
+                      child: GestureDetector(
+                        onTap: () => _showPlace(context, place),
+                        child: Center(
+                          child: Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: palette.primary,
+                              shape: BoxShape.circle,
+                              border:
+                                  Border.all(color: palette.surface, width: 2),
+                            ),
+                            child: Icon(
+                              Icons.school_outlined,
+                              color: palette.onPrimary,
+                              size: 16,
+                            ),
                           ),
                         ),
-                      );
-                    },
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: b.color,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: b.color.withValues(alpha: 0.5),
-                            blurRadius: 8,
-                            spreadRadius: 2,
-                          ),
-                        ],
                       ),
-                      child: const Icon(Icons.school_rounded, color: Colors.white, size: 24),
                     ),
                   ),
-                );
-              }).toList(),
+              ],
             ),
           ],
         ),
@@ -120,25 +113,33 @@ class _CampusMapScreenState extends State<CampusMapScreen> {
           top: 16,
           left: 16,
           right: 16,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: AppColors.surface.withValues(alpha: 0.92),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border, width: 1),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.location_on_outlined, size: 18, color: AppColors.accentCyan),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Astana IT University (AITU, Expo) — нажмите на маркер для просмотра',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-                  ),
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: palette.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(color: palette.border),
                 ),
-              ],
+                child: Text(l10n.map_hint, style: context.text.bodySmall),
+              ),
             ),
+          ),
+        ),
+        Positioned(
+          right: 8,
+          bottom: 8,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: palette.surface,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(l10n.map_attribution, style: context.text.labelSmall),
           ),
         ),
       ],
