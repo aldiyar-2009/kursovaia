@@ -158,3 +158,124 @@ describe('POST /api/sync', () => {
     assert.equal((await db('chat_messages').where({ id: m.id })).length, 0, 'nothing stored');
   });
 });
+
+const lmsCourse = (over = {}) => ({
+  id: uuid(), source: 'lms', lms_course_id: 4211, subject_id: null, classification: 'inprogress',
+  title: 'Linear Algebra | Иванов И.И.', teacher_name: 'Иванов И.И.', credits: 5,
+  register_midterm: 78.5, register_endterm: null, final_exam: null, total: null,
+  grade_items_json: JSON.stringify([{ name: 'Quiz 1', grade: '8,00' }]), imported_at: 1_700_000_000_000,
+  is_deleted: false, updated_at: 1000, ...over,
+});
+const lmsEvent = (over = {}) => ({
+  id: uuid(), lms_event_id: 99001, lms_course_id: 4211, title: 'Assignment 2 is due', course_title: 'Linear Algebra',
+  event_type: 'deadline', module_name: 'assign', starts_at: 1_800_000_000_000, duration_min: null, location: null,
+  url: 'https://lms.astanait.edu.kz/mod/assign/view.php?id=1', is_done: false, imported_at: 1_700_000_000_000,
+  is_deleted: false, updated_at: 1000, ...over,
+});
+const lmsMaterial = (over = {}) => ({
+  id: uuid(), lms_module_id: 555, lms_course_id: 4211, course_title: 'Linear Algebra', section_title: 'Week 1',
+  title: 'Lecture 1 slides', material_type: 'file', url: 'https://lms.astanait.edu.kz/mod/resource/view.php?id=555',
+  imported_at: 1_700_000_000_000, is_deleted: false, updated_at: 1000, ...over,
+});
+
+describe('POST /api/sync — LMS tables', () => {
+  test('response contains exactly the SYNC_ORDER tables', async () => {
+    const { token } = await registerUser('Keys');
+    const res = await authed(token).post('/api/sync').send({ last_synced_at: 0 });
+    assert.deepEqual(
+      Object.keys(res.body.changes),
+      ['subjects', 'lessons', 'tasks', 'subtasks', 'lms_courses', 'lms_events', 'lms_materials'],
+    );
+  });
+
+  test('push + pull round-trip for lms_courses, lms_events, lms_materials', async () => {
+    const { token } = await registerUser('LMS user');
+    const s = subject();
+    const c = lmsCourse({ subject_id: s.id });
+    const manual = lmsCourse({ source: 'manual', lms_course_id: null, classification: null, title: 'Physics (manual)', credits: undefined, grade_items_json: null, imported_at: null });
+    delete manual.credits;
+    const e = lmsEvent();
+    const cls = lmsEvent({ lms_event_id: 99002, event_type: 'class', module_name: 'attendance', duration_min: 50, location: 'C1.2.204', is_done: true });
+    const m = lmsMaterial();
+
+    const push = await authed(token).post('/api/sync').send({
+      last_synced_at: 0,
+      changes: { subjects: [s], lms_courses: [c, manual], lms_events: [e, cls], lms_materials: [m] },
+    });
+    assert.equal(push.status, 200);
+    assert.deepEqual(push.body.rejected, []);
+    assert.deepEqual(push.body.applied.lms_courses, [c.id, manual.id]);
+    assert.deepEqual(push.body.applied.lms_events, [e.id, cls.id]);
+    assert.deepEqual(push.body.applied.lms_materials, [m.id]);
+
+    const pull = await authed(token).post('/api/sync').send({ last_synced_at: 0 });
+    const gotC = pull.body.changes.lms_courses.find((r) => r.id === c.id);
+    assert.equal(gotC.subject_id, s.id);
+    assert.equal(gotC.register_midterm, 78.5);
+    assert.equal(gotC.total, null);
+    assert.equal(gotC.lms_course_id, 4211);
+    assert.equal(gotC.grade_items_json, c.grade_items_json);
+    assert.equal(gotC.is_deleted, false);
+    assert.equal(pull.body.changes.lms_courses.find((r) => r.id === manual.id).credits, 5, 'credits default 5');
+
+    const gotCls = pull.body.changes.lms_events.find((r) => r.id === cls.id);
+    assert.equal(gotCls.event_type, 'class');
+    assert.equal(gotCls.duration_min, 50);
+    assert.equal(gotCls.is_done, true, 'booleans normalized');
+    assert.equal(pull.body.changes.lms_events.find((r) => r.id === e.id).is_done, false);
+
+    const gotM = pull.body.changes.lms_materials[0];
+    assert.equal(gotM.material_type, 'file');
+    assert.equal(gotM.section_title, 'Week 1');
+
+    const other = await registerUser('Other');
+    const otherPull = await authed(other.token).post('/api/sync').send({ last_synced_at: 0 });
+    assert.equal(otherPull.body.changes.lms_courses.length, 0, 'LMS rows are private');
+    assert.equal(otherPull.body.changes.lms_events.length, 0);
+    assert.equal(otherPull.body.changes.lms_materials.length, 0);
+    const hijack = await authed(other.token).post('/api/sync').send({ changes: { lms_events: [{ ...e, is_done: true, updated_at: 5000 }] } });
+    assert.equal(hijack.body.rejected[0].reason, 'forbidden');
+  });
+
+  test('validation rejects total 101, unknown event_type and foreign subject_id', async () => {
+    const a = await registerUser('Validator A');
+    const b = await registerUser('Validator B');
+    const foreignSubject = subject();
+    await authed(a.token).post('/api/sync').send({ changes: { subjects: [foreignSubject] } });
+
+    const badTotal = lmsCourse({ total: 101 });
+    const badCredits = lmsCourse({ credits: 0 });
+    const foreignRef = lmsCourse({ subject_id: foreignSubject.id });
+    const badEvent = lmsEvent({ event_type: 'x' });
+    const noStart = lmsEvent({ starts_at: null });
+    const badMaterial = lmsMaterial({ material_type: 'video' });
+
+    const res = await authed(b.token).post('/api/sync').send({
+      changes: { lms_courses: [badTotal, badCredits, foreignRef], lms_events: [badEvent, noStart], lms_materials: [badMaterial] },
+    });
+    assert.equal(res.status, 200);
+    assert.deepEqual(res.body.applied.lms_courses, []);
+    assert.deepEqual(res.body.applied.lms_events, []);
+    assert.deepEqual(res.body.applied.lms_materials, []);
+    const reasons = Object.fromEntries(res.body.rejected.map((r) => [r.id, r.reason]));
+    assert.match(reasons[badTotal.id], /total/);
+    assert.match(reasons[badCredits.id], /credits/);
+    assert.equal(reasons[foreignRef.id], 'subject_id not found');
+    assert.match(reasons[badEvent.id], /event_type/);
+    assert.match(reasons[noStart.id], /starts_at/);
+    assert.match(reasons[badMaterial.id], /material_type/);
+  });
+
+  test('Last-Write-Wins on lms_courses.credits', async () => {
+    const { token } = await registerUser('LWW LMS');
+    const c = lmsCourse({ updated_at: 2000 });
+    await authed(token).post('/api/sync').send({ changes: { lms_courses: [c] } });
+
+    const newer = await authed(token).post('/api/sync').send({ changes: { lms_courses: [{ ...c, credits: 6, updated_at: 3000 }] } });
+    assert.deepEqual(newer.body.applied.lms_courses, [c.id]);
+
+    const stale = await authed(token).post('/api/sync').send({ last_synced_at: Date.now(), changes: { lms_courses: [{ ...c, credits: 3, updated_at: 2500 }] } });
+    assert.equal(stale.body.rejected[0].reason, 'stale');
+    assert.equal(stale.body.changes.lms_courses.find((r) => r.id === c.id).credits, 6, 'server copy wins');
+  });
+});

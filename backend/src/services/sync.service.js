@@ -29,6 +29,10 @@ async function checkReferences(trx, table, user, data) {
     const subject = await trx('subjects').where({ id: data.subject_id, user_id: user.id }).first('id');
     if (!subject) return 'subject_id not found';
   }
+  if (table === 'lms_courses' && data.subject_id != null) {
+    const subject = await trx('subjects').where({ id: data.subject_id, user_id: user.id }).first('id');
+    if (!subject) return 'subject_id not found';
+  }
   if (table === 'subtasks') {
     const task = await trx('tasks').where({ id: data.task_id, user_id: user.id }).first('id');
     if (!task) return 'task_id not found';
