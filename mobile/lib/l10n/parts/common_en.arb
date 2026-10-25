@@ -1,0 +1,9 @@
+{
+  "@@locale": "en",
+  "common_appName": "StudyPlan",
+  "common_save": "Save",
+  "common_cancel": "Cancel",
+  "common_delete": "Delete",
+  "common_retry": "Try again",
+  "common_loading": "Loading…"
+}
