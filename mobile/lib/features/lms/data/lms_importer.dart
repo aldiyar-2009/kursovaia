@@ -6,14 +6,19 @@
 ///   grade items and `importedAt` are. `manual` courses are never touched.
 ///   `lms` courses missing from the result are soft-deleted, unless
 ///   `errors['courses']` is set (then nothing is deleted).
+/// * Scores: with `errors['grades']` stored scores are kept; for a course in
+///   `failedGradeCourseIds` a stored score is replaced only by a non-null one.
 /// * Each imported course is linked to a subject with the same title
 ///   (case-insensitive, trimmed); a subject is created when none exists.
 /// * Events are upserted by `lmsEventId` (without an id: by type + title +
 ///   start); `isDone` is kept. For each kind imported without an error
-///   (`deadlines`, `classes`) missing future events of that type are
-///   soft-deleted; past ones stay.
+///   (`deadlines`, `classes`): missing future classes are soft-deleted; a
+///   missing deadline due in the future or within [kLmsSubmittedGrace] is
+///   marked done (Moodle drops submitted work from the action events). Older
+///   past events stay as history.
 /// * Materials are upserted by `lmsModuleId`; missing ones are soft-deleted
-///   unless `errors['materials']` is set.
+///   only when neither `errors['materials']` nor `errors['courses']` is set,
+///   and only for courses in `materialCourseIds` (contents loaded OK).
 /// * Every write stamps `updatedAt = now` and a pending `syncStatus`.
 library;
 
@@ -27,6 +32,10 @@ import 'package:studyplan/features/lms/data/lms_models.dart';
 
 /// SharedPreferences key holding the LMS profile JSON (device only).
 const kLmsProfilePrefsKey = 'lms.profile';
+
+/// A deadline that vanished from the LMS is marked done when it is due in the
+/// future or at most this long ago; older ones are left untouched.
+const kLmsSubmittedGrace = Duration(days: 30);
 
 /// Neutral colours for subjects created by the import.
 const _subjectPalette = [
@@ -145,7 +154,15 @@ Future<LmsImportSummary> applyImport(
           existing?.subjectId != null && liveSubjectIds.contains(existing!.subjectId)
               ? existing.subjectId!
               : await subjectFor(c);
-      final keepScores = gradesFailed && existing != null;
+      // All grades failed: keep every stored score. This course's report
+      // failed: keep a stored score unless a new non-null one arrived (e.g. the
+      // overview total).
+      final keepAll = gradesFailed && existing != null;
+      final keepMissing =
+          existing != null && r.failedGradeCourseIds.contains(c.lmsCourseId);
+      Value<T?> score<T>(T? v) => keepAll || (keepMissing && v == null)
+          ? Value<T?>.absent()
+          : Value<T?>(v);
       final companion = LmsCoursesCompanion(
         source: const Value('lms'),
         lmsCourseId: Value(c.lmsCourseId),
@@ -153,11 +170,11 @@ Future<LmsImportSummary> applyImport(
         classification: Value(c.classification),
         title: Value(title),
         teacherName: Value(_truncateOpt(c.teacherName, 160)),
-        registerMidterm: keepScores ? const Value.absent() : Value(c.midterm),
-        registerEndterm: keepScores ? const Value.absent() : Value(c.endterm),
-        finalExam: keepScores ? const Value.absent() : Value(c.finalExam),
-        total: keepScores ? const Value.absent() : Value(c.total),
-        gradeItemsJson: keepScores ? const Value.absent() : Value(c.gradeItemsJson),
+        registerMidterm: score(c.midterm),
+        registerEndterm: score(c.endterm),
+        finalExam: score(c.finalExam),
+        total: score(c.total),
+        gradeItemsJson: score(c.gradeItemsJson),
         importedAt: Value(nowMs),
         isDeleted: const Value(false),
         updatedAt: Value(nowMs),
@@ -263,9 +280,25 @@ Future<LmsImportSummary> applyImport(
       if (!errors.containsKey('deadlines')) LmsEventType.deadline.storageValue,
       if (!errors.containsKey('classes')) LmsEventType.classSession.storageValue,
     };
+    final doneSinceMs = BigInt.from(
+      now.subtract(kLmsSubmittedGrace).millisecondsSinceEpoch,
+    );
     for (final e in existingEvents) {
       if (e.isDeleted || touchedEventIds.contains(e.id)) continue;
       if (!deletableTypes.contains(e.eventType)) continue;
+      if (e.eventType == LmsEventType.deadline.storageValue) {
+        // Moodle drops submitted assignments from the action events: a
+        // vanished deadline is marked done, not deleted. Old ones stay as is.
+        if (e.isDone || e.startsAt < doneSinceMs) continue;
+        await (db.update(db.lmsEvents)..where((t) => t.id.equals(e.id))).write(
+          LmsEventsCompanion(
+            isDone: const Value(true),
+            updatedAt: Value(nowMs),
+            syncStatus: Value(_updateStatus(e.syncStatus)),
+          ),
+        );
+        continue;
+      }
       if (e.startsAt < nowMs) continue; // past events stay as history
       await (db.update(db.lmsEvents)..where((t) => t.id.equals(e.id))).write(
         LmsEventsCompanion(
@@ -338,9 +371,13 @@ Future<LmsImportSummary> applyImport(
       materialCount++;
     }
 
-    if (!errors.containsKey('materials')) {
+    if (!errors.containsKey('materials') && !errors.containsKey('courses')) {
+      final loadedCourses =
+          r.materialCourseIds ??
+          {for (final m in r.materials) ?m.lmsCourseId};
       for (final m in existingMaterials) {
         if (m.isDeleted || touchedMaterialIds.contains(m.id)) continue;
+        if (!loadedCourses.contains(m.lmsCourseId)) continue;
         await (db.update(db.lmsMaterials)..where((t) => t.id.equals(m.id))).write(
           LmsMaterialsCompanion(
             isDeleted: const Value(true),

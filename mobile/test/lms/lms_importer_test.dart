@@ -290,6 +290,161 @@ void main() {
     expect(byLmsId(await allCourses(), 1).total, 80);
   });
 
+  test('errors[courses] set -> materials are not deleted either', () async {
+    await applyImport(db, user, firstResult(), now: now);
+    await applyImport(
+      db,
+      user,
+      LmsImportResult(
+        courses: [course(1, 'Algebra')],
+        materialCourseIds: const {1},
+        errors: const {'courses': 'partial'},
+      ),
+      now: now,
+    );
+    expect((await allMaterials()).any((m) => m.isDeleted), isFalse);
+    expect((await allCourses()).any((c) => c.isDeleted), isFalse);
+  });
+
+  test('material deletions are scoped to courses whose contents loaded', () async {
+    final physics = LmsMaterialData(
+      lmsModuleId: 20,
+      lmsCourseId: 2,
+      courseTitle: 'Physics',
+      title: 'Physics notes',
+      materialType: 'file',
+    );
+    await applyImport(
+      db,
+      user,
+      LmsImportResult(
+        courses: firstResult().courses,
+        materials: [material(10, 'Slides 1'), material(11, 'Slides 2'), physics],
+      ),
+      now: now,
+    );
+    // Only course 1 loaded; its module 11 is gone. Course 2 was not fetched.
+    await applyImport(
+      db,
+      user,
+      LmsImportResult(
+        courses: firstResult().courses,
+        materials: [material(10, 'Slides 1')],
+        materialCourseIds: const {1},
+      ),
+      now: now,
+    );
+    final materials = await allMaterials();
+    expect(materials.singleWhere((m) => m.lmsModuleId == 11).isDeleted, isTrue);
+    expect(materials.singleWhere((m) => m.lmsModuleId == 20).isDeleted, isFalse);
+    expect(materials.singleWhere((m) => m.lmsModuleId == 10).isDeleted, isFalse);
+  });
+
+  test('failedGradeCourseIds keeps existing scores of those courses only', () async {
+    await applyImport(
+      db,
+      user,
+      LmsImportResult(
+        courses: [course(1, 'Algebra', total: 80), course(2, 'Physics', total: 60)],
+      ),
+      now: now,
+    );
+    await applyImport(
+      db,
+      user,
+      LmsImportResult(
+        courses: [course(1, 'Algebra'), course(2, 'Physics')],
+        failedGradeCourseIds: const {1},
+      ),
+      now: now,
+    );
+    final courses = await allCourses();
+    expect(byLmsId(courses, 1).total, 80);
+    expect(byLmsId(courses, 2).total, isNull);
+  });
+
+  test('failed grade course still takes a new non-null score', () async {
+    await applyImport(
+      db,
+      user,
+      LmsImportResult(courses: [course(1, 'Algebra', total: 80)]),
+      now: now,
+    );
+    await applyImport(
+      db,
+      user,
+      LmsImportResult(
+        courses: [course(1, 'Algebra', total: 85)],
+        failedGradeCourseIds: const {1},
+      ),
+      now: now,
+    );
+    expect(byLmsId(await allCourses(), 1).total, 85);
+  });
+
+  test('vanished future/recent deadline is marked done, old one untouched', () async {
+    final recentPast = now.subtract(const Duration(days: 5));
+    final oldPast = now.subtract(const Duration(days: 60));
+    await applyImport(
+      db,
+      user,
+      LmsImportResult(
+        events: [
+          event(100, 'Essay', LmsEventType.deadline, future1),
+          event(101, 'Lab report', LmsEventType.deadline, future2),
+          event(102, 'Quiz', LmsEventType.deadline, recentPast),
+          event(103, 'Old quiz', LmsEventType.deadline, oldPast),
+        ],
+      ),
+      now: now,
+    );
+    final synced = await allEvents();
+    for (final e in synced) {
+      await (db.update(db.lmsEvents)..where((t) => t.id.equals(e.id)))
+          .write(const LmsEventsCompanion(syncStatus: Value('synced')));
+    }
+
+    await applyImport(
+      db,
+      user,
+      LmsImportResult(
+        events: [event(101, 'Lab report', LmsEventType.deadline, future2)],
+      ),
+      now: now,
+    );
+    final events = await allEvents();
+    final essay = eventById(events, 100);
+    expect(essay.isDeleted, isFalse);
+    expect(essay.isDone, isTrue);
+    expect(essay.syncStatus, 'pending_update');
+    final quiz = eventById(events, 102);
+    expect(quiz.isDeleted, isFalse);
+    expect(quiz.isDone, isTrue);
+    final old = eventById(events, 103);
+    expect(old.isDeleted, isFalse);
+    expect(old.isDone, isFalse);
+    expect(old.syncStatus, 'synced');
+    expect(eventById(events, 101).isDone, isFalse);
+  });
+
+  test('vanished deadline with deadlines error is left alone', () async {
+    await applyImport(
+      db,
+      user,
+      LmsImportResult(events: [event(100, 'Essay', LmsEventType.deadline, future1)]),
+      now: now,
+    );
+    await applyImport(
+      db,
+      user,
+      const LmsImportResult(errors: {'deadlines': 'x'}),
+      now: now,
+    );
+    final e = eventById(await allEvents(), 100);
+    expect(e.isDone, isFalse);
+    expect(e.isDeleted, isFalse);
+  });
+
   test('profile is stored in SharedPreferences', () async {
     final prefs = await SharedPreferences.getInstance();
     await applyImport(db, user, firstResult(), now: now, prefs: prefs);

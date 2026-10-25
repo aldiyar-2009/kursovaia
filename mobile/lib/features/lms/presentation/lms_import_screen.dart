@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:studyplan/core/database/app_database.dart';
 import 'package:studyplan/core/sync/sync_bloc.dart';
+import 'package:studyplan/core/sync/sync_state.dart';
 import 'package:studyplan/core/theme/theme_ext.dart';
 import 'package:studyplan/core/widgets/ui/app_sheet.dart'
     show kPrimaryButtonHeight;
@@ -16,16 +17,26 @@ import 'package:studyplan/features/lms/data/moodle_ajax_parser.dart';
 import 'lms_webview.dart';
 import 'widgets/lms_import_result_view.dart';
 
-export 'lms_webview.dart' show isLmsImportSupported;
+export 'lms_webview.dart' show isLmsImportSupported, clearLmsWebSession;
 export 'widgets/lms_import_result_view.dart' show LmsImportResultView;
+
+/// How long the import waits for [openLmsImport]'s `beforeApply` (a sync).
+const kLmsBeforeApplyTimeout = Duration(seconds: 20);
 
 /// Opens the LMS import and returns its summary, or null when the user
 /// left before anything was saved. After a successful import a sync is
 /// requested through the caller's [SyncBloc], if one is above [context].
+///
+/// [beforeApply] runs after the LMS data is fetched and before it is written
+/// to the local database. The shell passes one sync with the server here, so
+/// the import merges into fresh rows (e.g. credits or «done» marks changed on
+/// another device) instead of stale ones. It is awaited for at most
+/// [kLmsBeforeApplyTimeout]; failures (offline) are ignored.
 Future<LmsImportSummary?> openLmsImport(
   BuildContext context, {
   required AppDatabase db,
   required String userId,
+  Future<void> Function()? beforeApply,
 }) async {
   SyncBloc? sync;
   try {
@@ -33,9 +44,13 @@ Future<LmsImportSummary?> openLmsImport(
   } catch (_) {
     sync = null;
   }
+  final bloc = sync;
+  final before =
+      beforeApply ?? (bloc == null ? null : () => _syncOnce(bloc));
   final summary = await Navigator.of(context).push<LmsImportSummary>(
     MaterialPageRoute(
-      builder: (_) => LmsImportScreen(db: db, userId: userId),
+      builder: (_) =>
+          LmsImportScreen(db: db, userId: userId, beforeApply: before),
     ),
   );
   if (summary != null && sync != null && !sync.isClosed) {
@@ -44,13 +59,65 @@ Future<LmsImportSummary?> openLmsImport(
   return summary;
 }
 
+/// Triggers one sync on [bloc] and completes when it has finished.
+Future<void> _syncOnce(SyncBloc bloc) async {
+  if (bloc.isClosed) return;
+  final finished = bloc.stream
+      .skipWhile((s) => s.status != SyncStatusState.syncing)
+      .firstWhere((s) => s.status != SyncStatusState.syncing);
+  bloc.add(SyncTriggered());
+  await finished;
+}
+
+/// Fetches the LMS data through [controller], runs [beforeApply] (see
+/// [openLmsImport]; errors and timeouts are ignored) and writes the result
+/// with [applyImport]. Throws when the script fails or returns garbage.
+Future<LmsImportSummary> runLmsImport(
+  LmsWebViewController controller, {
+  required AppDatabase db,
+  required String userId,
+  DateTime? now,
+  SharedPreferences? prefs,
+  Future<void> Function()? beforeApply,
+}) async {
+  final window = lmsImportWindow(now ?? DateTime.now());
+  final raw = await controller
+      .runImport(sinceSec: window.sinceSec, untilSec: window.untilSec)
+      .timeout(LmsImportScreen.scriptTimeout);
+  final decoded = jsonDecode(raw);
+  if (decoded is! Map) throw const FormatException('not an object');
+  final result = buildImportResult(Map<String, dynamic>.from(decoded));
+  if (beforeApply != null) {
+    try {
+      await beforeApply().timeout(kLmsBeforeApplyTimeout);
+    } catch (_) {
+      // Offline or server error: import into the local data as it is.
+    }
+  }
+  return applyImport(
+    db,
+    userId,
+    result,
+    now: now ?? DateTime.now(),
+    prefs: prefs ?? await SharedPreferences.getInstance(),
+  );
+}
+
 enum _Step { intro, login, loading, result, error }
 
 class LmsImportScreen extends StatefulWidget {
-  const LmsImportScreen({super.key, required this.db, required this.userId});
+  const LmsImportScreen({
+    super.key,
+    required this.db,
+    required this.userId,
+    this.beforeApply,
+  });
 
   final AppDatabase db;
   final String userId;
+
+  /// See [openLmsImport].
+  final Future<void> Function()? beforeApply;
 
   static const scriptTimeout = Duration(seconds: 60);
 
@@ -92,19 +159,11 @@ class _LmsImportScreenState extends State<LmsImportScreen> {
       _step = _Step.loading;
     });
     try {
-      final window = lmsImportWindow(DateTime.now());
-      final raw = await c
-          .runImport(sinceSec: window.sinceSec, untilSec: window.untilSec)
-          .timeout(LmsImportScreen.scriptTimeout);
-      final decoded = jsonDecode(raw);
-      if (decoded is! Map) throw const FormatException('not an object');
-      final result = buildImportResult(Map<String, dynamic>.from(decoded));
-      final summary = await applyImport(
-        widget.db,
-        widget.userId,
-        result,
-        now: DateTime.now(),
-        prefs: await SharedPreferences.getInstance(),
+      final summary = await runLmsImport(
+        c,
+        db: widget.db,
+        userId: widget.userId,
+        beforeApply: widget.beforeApply,
       );
       if (!mounted) return;
       setState(() {

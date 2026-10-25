@@ -107,6 +107,9 @@ LmsGradeItem? _pick(
 /// from [items] by name (case-insensitive) and stores [items] as
 /// `gradeItemsJson`.
 ///
+/// Every grade and [courseTotal] must already be a percent; they are clamped
+/// to 0..100 here (non-finite → `null`).
+///
 /// Rule «нет оценки»: when no item has a grade yet, every score (including
 /// [courseTotal], which Moodle shows as `0,00` at semester start) is `null`.
 /// Empty [items] means the report could not be read: [base] is returned as is.
@@ -116,20 +119,25 @@ LmsCourseData applyGradeItemList(
   double? courseTotal,
 }) {
   if (items.isEmpty) return base;
-  final anyGraded = items.any((i) => i.grade != null);
-  final mid = _pick(items, _midtermPatterns);
-  final end = _pick(items, _endtermPatterns, exclude: {?mid});
-  final fin = _pick(items, _finalPatterns, exclude: {?mid, ?end});
+  final clamped = [
+    for (final i in items)
+      LmsGradeItem(name: i.name, grade: clampPercent(i.grade), range: i.range),
+  ];
+  final total = clampPercent(courseTotal);
+  final anyGraded = clamped.any((i) => i.grade != null);
+  final mid = _pick(clamped, _midtermPatterns);
+  final end = _pick(clamped, _endtermPatterns, exclude: {?mid});
+  final fin = _pick(clamped, _finalPatterns, exclude: {?mid, ?end});
   return LmsCourseData(
     lmsCourseId: base.lmsCourseId,
     title: base.title,
     teacherName: base.teacherName,
     classification: base.classification,
-    total: anyGraded ? (courseTotal ?? base.total) : null,
+    total: anyGraded ? (total ?? clampPercent(base.total)) : null,
     midterm: mid?.grade,
     endterm: end?.grade,
     finalExam: fin?.grade,
-    gradeItemsJson: jsonEncode(items.map((i) => i.toJson()).toList()),
+    gradeItemsJson: jsonEncode(clamped.map((i) => i.toJson()).toList()),
   );
 }
 
@@ -251,6 +259,8 @@ class LmsImportResult {
     this.materials = const [],
     this.profile,
     this.errors = const {},
+    this.failedGradeCourseIds = const {},
+    this.materialCourseIds,
   });
 
   final List<LmsCourseData> courses;
@@ -258,4 +268,31 @@ class LmsImportResult {
   final List<LmsMaterialData> materials;
   final LmsProfileData? profile;
   final Map<String, String> errors;
+
+  /// Courses whose grade report could not be read (neither AJAX nor HTML).
+  /// The importer keeps their stored scores instead of writing `null`.
+  final Set<int> failedGradeCourseIds;
+
+  /// Courses whose contents were loaded completely; the importer deletes
+  /// missing materials only of these courses. `null` (hand-built results)
+  /// means «the courses that appear in [materials]».
+  final Set<int>? materialCourseIds;
+}
+
+/// Clamps a percent score to 0..100; NaN / infinity → `null`.
+double? clampPercent(double? v) {
+  if (v == null || !v.isFinite) return null;
+  return v.clamp(0, 100).toDouble();
+}
+
+/// Converts a raw grade to percent of its range: `(raw - min) / (max - min) *
+/// 100` when [max] is known and not 100 (and `max > min`); otherwise [raw] is
+/// taken as a percent already. The result is clamped by [clampPercent].
+double? gradeToPercent(double? raw, {double? min, double? max}) {
+  if (raw == null || !raw.isFinite) return null;
+  final lo = (min != null && min.isFinite) ? min : 0.0;
+  if (max != null && max.isFinite && max != 100 && max > lo) {
+    return clampPercent((raw - lo) / (max - lo) * 100);
+  }
+  return clampPercent(raw);
 }

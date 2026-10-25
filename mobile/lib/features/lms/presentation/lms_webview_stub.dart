@@ -5,6 +5,9 @@ import 'lms_webview_common.dart';
 /// The web build has no embedded browser that can run the import.
 bool get isLmsImportSupported => false;
 
+/// No embedded browser, so no LMS session to clear.
+Future<void> clearLmsWebSession() async {}
+
 /// Placeholder with the same constructor as the io variant; never shown
 /// because [isLmsImportSupported] is false.
 class LmsWebView extends StatelessWidget {
