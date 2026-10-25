@@ -34,8 +34,9 @@ async function checkReferences(trx, table, user, data) {
     if (!task) return 'task_id not found';
   }
   if (table === 'tasks') {
-    const canPublish = data.is_group && user.role === 'headman' && user.group_id;
-    data.is_group = Boolean(canPublish);
+    // Any member may publish a task to their own group; anything else becomes a personal task.
+    const canPublish = Boolean(data.is_group && user.group_id && data.group_id === user.group_id);
+    data.is_group = canPublish;
     data.group_id = canPublish ? user.group_id : null;
   }
   return null;

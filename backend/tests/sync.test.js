@@ -88,27 +88,51 @@ describe('POST /api/sync', () => {
     assert.equal((await authed(token).post('/api/sync').send({ last_synced_at: -5 })).status, 400);
   });
 
-  test('group tasks: only headman can publish, students receive them', async () => {
-    const headman = await registerUser('Headman');
-    const g = await authed(headman.token).post('/api/groups').send({ title: 'G-1' });
+  test('student member can publish group task', async () => {
+    const creator = await registerUser('Creator');
+    const g = await authed(creator.token).post('/api/groups').send({ title: 'G-1' });
+    const groupId = g.body.group.id;
     const student = await registerUser('Student', { invite_code: g.body.group.invite_code });
+    assert.equal(student.user.role, 'student');
 
-    const studentTask = { id: uuid(), title: 'Fake group task', priority: 1, status: 'inbox', is_group: true, is_deleted: false, updated_at: 1 };
-    await authed(student.token).post('/api/sync').send({ changes: { tasks: [studentTask] } });
-    const row = await db('tasks').where({ id: studentTask.id }).first();
-    assert.equal(Boolean(row.is_group), false, 'student cannot publish group tasks');
+    const groupTask = {
+      id: uuid(), title: 'Лаба №3', priority: 1, status: 'inbox', is_group: true, group_id: groupId,
+      due_date: Date.now() + 86400000, is_deleted: false, updated_at: 1,
+    };
+    const push = await authed(student.token).post('/api/sync').send({ changes: { tasks: [groupTask] } });
+    assert.deepEqual(push.body.applied.tasks, [groupTask.id]);
 
-    const groupTask = { id: uuid(), title: 'Лаба №3', priority: 1, status: 'inbox', is_group: true, due_date: Date.now() + 86400000, is_deleted: false, updated_at: 1 };
-    await authed(headman.token).post('/api/sync').send({ changes: { tasks: [groupTask] } });
-
-    const pull = await authed(student.token).post('/api/sync').send({ last_synced_at: 0 });
+    const pull = await authed(creator.token).post('/api/sync').send({ last_synced_at: 0 });
     const received = pull.body.changes.tasks.find((t) => t.id === groupTask.id);
-    assert.ok(received, 'student receives group task');
+    assert.ok(received, 'other members receive the group task');
     assert.equal(received.is_group, true);
-    assert.equal(received.group_id, g.body.group.id);
+    assert.equal(received.group_id, groupId);
 
-    const edit = await authed(student.token).post('/api/sync').send({ changes: { tasks: [{ ...groupTask, title: 'hacked', updated_at: 99 }] } });
-    assert.equal(edit.body.rejected[0].reason, 'forbidden');
+    const edit = await authed(creator.token).post('/api/sync').send({ changes: { tasks: [{ ...groupTask, title: 'hacked', updated_at: 99 }] } });
+    assert.equal(edit.body.rejected[0].reason, 'forbidden', 'only the author edits a group task');
+  });
+
+  test('non-member cannot publish group task for another group', async () => {
+    const a = await registerUser('Owner A');
+    const ga = await authed(a.token).post('/api/groups').send({ title: 'G-A' });
+    const b = await registerUser('Owner B');
+    await authed(b.token).post('/api/groups').send({ title: 'G-B' });
+    const loner = await registerUser('No group');
+
+    const foreign = { id: uuid(), title: 'Spam', priority: 3, status: 'inbox', is_group: true, group_id: ga.body.group.id, is_deleted: false, updated_at: 1 };
+    const noGroup = { ...foreign, id: uuid() };
+    const noGroupId = { id: uuid(), title: 'No group_id', priority: 3, status: 'inbox', is_group: true, is_deleted: false, updated_at: 1 };
+    await authed(b.token).post('/api/sync').send({ changes: { tasks: [foreign, noGroupId] } });
+    await authed(loner.token).post('/api/sync').send({ changes: { tasks: [noGroup] } });
+
+    for (const id of [foreign.id, noGroup.id, noGroupId.id]) {
+      // eslint-disable-next-line no-await-in-loop
+      const row = await db('tasks').where({ id }).first();
+      assert.equal(Boolean(row.is_group), false);
+      assert.equal(row.group_id, null);
+    }
+    const pullA = await authed(a.token).post('/api/sync').send({ last_synced_at: 0 });
+    assert.equal(pullA.body.changes.tasks.length, 0, 'group A sees nothing from outsiders');
   });
 
   test('subtasks require own parent task', async () => {

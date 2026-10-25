@@ -36,11 +36,16 @@ export const remove = asyncHandler(async (req, res) => {
   res.json(result);
 });
 
-/** GET /api/files/:name — downloads an uploaded material file. */
+/**
+ * GET /api/files/:name — downloads an uploaded material file. Only members of the group
+ * the material belongs to may download it; everyone else gets 404 (no existence leak).
+ */
 export const downloadFile = asyncHandler(async (req, res) => {
   const { name } = req.params;
   if (!SAFE_NAME_RE.test(name)) throw notFound('File not found');
-  if (!fs.existsSync(path.join(env.uploadDir, name))) throw notFound('File not found');
+  const material = await materialsService.findGroupMaterialByFile(req.user, name);
+  if (!material || !fs.existsSync(path.join(env.uploadDir, name))) throw notFound('File not found');
+  res.set('X-Content-Type-Options', 'nosniff');
   // `root` keeps the dotfile check on the file name only, not on the upload directory path.
-  res.sendFile(name, { root: env.uploadDir });
+  res.download(name, material.file_name, { root: env.uploadDir });
 });
