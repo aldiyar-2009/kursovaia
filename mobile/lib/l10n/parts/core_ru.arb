@@ -1,7 +1,0 @@
-{
-  "@@locale": "ru",
-  "core_today": "Сегодня",
-  "@core_today": {"description": "Relative day label in due dates, followed by a time: «Сегодня, 20:00»"},
-  "core_tomorrow": "Завтра",
-  "core_yesterday": "Вчера"
-}

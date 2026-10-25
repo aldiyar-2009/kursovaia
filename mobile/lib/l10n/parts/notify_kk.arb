@@ -1,8 +1,0 @@
-{
-  "@@locale": "kk",
-  "notify_deadline24hTitle": "Тапсыру мерзіміне 24 сағат қалды",
-  "notify_deadline2hTitle": "Тапсыру мерзіміне 2 сағат қалды",
-  "notify_channelName": "Мерзімдер мен тапсырмалар",
-  "notify_channelDescription": "Тапсырмаларды тапсыру мерзімі туралы еске салғыштар",
-  "notify_openAction": "Хабарландыруды ашу"
-}

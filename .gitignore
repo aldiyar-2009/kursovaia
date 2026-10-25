@@ -43,8 +43,7 @@ Thumbs.db
 .playwright-mcp/
 /~/
 
-# Временно: собираются tool/merge_arb.dart из lib/l10n/parts
-mobile/lib/l10n/app_*.arb
+# Сгенерированные локализации (flutter gen-l10n)
 mobile/lib/l10n/generated/
 .claude/settings.local.json
 

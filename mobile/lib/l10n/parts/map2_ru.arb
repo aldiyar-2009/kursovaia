@@ -1,7 +1,0 @@
-{
-  "@@locale": "ru",
-  "map_offlineNote": "Карта недоступна без интернета",
-  "@map_offlineNote": {
-    "description": "Shown over the campus map when tiles fail to load"
-  }
-}

@@ -1,0 +1,703 @@
+{
+  "@@locale": "ru",
+  "auth_tagline": "Расписание, задания и оценки в одном месте",
+  "auth_signIn": "Вход",
+  "auth_signUp": "Регистрация",
+  "auth_name": "Имя и фамилия",
+  "auth_email": "Email",
+  "auth_password": "Пароль",
+  "auth_passwordRepeat": "Повторите пароль",
+  "auth_inviteCode": "Код группы (необязательно)",
+  "auth_showPassword": "Показать пароль",
+  "auth_hidePassword": "Скрыть пароль",
+  "auth_submitSignIn": "Войти",
+  "auth_submitSignUp": "Создать аккаунт",
+  "auth_serverSettings": "Настройки сервера",
+  "auth_errorNameRequired": "Введите имя",
+  "auth_errorEmailRequired": "Введите email",
+  "auth_errorEmailInvalid": "Проверьте адрес: он должен выглядеть как name@example.com",
+  "auth_errorPasswordRequired": "Введите пароль",
+  "auth_errorPasswordShort": "Пароль должен быть не короче 6 символов",
+  "auth_errorPasswordMismatch": "Пароли не совпадают",
+  "auth_errorInvalidCredentials": "Неверный email или пароль",
+  "auth_errorEmailTaken": "Этот email уже зарегистрирован. Войдите или укажите другой",
+  "auth_errorInviteCode": "Группа с таким кодом не найдена. Проверьте код или оставьте поле пустым",
+  "auth_errorNetwork": "Сервер недоступен. Проверьте интернет или адрес сервера",
+  "auth_errorGeneric": "Не удалось выполнить запрос. Попробуйте ещё раз",
+  "common_appName": "StudyPlan",
+  "common_save": "Сохранить",
+  "common_cancel": "Отмена",
+  "common_delete": "Удалить",
+  "common_retry": "Повторить",
+  "core_today": "Сегодня",
+  "@core_today": {
+    "description": "Relative day label in due dates, followed by a time: «Сегодня, 20:00»"
+  },
+  "core_tomorrow": "Завтра",
+  "core_yesterday": "Вчера",
+  "grades_title": "Оценки",
+  "grades_emptyTitle": "Оценок пока нет",
+  "grades_emptyMessage": "Импортируйте их из LMS — вход через ваш аккаунт Microsoft АИТУ",
+  "grades_emptyMessageWeb": "Импорт доступен в приложении для Android, iOS и Windows. Здесь оценки можно ввести вручную.",
+  "grades_emptyMessageNoImport": "Импорт из LMS пока недоступен. Оценки можно ввести вручную.",
+  "grades_importLms": "Импортировать из LMS",
+  "grades_refreshLms": "Обновить из LMS",
+  "grades_addManual": "Добавить предмет вручную",
+  "grades_average": "Средний балл",
+  "grades_gpaSemester": "GPA семестра",
+  "grades_scholarship": "Стипендия",
+  "grades_scholarshipIncreased": "Повышенная",
+  "grades_scholarshipRegular": "Обычная",
+  "grades_scholarshipNone": "Нет",
+  "grades_scholarshipUnknown": "Нет данных",
+  "grades_lastImport": "Последний импорт: {date}",
+  "@grades_lastImport": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "grades_currentSemester": "Текущий семестр",
+  "grades_pastSemesters": "Прошлые семестры",
+  "grades_overallGpa": "Общий GPA {value}",
+  "@grades_overallGpa": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "grades_currentEmpty": "В текущем семестре предметов нет",
+  "grades_noGrade": "нет оценки",
+  "grades_credits": "{count, plural, one{{count} кредит} few{{count} кредита} many{{count} кредитов} other{{count} кредита}}",
+  "@grades_credits": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "grades_statusInProgress": "Идёт",
+  "grades_statusPassed": "Сдано",
+  "grades_statusAtRisk": "Риск отработки",
+  "grades_statusFailed": "Отработка",
+  "grades_components": "Компоненты",
+  "grades_midterm": "Register Midterm",
+  "grades_endterm": "Register Endterm",
+  "grades_admission": "Рейтинг допуска",
+  "grades_admissionShort": "допуск",
+  "grades_finalExam": "Финальный экзамен",
+  "grades_total": "Итог",
+  "grades_edit": "Изменить",
+  "grades_finalSection": "Что нужно на финале",
+  "grades_toPass": "Чтобы сдать",
+  "grades_toGetAtLeast": "Чтобы получить {score}+",
+  "@grades_toGetAtLeast": {
+    "placeholders": {
+      "score": {
+        "type": "String"
+      }
+    }
+  },
+  "grades_needScore": "нужно {score}",
+  "@grades_needScore": {
+    "placeholders": {
+      "score": {
+        "type": "String"
+      }
+    }
+  },
+  "grades_unreachable": "недостижимо",
+  "grades_noAdmission": "Рейтинг допуска ниже проходного — к экзамену не допускают",
+  "grades_whatIf": "Что будет, если…",
+  "grades_whatIfHint": "Передвиньте ползунок или введите балл за финал. Значение не сохраняется.",
+  "grades_whatIfFinal": "Балл за финал",
+  "grades_whatIfStatus": "Статус",
+  "grades_course": "Предмет",
+  "grades_creditsLabel": "Кредиты",
+  "grades_creditsDecrease": "Меньше кредитов",
+  "grades_creditsIncrease": "Больше кредитов",
+  "grades_teacher": "Преподаватель",
+  "grades_source": "Источник",
+  "grades_sourceLms": "LMS",
+  "grades_sourceManual": "Введено вручную",
+  "grades_imported": "Импортировано",
+  "grades_deleteCourse": "Удалить предмет",
+  "grades_deleteConfirmTitle": "Удалить предмет?",
+  "grades_deleteConfirmMessage": "«{title}» и его оценки будут удалены на всех устройствах.",
+  "@grades_deleteConfirmMessage": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "grades_formAddTitle": "Новый предмет",
+  "grades_formEditTitle": "Оценки предмета",
+  "grades_formName": "Название",
+  "grades_formNameHint": "Например, Calculus 1",
+  "grades_formNameRequired": "Введите название",
+  "grades_formSemester": "Семестр",
+  "grades_formSemesterCurrent": "Текущий",
+  "grades_formSemesterPast": "Прошлый",
+  "grades_formScoresSection": "Баллы",
+  "grades_formScoresHelp": "Оставьте поле пустым, если оценки ещё нет.",
+  "grades_formTotalHelp": "Если известен только итог. Когда заполнены все три компонента, итог считается сам.",
+  "grades_formScoreInvalid": "Число от 0 до 100",
+  "grades_formCreditsInvalid": "Целое число от 1 до 30",
+  "grades_scoreEmpty": "—",
+  "group_title": "Группа",
+  "group_emptyTitle": "Вы не в группе",
+  "group_emptyMessage": "Вступите в группу по коду от одногруппника или создайте свою, чтобы делиться дедлайнами и материалами.",
+  "group_create": "Создать группу",
+  "group_join": "Вступить по коду",
+  "group_createTitle": "Новая группа",
+  "group_createNameLabel": "Название",
+  "group_createNameHint": "Например, BDA-2601",
+  "group_createSubmit": "Создать",
+  "group_createDone": "Группа создана. Пригласите одногруппников по коду.",
+  "group_joinTitle": "Вступить в группу",
+  "group_joinCodeLabel": "Код приглашения",
+  "group_joinCodeHint": "6 символов",
+  "group_joinSubmit": "Вступить",
+  "group_joinDone": "Вы вступили в группу «{title}»",
+  "@group_joinDone": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "group_fieldRequired": "Заполните поле",
+  "group_errorCodeNotFound": "Группа с таким кодом не найдена",
+  "group_errorAlreadyMember": "Вы уже состоите в этой группе",
+  "group_errorOffline": "Нет соединения с сервером",
+  "group_errorGeneric": "Не удалось выполнить действие. Попробуйте ещё раз.",
+  "group_inviteSection": "Приглашение",
+  "group_inviteHint": "Одногруппники вводят этот код в разделе «Группа» или открывают ссылку.",
+  "group_copy": "Копировать",
+  "group_copied": "Код скопирован",
+  "group_invite": "Пригласить",
+  "group_inviteMessage": "Вступай в группу {title} в StudyPlan: код {code}\n{link}",
+  "@group_inviteMessage": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "code": {
+        "type": "String"
+      },
+      "link": {
+        "type": "String"
+      }
+    }
+  },
+  "group_membersCount": "{count, plural, one{{count} участник} few{{count} участника} many{{count} участников} other{{count} участника}}",
+  "@group_membersCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "group_membersSection": "Участники",
+  "group_memberYou": "вы",
+  "group_membersUnavailable": "Список участников не загрузился",
+  "group_materials": "Материалы группы",
+  "group_leave": "Покинуть группу",
+  "group_leaveConfirmTitle": "Покинуть группу?",
+  "group_leaveConfirmMessage": "Групповые задания и материалы перестанут быть доступны. Вернуться можно по коду приглашения.",
+  "group_leaveConfirm": "Покинуть",
+  "group_leaveDone": "Вы покинули группу",
+  "group_offlineNotice": "Нет соединения. Показаны сохранённые данные.",
+  "group_materialsTitle": "Материалы",
+  "group_materialsTabGroup": "Группа",
+  "group_materialsTabLms": "LMS",
+  "group_materialsFilterAll": "Все",
+  "group_materialsNoGroupTitle": "Материалы доступны в группе",
+  "group_materialsNoGroupMessage": "Вступите в группу или создайте её, чтобы делиться материалами.",
+  "group_materialsEmptyTitle": "Материалов пока нет",
+  "group_materialsEmptyMessage": "Загрузите конспект, презентацию или задание — их увидят все участники группы.",
+  "group_materialsUpload": "Загрузить файл",
+  "group_materialsUploadTitle": "Новый материал",
+  "group_materialsUploadNameLabel": "Название",
+  "group_materialsUploadSubjectLabel": "Предмет",
+  "group_materialsNoSubject": "Без предмета",
+  "group_materialsUploadSubmit": "Загрузить",
+  "group_materialsUploadDone": "Материал загружен",
+  "group_materialsUploadFailed": "Не удалось загрузить файл",
+  "group_materialsFileTooLarge": "Файл слишком большой",
+  "group_materialsDownload": "Скачать",
+  "group_materialsDownloadDone": "Файл сохранён",
+  "group_materialsDownloadFailed": "Не удалось скачать файл",
+  "group_materialsDelete": "Удалить",
+  "group_materialsDeleteConfirmTitle": "Удалить материал?",
+  "group_materialsDeleteConfirmMessage": "«{title}» исчезнет у всех участников группы.",
+  "@group_materialsDeleteConfirmMessage": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "group_materialsDeleteDone": "Материал удалён",
+  "group_materialsDeleteFailed": "Не удалось удалить материал",
+  "group_materialsLoadFailed": "Не удалось загрузить материалы",
+  "group_materialsOfflineCached": "Нет соединения. Показан сохранённый список.",
+  "group_materialsLmsEmptyTitle": "Материалов из LMS нет",
+  "group_materialsLmsEmptyMessage": "Файлы и ссылки курсов появятся после импорта из LMS в профиле.",
+  "group_materialsLmsNoCourse": "Без курса",
+  "group_materialsLmsOpenFailed": "Не удалось открыть ссылку",
+  "group_materialsTypeFile": "Файл",
+  "group_materialsTypeFolder": "Папка",
+  "group_materialsTypeUrl": "Ссылка",
+  "group_materialsTypePage": "Страница",
+  "group_materialsTypeOther": "Материал",
+  "group_materialsSizeB": "{size} Б",
+  "@group_materialsSizeB": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "group_materialsSizeKb": "{size} КБ",
+  "@group_materialsSizeKb": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "group_materialsSizeMb": "{size} МБ",
+  "@group_materialsSizeMb": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "home_weekEven": "Чётная неделя",
+  "home_weekOdd": "Нечётная неделя",
+  "home_now": "Сейчас",
+  "home_next": "Далее",
+  "home_laterToday": "Ещё сегодня",
+  "home_minutesLeft": "ещё {minutes} мин",
+  "@home_minutesLeft": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "home_startsInMinutes": "через {minutes} мин",
+  "@home_startsInMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "home_startsInHours": "через {hours} ч {minutes} мин",
+  "@home_startsInHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "home_lessonLecture": "Лекция",
+  "home_lessonPractice": "Практика",
+  "home_lessonLab": "Лабораторная",
+  "home_sourceLms": "LMS",
+  "home_sourceGroup": "Группа",
+  "home_deadlines": "Дедлайны",
+  "home_allTasks": "Все задания",
+  "home_grades": "Оценки",
+  "home_allGrades": "Все оценки",
+  "home_firstStepsTitle": "С чего начать",
+  "home_firstStepsMessage": "Здесь появятся следующая пара, ближайшие дедлайны и последние оценки.",
+  "home_stepSchedule": "Добавить расписание",
+  "home_stepScheduleHint": "Пары по дням недели, с чётными и нечётными неделями",
+  "home_stepLms": "Импортировать оценки из LMS",
+  "home_stepLmsHint": "Вход через ваш аккаунт Microsoft АИТУ",
+  "home_stepGroup": "Вступить в группу или создать",
+  "home_stepGroupHint": "Общие дедлайны и материалы с одногруппниками",
+  "home_quietTitle": "Ничего срочного",
+  "home_quietMessage": "Пар на сегодня больше нет, дедлайнов на ближайшую неделю тоже.",
+  "home_openSchedule": "Открыть расписание",
+  "lms_importTitle": "Импорт из LMS",
+  "lms_introHeading": "Перенесите данные из LMS",
+  "lms_introLead": "Войдите в LMS Astana IT University через учётную запись Microsoft. StudyPlan загрузит:",
+  "lms_kindGrades": "Оценки",
+  "lms_kindGradesHint": "по курсам и компонентам",
+  "lms_kindDeadlines": "Дедлайны",
+  "lms_kindDeadlinesHint": "задания и тесты",
+  "lms_kindSchedule": "Расписание",
+  "lms_kindScheduleHint": "занятия из модуля посещаемости",
+  "lms_kindMaterials": "Материалы",
+  "lms_kindMaterialsHint": "список файлов и ссылок курсов",
+  "lms_kindProfile": "Профиль",
+  "lms_kindProfileHint": "имя, почта, группа",
+  "lms_kindCourses": "Курсы",
+  "lms_privacy": "Пароль вводится только на странице Microsoft. StudyPlan его не видит и не хранит.",
+  "lms_introNote": "Данные сохраняются на устройстве и синхронизируются с вашим аккаунтом StudyPlan. Повторный импорт обновляет их, не трогая ваши записи.",
+  "lms_signIn": "Войти через Microsoft",
+  "lms_cancelLogin": "Отменить вход",
+  "lms_loadingTitle": "Загружаем данные из LMS…",
+  "lms_loadingHint": "Обычно это занимает до минуты. Не закрывайте экран.",
+  "lms_resultTitle": "Импорт завершён",
+  "lms_resultPartialTitle": "Импорт завершён частично",
+  "lms_resultLead": "Данные сохранены и появятся в разделах приложения.",
+  "lms_resultPartialLead": "Загруженное сохранено. Часть данных получить не удалось — можно повторить.",
+  "lms_countCourses": "Курсы",
+  "lms_countDeadlines": "Дедлайны",
+  "lms_countClasses": "Занятия",
+  "lms_countMaterials": "Материалы",
+  "lms_errorsHeader": "Не загрузилось",
+  "lms_retry": "Повторить",
+  "lms_done": "Готово",
+  "lms_close": "Закрыть",
+  "lms_errorTitle": "Не удалось загрузить данные",
+  "lms_errorTimeout": "LMS не ответила за 60 секунд. Проверьте соединение и повторите — вход сохранён, вводить пароль снова не нужно.",
+  "lms_errorGeneric": "Импорт прервался. Повторите попытку — вход сохранён, вводить пароль снова не нужно.",
+  "map_offlineNote": "Карта недоступна без интернета",
+  "@map_offlineNote": {
+    "description": "Shown over the campus map when tiles fail to load"
+  },
+  "map_hint": "Astana IT University, EXPO. Нажмите на точку, чтобы увидеть описание",
+  "map_mainTitle": "Главный корпус (C1)",
+  "map_mainDesc": "Ректорат, актовый зал, аудитории C1.1.200–C1.3.350",
+  "map_labsTitle": "Блок C2",
+  "map_labsDesc": "Лаборатории Cisco и Huawei ICT, аудитории C2.2.100–C2.3.250",
+  "map_libraryTitle": "Библиотека и коворкинг",
+  "map_libraryDesc": "Зона тихой учёбы, open space, переговорные",
+  "map_sportTitle": "Спорткомплекс и фудкорт",
+  "map_sportDesc": "Спортивные секции, столовая, кофейня",
+  "nav_home": "Главная",
+  "nav_schedule": "Расписание",
+  "nav_tasks": "Задания",
+  "nav_grades": "Оценки",
+  "nav_more": "Ещё",
+  "nav_group": "Группа",
+  "nav_groupNone": "Группа не выбрана",
+  "nav_campusMap": "Карта AITU",
+  "nav_profileSettings": "Профиль и настройки",
+  "nav_syncSection": "Синхронизация",
+  "nav_syncNow": "Синхронизировать",
+  "nav_syncDone": "Все изменения сохранены",
+  "nav_syncDoneAt": "Синхронизировано в {time}",
+  "@nav_syncDoneAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "nav_syncInProgress": "Синхронизация…",
+  "nav_syncPending": "{count, plural, one{{count} изменение ждёт отправки} few{{count} изменения ждут отправки} many{{count} изменений ждут отправки} other{{count} изменения ждут отправки}}",
+  "@nav_syncPending": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "nav_syncError": "Не удалось связаться с сервером",
+  "notify_deadline24hTitle": "Дедлайн через 24 часа",
+  "notify_deadline2hTitle": "Дедлайн через 2 часа",
+  "notify_channelName": "Дедлайны и задачи",
+  "notify_channelDescription": "Напоминания о сроках сдачи заданий",
+  "notify_openAction": "Открыть уведомление",
+  "profile_title": "Профиль и настройки",
+  "profile_noName": "Без имени",
+  "profile_editName": "Изменить имя",
+  "profile_nameLabel": "Имя и фамилия",
+  "profile_nameRequired": "Введите имя",
+  "profile_nameSaved": "Имя сохранено",
+  "profile_nameSavedLocally": "Нет связи с сервером. Имя сохранено на этом устройстве",
+  "profile_sectionLms": "LMS",
+  "profile_lmsFullName": "ФИО",
+  "profile_lmsEmail": "Почта",
+  "profile_lmsConnect": "Подключить LMS",
+  "profile_lmsConnectHint": "Импорт оценок, дедлайнов и материалов",
+  "profile_sectionAppearance": "Оформление",
+  "profile_theme": "Тема",
+  "profile_themeSystem": "Системная",
+  "profile_themeLight": "Светлая",
+  "profile_themeDark": "Тёмная",
+  "profile_language": "Язык",
+  "profile_languageSystem": "Системный",
+  "profile_languageSystemHint": "Как на устройстве, если это русский, казахский или английский",
+  "profile_sectionNotifications": "Уведомления",
+  "profile_deadlineReminders": "Напоминания о дедлайнах",
+  "profile_deadlineRemindersHint": "За 24 часа и за 2 часа до срока",
+  "profile_remindersOn": "{count, plural, =0{Ближайших дедлайнов нет. Напоминания включены} one{Запланировано напоминаний для {count} дедлайна} few{Запланировано напоминаний для {count} дедлайнов} many{Запланировано напоминаний для {count} дедлайнов} other{Запланировано напоминаний для {count} дедлайна}}",
+  "@profile_remindersOn": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "profile_remindersOff": "Напоминания выключены",
+  "profile_sectionData": "Данные",
+  "profile_exportIcs": "Экспорт расписания (.ics)",
+  "profile_exportIcsHint": "Для Google Календаря, Outlook и Календаря Apple",
+  "profile_exportIcsEmpty": "В расписании нет пар. Добавьте их, чтобы экспортировать",
+  "profile_exportIcsDone": "Файл расписания сохранён",
+  "profile_exportIcsFailed": "Не удалось экспортировать расписание",
+  "profile_server": "Сервер",
+  "profile_logout": "Выйти",
+  "profile_logoutTitle": "Выйти из аккаунта?",
+  "profile_logoutMessage": "Данные на этом устройстве сохранятся.",
+  "profile_serverTitle": "Сервер",
+  "profile_serverMessage": "Адрес API, с которым приложение синхронизирует данные.",
+  "profile_serverUrlLabel": "Адрес API",
+  "profile_serverPresets": "Быстрый выбор",
+  "profile_serverPresetLocal": "Этот компьютер",
+  "profile_serverPresetEmulator": "Эмулятор Android",
+  "profile_serverPresetLan": "Локальная сеть",
+  "profile_serverTest": "Проверить",
+  "profile_serverTesting": "Проверка…",
+  "profile_serverOk": "Сервер доступен",
+  "profile_serverBadStatus": "Сервер ответил с кодом {code}",
+  "@profile_serverBadStatus": {
+    "placeholders": {
+      "code": {
+        "type": "int"
+      }
+    }
+  },
+  "profile_serverUnreachable": "Не удалось подключиться к серверу",
+  "profile_serverInvalid": "Введите адрес, начинающийся с http:// или https://",
+  "profile_serverSaved": "Адрес сервера сохранён",
+  "grades_summaryNoTotals": "нет итоговых оценок",
+  "grades_headerTotalAfterFinal": "Итог появится после финального экзамена",
+  "home_stepGradesManual": "Добавить оценки",
+  "home_stepGradesManualHint": "Введите баллы по предметам вручную",
+  "tasks_rowDue": "срок: {due}",
+  "@tasks_rowDue": {
+    "placeholders": {
+      "due": {
+        "type": "String"
+      }
+    }
+  },
+  "tasks_statusOpen": "не выполнено",
+  "tasks_statusDone": "выполнено",
+  "tasks_statusOverdue": "просрочено",
+  "group_inviteCopied": "Текст приглашения скопирован",
+  "@group_inviteCopied": {
+    "description": "Snackbar after the invite text (with the link) was copied to the clipboard because sharing is unavailable, e.g. on the web"
+  },
+  "group_materialsLmsEmptyMessageWeb": "Импорт из LMS доступен в приложении для Android, iOS и Windows.",
+  "@group_materialsLmsEmptyMessageWeb": {
+    "description": "Empty LMS materials tab on the web, where the LMS import is unavailable"
+  },
+  "auth_showPasswordRepeat": "Показать повтор пароля",
+  "@auth_showPasswordRepeat": {
+    "description": "Tooltip of the visibility toggle on the confirm-password field"
+  },
+  "auth_hidePasswordRepeat": "Скрыть повтор пароля",
+  "@auth_hidePasswordRepeat": {
+    "description": "Tooltip of the visibility toggle on the confirm-password field"
+  },
+  "schedule_title": "Расписание",
+  "schedule_tabLessons": "Пары",
+  "schedule_tabCalendar": "Календарь",
+  "schedule_addLesson": "Добавить пару",
+  "schedule_editLesson": "Изменить пару",
+  "schedule_weekHeader": "{week} неделя · {parity}",
+  "@schedule_weekHeader": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      },
+      "parity": {
+        "type": "String"
+      }
+    }
+  },
+  "schedule_parityEven": "чётная",
+  "schedule_parityOdd": "нечётная",
+  "schedule_beforeSemester": "До начала семестра",
+  "schedule_today": "Сегодня",
+  "schedule_prevWeek": "Предыдущая неделя",
+  "schedule_nextWeek": "Следующая неделя",
+  "schedule_emptyTitle": "Расписание пусто",
+  "schedule_emptyMessage": "Добавьте пары, чтобы видеть следующую пару на главной",
+  "schedule_emptyDay": "В этот день пар нет",
+  "schedule_lmsLabel": "LMS",
+  "schedule_lessonUntitled": "Занятие",
+  "schedule_typeLecture": "Лекция",
+  "schedule_typePractice": "Практика",
+  "schedule_typeLab": "Лабораторная",
+  "schedule_typeLabShort": "Лаб.",
+  "schedule_fieldSubject": "Предмет",
+  "schedule_subjectPick": "Выберите предмет",
+  "schedule_subjectNew": "Новый предмет…",
+  "schedule_subjectNewHint": "Название предмета",
+  "schedule_subjectRequired": "Укажите предмет",
+  "schedule_fieldWeek": "Неделя",
+  "schedule_weekEvery": "Каждую",
+  "schedule_weekEven": "Чётную",
+  "schedule_weekOdd": "Нечётную",
+  "schedule_weekOnce": "Один раз",
+  "schedule_fieldDay": "День недели",
+  "schedule_fieldDate": "Дата",
+  "schedule_fieldStart": "Начало",
+  "schedule_fieldEnd": "Конец",
+  "schedule_timeError": "Конец пары должен быть позже начала",
+  "schedule_fieldType": "Тип",
+  "schedule_fieldRoom": "Аудитория",
+  "schedule_roomHint": "Например, C1.3.240",
+  "schedule_deleteLesson": "Удалить пару",
+  "schedule_deleteConfirmTitle": "Удалить пару?",
+  "schedule_deleteConfirmMessage": "Пара исчезнет из расписания на всех неделях.",
+  "schedule_calendarYear": "2026/2027 учебный год",
+  "schedule_calendarNow": "Сейчас",
+  "schedule_calendarFrom": "с {date}",
+  "@schedule_calendarFrom": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "schedule_catStudy": "Учёба",
+  "schedule_catControl": "Контроль",
+  "schedule_catSession": "Сессия",
+  "schedule_catHolidays": "Каникулы",
+  "schedule_catPublicHoliday": "Праздники",
+  "schedule_catPractice": "Практика",
+  "schedule_cal1Title": "I семестр",
+  "schedule_cal1Desc": "Теоретическое и практическое обучение в первом семестре.",
+  "schedule_cal2Title": "1 рубежная неделя",
+  "schedule_cal2Desc": "Первые рубежные контрольные и отчёты по лабораторным (РК1).",
+  "schedule_cal3Title": "2 рубежная неделя",
+  "schedule_cal3Desc": "Второй рубежный контроль (РК2), допуск к зимней сессии.",
+  "schedule_cal4Title": "Зачётная неделя и экзамены",
+  "schedule_cal4Desc": "Зимняя экзаменационная сессия за первый семестр.",
+  "schedule_cal5Title": "Зимние каникулы",
+  "schedule_cal5Desc": "Официальные зимние студенческие каникулы.",
+  "schedule_cal6Title": "II семестр",
+  "schedule_cal6Desc": "Весенний учебный семестр.",
+  "schedule_cal7Title": "Наурыз мейрамы",
+  "schedule_cal7Desc": "Государственные весенние праздники Республики Казахстан.",
+  "schedule_cal8Title": "3 рубежная неделя",
+  "schedule_cal8Desc": "Рубежный контроль РК3 по весенним дисциплинам.",
+  "schedule_cal9Title": "4 рубежная неделя",
+  "schedule_cal9Desc": "Итоговый допуск к летней экзаменационной сессии (РК4).",
+  "schedule_cal10Title": "Летняя экзаменационная сессия",
+  "schedule_cal10Desc": "Летние экзамены и защита курсовых проектов.",
+  "schedule_cal11Title": "Производственная практика",
+  "schedule_cal11Desc": "Учебная и профессиональная практика в IT-компаниях.",
+  "schedule_cal12Title": "Летние каникулы",
+  "schedule_cal12Desc": "Отдых до начала 2027/2028 учебного года.",
+  "tasks_title": "Задания",
+  "tasks_newTask": "Новое задание",
+  "tasks_filterAll": "Все",
+  "tasks_filterMine": "Мои",
+  "tasks_filterGroup": "Группа",
+  "tasks_filterLms": "LMS",
+  "tasks_filterDone": "Выполненные",
+  "tasks_sectionOverdue": "Просрочено",
+  "tasks_sectionToday": "Сегодня",
+  "tasks_sectionWeek": "На неделе",
+  "tasks_sectionLater": "Позже",
+  "tasks_sectionNoDate": "Без срока",
+  "tasks_sectionDone": "Выполненные",
+  "tasks_labelLms": "LMS",
+  "tasks_labelGroup": "Группа",
+  "tasks_author": "Автор: {name}",
+  "@tasks_author": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tasks_subtaskProgress": "{done} из {total}",
+  "@tasks_subtaskProgress": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "tasks_priorityHigh": "Высокий приоритет",
+  "tasks_priorityMedium": "Средний приоритет",
+  "tasks_markDone": "Отметить выполненным",
+  "tasks_markNotDone": "Снять отметку",
+  "tasks_doneSnack": "Отмечено выполненным",
+  "tasks_undo": "Отменить",
+  "tasks_emptyTitle": "Заданий нет",
+  "tasks_emptyMessage": "Создайте задание или импортируйте дедлайны из LMS",
+  "tasks_allDoneTitle": "Всё сделано",
+  "tasks_allDoneMessage": "Выполненные задания собраны в фильтре «Выполненные».",
+  "tasks_emptyMineTitle": "Своих заданий нет",
+  "tasks_emptyMineMessage": "Задания, которые вы создаёте, появятся здесь.",
+  "tasks_emptyGroupTitle": "Групповых заданий нет",
+  "tasks_emptyGroupMessage": "Задания, которые публикуют участники группы, появятся здесь.",
+  "tasks_noGroupTitle": "Вы не состоите в группе",
+  "tasks_noGroupMessage": "Создайте группу или вступите по коду в разделе «Ещё» → «Группа», чтобы видеть общие задания одногруппников.",
+  "tasks_noGroupAction": "Открыть «Ещё»",
+  "tasks_emptyLmsTitle": "Дедлайнов из LMS нет",
+  "tasks_emptyLmsMessage": "Импортируйте их во вкладке «Оценки» через вход в LMS.",
+  "tasks_emptyDoneTitle": "Выполненных заданий нет",
+  "tasks_emptyDoneMessage": "Отмеченные задания появятся здесь.",
+  "tasks_openLink": "Открыть в LMS",
+  "tasks_linkFailed": "Не удалось открыть ссылку",
+  "tasks_sheetNew": "Новое задание",
+  "tasks_sheetEdit": "Задание",
+  "tasks_fieldTitle": "Название",
+  "tasks_fieldTitleHint": "Например, лабораторная работа 3",
+  "tasks_fieldDescription": "Описание",
+  "tasks_fieldDescriptionHint": "Необязательно",
+  "tasks_titleRequired": "Введите название задания",
+  "tasks_due": "Срок",
+  "tasks_dueNone": "Не указан",
+  "tasks_dueClear": "Убрать срок",
+  "tasks_subject": "Предмет",
+  "tasks_subjectNone": "Без предмета",
+  "tasks_priority": "Приоритет",
+  "tasks_priorityHighShort": "Высокий",
+  "tasks_priorityMediumShort": "Средний",
+  "tasks_priorityLowShort": "Обычный",
+  "tasks_publishGroup": "Опубликовать для группы",
+  "tasks_publishGroupHint": "Задание увидят все участники группы {group}",
+  "@tasks_publishGroupHint": {
+    "placeholders": {
+      "group": {
+        "type": "String"
+      }
+    }
+  },
+  "tasks_subtasks": "Подзадачи",
+  "tasks_subtaskHint": "Добавить подзадачу",
+  "tasks_subtaskAdd": "Добавить",
+  "tasks_subtaskRemove": "Удалить подзадачу",
+  "tasks_attachments": "Файлы",
+  "tasks_attach": "Прикрепить файл",
+  "tasks_attachUnavailable": "Прикрепление файлов доступно в приложении для Android, iOS и Windows",
+  "tasks_fileSizeKb": "{size} КБ",
+  "@tasks_fileSizeKb": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "tasks_saved": "Задание сохранено",
+  "tasks_deleteTask": "Удалить задание",
+  "tasks_deleted": "Задание удалено",
+  "tasks_readOnlyHint": "Изменить задание может только его автор."
+}

@@ -28,7 +28,7 @@ jobs:
 
       - name: Generate localizations
         working-directory: mobile
-        run: dart run tool/merge_arb.dart && flutter gen-l10n
+        run: flutter gen-l10n
 
       - name: Analyze code
         working-directory: mobile

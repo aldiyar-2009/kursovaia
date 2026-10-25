@@ -1,7 +1,0 @@
-{
-  "@@locale": "en",
-  "group_inviteCopied": "Invite text copied",
-  "group_materialsLmsEmptyMessageWeb": "LMS import is available in the Android, iOS and Windows apps.",
-  "auth_showPasswordRepeat": "Show repeated password",
-  "auth_hidePasswordRepeat": "Hide repeated password"
-}
