@@ -121,27 +121,16 @@ describe('POST /api/sync', () => {
     assert.equal(res.body.rejected[0].reason, 'task_id not found');
   });
 
-  test('offline chat messages are pushed idempotently; headman-only types enforced', async () => {
-    const headman = await registerUser('HM');
-    const g = await authed(headman.token).post('/api/groups').send({ title: 'Chat-1' });
-    const student = await registerUser('ST', { invite_code: g.body.group.invite_code });
+  test('chat is gone: pushed chat_messages are ignored and nothing is returned for them', async () => {
+    const user = await registerUser('NoChat');
+    await authed(user.token).post('/api/groups').send({ title: 'NoChat-1' });
 
-    const m = { id: uuid(), message_type: 'text', content: 'Написал офлайн', created_at: Date.now() - 60000 };
-    const first = await authed(student.token).post('/api/sync').send({ changes: { chat_messages: [m] } });
-    const again = await authed(student.token).post('/api/sync').send({ changes: { chat_messages: [m] } });
-    assert.deepEqual(first.body.applied.chat_messages, [m.id]);
-    assert.deepEqual(again.body.applied.chat_messages, [m.id]);
-    assert.equal((await db('chat_messages').where({ id: m.id })).length, 1);
-
-    const hw = { id: uuid(), message_type: 'homework', content: 'Fake HW', payload_json: { title: 'x' } };
-    const denied = await authed(student.token).post('/api/sync').send({ changes: { chat_messages: [hw] } });
-    assert.equal(denied.body.rejected[0].table, 'chat_messages');
-
-    const realHw = { ...hw, id: uuid(), content: 'ДЗ', payload_json: { title: 'ДЗ', due_date: Date.now() } };
-    await authed(headman.token).post('/api/sync').send({ changes: { chat_messages: [realHw] } });
-    const pull = await authed(student.token).post('/api/sync').send({ last_synced_at: 0 });
-    const got = pull.body.changes.chat_messages.find((x) => x.id === realHw.id);
-    assert.equal(got.payload_json.title, 'ДЗ', 'payload parsed back to object');
-    assert.equal(got.sender_name, 'HM', 'sender identity comes from the server, not the client');
+    const m = { id: uuid(), message_type: 'text', content: 'От старого клиента', created_at: Date.now() };
+    const res = await authed(user.token).post('/api/sync').send({ last_synced_at: 0, changes: { chat_messages: [m] } });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.changes.chat_messages, undefined, 'no chat in the pull');
+    assert.equal(res.body.applied.chat_messages, undefined, 'no chat in applied');
+    assert.equal(res.body.rejected.length, 0);
+    assert.equal((await db('chat_messages').where({ id: m.id })).length, 0, 'nothing stored');
   });
 });

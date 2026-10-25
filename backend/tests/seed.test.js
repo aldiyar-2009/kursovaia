@@ -9,7 +9,7 @@ before(async () => {
 });
 after(() => db.destroy());
 
-test('demo seed: both accounts log in and get timetable, deadlines and chat', async () => {
+test('demo seed: both accounts log in and get timetable and deadlines', async () => {
   for (const email of ['headman@studyplan.dev', 'student@studyplan.dev']) {
     // eslint-disable-next-line no-await-in-loop
     const login = await request(app).post('/api/auth/login').send({ email, password: 'password123' });
@@ -20,6 +20,6 @@ test('demo seed: both accounts log in and get timetable, deadlines and chat', as
     assert.equal(sync.body.changes.subjects.length, 6);
     assert.ok(sync.body.changes.lessons.length >= 15);
     assert.ok(sync.body.changes.tasks.some((t) => t.is_group));
-    assert.ok(sync.body.changes.chat_messages.some((m) => m.message_type === 'schedule_update'));
+    assert.equal(sync.body.changes.chat_messages, undefined);
   }
 });

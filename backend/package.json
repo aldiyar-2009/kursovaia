@@ -1,7 +1,7 @@
 {
   "name": "studyplan-backend",
   "version": "1.0.0",
-  "description": "StudyPlan backend: Express + Knex (SQLite / PostgreSQL) + Socket.IO. Offline-first sync API and realtime group chat.",
+  "description": "StudyPlan backend: Express + Knex (SQLite / PostgreSQL). Offline-first sync API and group materials.",
   "type": "module",
   "main": "src/server.js",
   "engines": {
@@ -29,11 +29,9 @@
     "multer": "^2.4.0",
     "pg": "^8.23.1",
     "qrcode-terminal": "^0.12.0",
-    "socket.io": "^4.8.4",
     "sqlite3": "^6.0.1"
   },
   "devDependencies": {
-    "socket.io-client": "^4.8.4",
     "supertest": "^7.3.1"
   }
 }

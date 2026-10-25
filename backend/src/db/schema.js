@@ -4,7 +4,6 @@ import {
   isNonEmptyString,
   isTimeStr,
   isUuid,
-  parseJson,
   toBool,
   toNullableBool,
 } from '../utils/validators.js';
@@ -16,8 +15,6 @@ const nullableDate = (v) => v === null || v === undefined || isDateStr(v);
 
 export const LESSON_TYPES = ['lecture', 'practice', 'lab'];
 export const TASK_STATUSES = ['inbox', 'in_progress', 'completed'];
-export const MESSAGE_TYPES = ['text', 'schedule_update', 'homework', 'file'];
-export const HEADMAN_ONLY_MESSAGE_TYPES = ['schedule_update', 'homework'];
 
 export const SYNC_TABLES = {
   subjects: {
@@ -86,11 +83,6 @@ export function normalizeRow(table, row) {
   for (const b of spec?.booleans ?? []) out[b] = toBool(out[b]);
   for (const b of spec?.nullableBooleans ?? []) out[b] = toNullableBool(out[b]);
   return out;
-}
-
-export function normalizeMessage(row) {
-  if (!row) return row;
-  return { ...row, is_pinned: toBool(row.is_pinned), payload_json: parseJson(row.payload_json) };
 }
 
 export function normalizeUser(row) {

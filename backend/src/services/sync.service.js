@@ -1,10 +1,8 @@
 import { db } from '../config/db.js';
 import { env } from '../config/env.js';
-import { normalizeMessage, normalizeRow, SYNC_ORDER, SYNC_TABLES } from '../db/schema.js';
-import { emitToGroup, emitToUser } from '../realtime/notifier.js';
+import { normalizeRow, SYNC_ORDER, SYNC_TABLES } from '../db/schema.js';
 import { badRequest } from '../utils/http-error.js';
 import { isEpochMs, isUuid, pick, toBool, toNullableBool } from '../utils/validators.js';
-import { storeMessage, validateIncomingMessage } from './chat.service.js';
 
 /**
  * Pull window overlap. A concurrent transaction may commit rows stamped slightly
@@ -12,7 +10,6 @@ import { storeMessage, validateIncomingMessage } from './chat.service.js';
  * missed. Duplicates are harmless because clients apply rows idempotently (LWW).
  */
 export const PULL_OVERLAP_MS = 5_000;
-const INITIAL_CHAT_HISTORY = 300;
 
 function coerce(table, data) {
   const spec = SYNC_TABLES[table];
@@ -46,14 +43,13 @@ async function checkReferences(trx, table, user, data) {
 
 /**
  * Push phase: applies client changes with Last-Write-Wins inside one transaction.
- * @returns {Promise<{applied: Record<string,string[]>, rejected: object[], forced: Record<string,Set<string>>, createdMessages: object[], groupTasksChanged: boolean}>}
+ * Tables outside SYNC_ORDER (e.g. `chat_messages` from old clients) are ignored.
+ * @returns {Promise<{applied: Record<string,string[]>, rejected: object[], forced: Record<string,Set<string>>}>}
  */
 async function applyChanges(user, changes, now) {
   const applied = {};
   const rejected = [];
   const forced = {};
-  const createdMessages = [];
-  let groupTasksChanged = false;
 
   await db.transaction(async (trx) => {
     for (const table of SYNC_ORDER) {
@@ -95,22 +91,11 @@ async function applyChanges(user, changes, now) {
         }
 
         applied[table].push(data.id);
-        if (table === 'tasks' && (data.is_group || toBool(existing?.is_group))) groupTasksChanged = true;
       }
-    }
-
-    applied.chat_messages = [];
-    for (const message of changes.chat_messages ?? []) {
-      const error = validateIncomingMessage(user, message);
-      if (error) { rejected.push({ table: 'chat_messages', id: message?.id ?? null, reason: error }); continue; }
-      // eslint-disable-next-line no-await-in-loop
-      const { message: stored, created } = await storeMessage(user, message, trx);
-      applied.chat_messages.push(stored.id);
-      if (created) createdMessages.push(stored);
     }
   });
 
-  return { applied, rejected, forced, createdMessages, groupTasksChanged };
+  return { applied, rejected, forced };
 }
 
 /** Pull phase: everything changed on the server since the client's cursor. */
@@ -144,28 +129,12 @@ async function collectChanges(user, lastSyncedAt, forced, applied) {
     }
     out[table] = [...byId.values()].map((r) => normalizeRow(table, r));
   }
-
-  if (!user.group_id) {
-    out.chat_messages = [];
-  } else if (initial) {
-    const rows = await db('chat_messages')
-      .where({ group_id: user.group_id })
-      .orderBy('created_at', 'desc')
-      .limit(INITIAL_CHAT_HISTORY);
-    out.chat_messages = rows.reverse().map(normalizeMessage);
-  } else {
-    const rows = await db('chat_messages')
-      .where({ group_id: user.group_id })
-      .andWhere('server_updated_at', '>', since)
-      .orderBy('created_at', 'asc');
-    out.chat_messages = rows.map(normalizeMessage);
-  }
   return out;
 }
 
 /**
  * Batch synchronisation entry point.
- * Request : { last_synced_at, changes: { subjects, lessons, tasks, subtasks, chat_messages } }
+ * Request : { last_synced_at, changes: { <table in SYNC_ORDER>: rows[] } }
  * Response: { server_time, applied, rejected, changes, group }
  */
 export async function synchronize(user, body) {
@@ -174,7 +143,7 @@ export async function synchronize(user, body) {
 
   const changes = body?.changes ?? {};
   if (typeof changes !== 'object' || Array.isArray(changes)) throw badRequest('changes must be an object');
-  for (const table of [...SYNC_ORDER, 'chat_messages']) {
+  for (const table of SYNC_ORDER) {
     const list = changes[table];
     if (list === undefined) continue;
     if (!Array.isArray(list)) throw badRequest(`changes.${table} must be an array`);
@@ -183,13 +152,6 @@ export async function synchronize(user, body) {
 
   const now = Date.now();
   const result = await applyChanges(user, changes, now);
-
-  // Side effects only after a successful commit.
-  for (const message of result.createdMessages) emitToGroup(user.group_id, 'chat:message', message);
-  const touched = SYNC_ORDER.filter((t) => result.applied[t]?.length);
-  if (touched.length) emitToUser(user.id, 'sync:changed', { tables: touched });
-  if (result.groupTasksChanged) emitToGroup(user.group_id, 'sync:changed', { tables: ['tasks'] });
-
   const pulled = await collectChanges(user, lastSyncedAt, result.forced, result.applied);
   const group = user.group_id ? await db('groups').where({ id: user.group_id }).first() : null;
 

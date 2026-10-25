@@ -76,4 +76,18 @@ describe('University course materials API', () => {
     assert.equal(delRes.status, 200);
     assert.equal(delRes.body.success, true);
   });
+
+  it('real file upload + authorized download via /api/files/:name', async () => {
+    const up = await authed(studentToken)
+      .post('/api/materials/upload')
+      .field('title', 'Методичка')
+      .attach('file', Buffer.from('%PDF-1.4 demo'), 'методичка.pdf');
+    assert.equal(up.status, 201);
+    assert.equal(up.body.material.file_name, 'методичка.pdf');
+    const url = `/api/files/${up.body.material.file_path}`;
+    const down = await authed(studentToken).get(url);
+    assert.equal(down.status, 200);
+    assert.equal((await request(app).get(url)).status, 401);
+    assert.equal((await authed(studentToken).get('/api/files/..%2F..%2F.env')).status, 404);
+  });
 });
