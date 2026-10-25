@@ -26,6 +26,9 @@ class MoreScreen extends StatelessWidget {
   /// group screen; `group_data` in SharedPreferences is already updated.
   final ValueChanged<Map<String, dynamic>?>? onGroupChanged;
 
+  /// Starts the LMS import; null where it is unavailable (web).
+  final VoidCallback? onImportLms;
+
   const MoreScreen({
     super.key,
     required this.db,
@@ -36,6 +39,7 @@ class MoreScreen extends StatelessWidget {
     required this.onLogout,
     this.onUserUpdated,
     this.onGroupChanged,
+    this.onImportLms,
   });
 
   void _push(BuildContext context, Widget screen) {
@@ -71,6 +75,7 @@ class MoreScreen extends StatelessWidget {
                   group: group,
                   onLogout: onLogout,
                   onUserUpdated: onUserUpdated,
+                  onImportLms: onImportLms,
                 ),
               ),
             ),

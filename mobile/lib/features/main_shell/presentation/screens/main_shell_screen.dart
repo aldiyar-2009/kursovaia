@@ -173,7 +173,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userId = _currentUser['id'] as String;
     final destinations = _destinations(context);
     final body = IndexedStack(
       index: _tab.index,
