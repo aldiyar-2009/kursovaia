@@ -4,7 +4,6 @@ import {
   isNonEmptyString,
   isTimeStr,
   isUuid,
-  parseJson,
   toBool,
   toNullableBool,
 } from '../utils/validators.js';
@@ -13,11 +12,19 @@ import {
 const nullableUuid = (v) => v === null || v === undefined || isUuid(v);
 const nullableStr = (max) => (v) => v === null || v === undefined || (typeof v === 'string' && v.length <= max);
 const nullableDate = (v) => v === null || v === undefined || isDateStr(v);
+const nullableEpoch = (v) => v === null || v === undefined || isEpochMs(v);
+/** Moodle ids: non-negative 32-bit integers. */
+const nullableLmsId = (v) => v === null || v === undefined || (Number.isInteger(v) && v >= 0 && v <= 2_147_483_647);
+/** Grade on the 0..100 scale or null (no grade yet). */
+const nullableScore = (v) => v === null || v === undefined || (typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 100);
+const oneOfOrDefault = (values, v, fallback) => values.includes(v ?? fallback);
 
 export const LESSON_TYPES = ['lecture', 'practice', 'lab'];
 export const TASK_STATUSES = ['inbox', 'in_progress', 'completed'];
-export const MESSAGE_TYPES = ['text', 'schedule_update', 'homework', 'file'];
-export const HEADMAN_ONLY_MESSAGE_TYPES = ['schedule_update', 'homework'];
+export const LMS_COURSE_SOURCES = ['lms', 'manual'];
+export const LMS_CLASSIFICATIONS = ['inprogress', 'past', 'future'];
+export const LMS_EVENT_TYPES = ['deadline', 'class', 'other'];
+export const LMS_MATERIAL_TYPES = ['file', 'folder', 'url', 'page', 'other'];
 
 export const SYNC_TABLES = {
   subjects: {
@@ -74,10 +81,77 @@ export const SYNC_TABLES = {
       return null;
     },
   },
+  lms_courses: {
+    columns: [
+      'id', 'source', 'lms_course_id', 'subject_id', 'classification', 'title', 'teacher_name', 'credits',
+      'register_midterm', 'register_endterm', 'final_exam', 'total', 'grade_items_json', 'imported_at',
+      'is_deleted', 'updated_at',
+    ],
+    booleans: ['is_deleted'],
+    validate(r) {
+      if (!oneOfOrDefault(LMS_COURSE_SOURCES, r.source, 'lms')) return `source must be one of ${LMS_COURSE_SOURCES.join(', ')}`;
+      if (!nullableLmsId(r.lms_course_id)) return 'lms_course_id must be a non-negative integer';
+      if (!nullableUuid(r.subject_id)) return 'subject_id must be a UUID';
+      if (!(r.classification == null || LMS_CLASSIFICATIONS.includes(r.classification))) {
+        return `classification must be one of ${LMS_CLASSIFICATIONS.join(', ')}`;
+      }
+      if (!isNonEmptyString(r.title, 255)) return 'title is required (<=255 chars)';
+      if (!nullableStr(160)(r.teacher_name)) return 'teacher_name too long';
+      if (!(r.credits === undefined || (Number.isInteger(r.credits) && r.credits >= 1 && r.credits <= 30))) {
+        return 'credits must be an integer 1..30';
+      }
+      for (const k of ['register_midterm', 'register_endterm', 'final_exam', 'total']) {
+        if (!nullableScore(r[k])) return `${k} must be a number 0..100 or null`;
+      }
+      if (!nullableStr(100_000)(r.grade_items_json)) return 'grade_items_json must be a string (<=100000 chars)';
+      if (!nullableEpoch(r.imported_at)) return 'imported_at must be epoch ms';
+      return null;
+    },
+  },
+  lms_events: {
+    columns: [
+      'id', 'lms_event_id', 'lms_course_id', 'title', 'course_title', 'event_type', 'module_name', 'starts_at',
+      'duration_min', 'location', 'url', 'is_done', 'imported_at', 'is_deleted', 'updated_at',
+    ],
+    booleans: ['is_done', 'is_deleted'],
+    validate(r) {
+      if (!nullableLmsId(r.lms_event_id) || !nullableLmsId(r.lms_course_id)) return 'lms ids must be non-negative integers';
+      if (!isNonEmptyString(r.title, 255)) return 'title is required (<=255 chars)';
+      if (!nullableStr(255)(r.course_title)) return 'course_title too long';
+      if (!oneOfOrDefault(LMS_EVENT_TYPES, r.event_type, 'other')) return `event_type must be one of ${LMS_EVENT_TYPES.join(', ')}`;
+      if (!nullableStr(64)(r.module_name)) return 'module_name too long';
+      if (!isEpochMs(r.starts_at)) return 'starts_at must be epoch ms';
+      if (!(r.duration_min == null || (Number.isInteger(r.duration_min) && r.duration_min >= 0))) {
+        return 'duration_min must be a non-negative integer';
+      }
+      if (!nullableStr(128)(r.location)) return 'location too long';
+      if (!nullableStr(1024)(r.url)) return 'url too long';
+      if (!nullableEpoch(r.imported_at)) return 'imported_at must be epoch ms';
+      return null;
+    },
+  },
+  lms_materials: {
+    columns: [
+      'id', 'lms_module_id', 'lms_course_id', 'course_title', 'section_title', 'title', 'material_type', 'url',
+      'imported_at', 'is_deleted', 'updated_at',
+    ],
+    booleans: ['is_deleted'],
+    validate(r) {
+      if (!nullableLmsId(r.lms_module_id) || !nullableLmsId(r.lms_course_id)) return 'lms ids must be non-negative integers';
+      if (!nullableStr(255)(r.course_title) || !nullableStr(255)(r.section_title)) return 'course_title/section_title too long';
+      if (!isNonEmptyString(r.title, 255)) return 'title is required (<=255 chars)';
+      if (!oneOfOrDefault(LMS_MATERIAL_TYPES, r.material_type, 'other')) {
+        return `material_type must be one of ${LMS_MATERIAL_TYPES.join(', ')}`;
+      }
+      if (!nullableStr(1024)(r.url)) return 'url too long';
+      if (!nullableEpoch(r.imported_at)) return 'imported_at must be epoch ms';
+      return null;
+    },
+  },
 };
 
 /** Order matters: parents first so FK checks pass inside one transaction. */
-export const SYNC_ORDER = ['subjects', 'lessons', 'tasks', 'subtasks'];
+export const SYNC_ORDER = ['subjects', 'lessons', 'tasks', 'subtasks', 'lms_courses', 'lms_events', 'lms_materials'];
 
 export function normalizeRow(table, row) {
   if (!row) return row;
@@ -86,11 +160,6 @@ export function normalizeRow(table, row) {
   for (const b of spec?.booleans ?? []) out[b] = toBool(out[b]);
   for (const b of spec?.nullableBooleans ?? []) out[b] = toNullableBool(out[b]);
   return out;
-}
-
-export function normalizeMessage(row) {
-  if (!row) return row;
-  return { ...row, is_pinned: toBool(row.is_pinned), payload_json: parseJson(row.payload_json) };
 }
 
 export function normalizeUser(row) {

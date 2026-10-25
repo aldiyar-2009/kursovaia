@@ -76,4 +76,64 @@ describe('University course materials API', () => {
     assert.equal(delRes.status, 200);
     assert.equal(delRes.body.success, true);
   });
+
+  it('only uploader can delete material', async () => {
+    const create = await authed(studentToken)
+      .post('/api/materials/upload')
+      .send({ title: 'Конспект студента', subject_code: 'py', subject_title: 'Introduction to Programming' });
+    assert.equal(create.status, 201);
+    const matId = create.body.material.id;
+
+    // The seeded "headman" account has role=headman in the DB; roles no longer grant anything.
+    const other = await authed(headmanToken).delete(`/api/materials/${matId}`);
+    assert.equal(other.status, 403);
+
+    const own = await authed(studentToken).delete(`/api/materials/${matId}`);
+    assert.equal(own.status, 200);
+  });
+
+  it('any member can upload; without a group upload is rejected', async () => {
+    const up = await authed(headmanToken).post('/api/materials/upload').send({ title: 'От участника' });
+    assert.equal(up.status, 201);
+
+    const reg = await request(app).post('/api/auth/register').send({ email: 'nogroup@test.dev', password: 'secret123', name: 'Без группы' });
+    const res = await authed(reg.body.token).post('/api/materials/upload').send({ title: 'x' });
+    assert.equal(res.status, 400);
+  });
+
+  it('real file upload + authorized download via /api/files/:name', async () => {
+    const up = await authed(studentToken)
+      .post('/api/materials/upload')
+      .field('title', 'Методичка')
+      .attach('file', Buffer.from('%PDF-1.4 demo'), 'методичка.pdf');
+    assert.equal(up.status, 201);
+    assert.equal(up.body.material.file_name, 'методичка.pdf');
+    const url = `/api/files/${up.body.material.file_path}`;
+    const down = await authed(studentToken).get(url);
+    assert.equal(down.status, 200);
+    assert.equal((await request(app).get(url)).status, 401);
+    assert.equal((await authed(studentToken).get('/api/files/..%2F..%2F.env')).status, 404);
+  });
+
+  it('material download: group member 200 as attachment, other group 404, no group 404', async () => {
+    const up = await authed(studentToken)
+      .post('/api/materials/upload')
+      .field('title', 'Только для группы')
+      .attach('file', Buffer.from('%PDF-1.4 secret'), 'secret.pdf');
+    assert.equal(up.status, 201);
+    const url = `/api/files/${up.body.material.file_path}`;
+
+    const member = await authed(headmanToken).get(url);
+    assert.equal(member.status, 200);
+    assert.match(member.headers['content-disposition'], /^attachment/);
+    assert.match(member.headers['content-disposition'], /secret\.pdf/);
+    assert.equal(member.headers['x-content-type-options'], 'nosniff');
+
+    const otherReg = await request(app).post('/api/auth/register').send({ email: 'othergroup@test.dev', password: 'secret123', name: 'Чужой' });
+    const otherGroup = await authed(otherReg.body.token).post('/api/groups').send({ title: 'OTHER-1' });
+    assert.equal((await authed(otherGroup.body.token).get(url)).status, 404);
+
+    const lonerReg = await request(app).post('/api/auth/register').send({ email: 'loner-dl@test.dev', password: 'secret123', name: 'Одиночка' });
+    assert.equal((await authed(lonerReg.body.token).get(url)).status, 404);
+  });
 });

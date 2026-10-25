@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
@@ -18,13 +19,58 @@ const int = (key, fallback) => {
   const n = Number.parseInt(process.env[key] ?? '', 10);
   return Number.isFinite(n) ? n : fallback;
 };
-const bool = (key, fallback = false) => {
-  const v = process.env[key];
-  if (v === undefined || v === '') return fallback;
-  return ['1', 'true', 'yes', 'on'].includes(v.toLowerCase());
-};
 
 const resolveFromRoot = (p) => (path.isAbsolute(p) ? p : path.resolve(ROOT_DIR, p));
+
+/**
+ * PostgreSQL connection for `pg` / Knex from raw environment variables.
+ *
+ * SSL rules (certificate verification is never disabled):
+ *  - `PG_SSL=false` (explicit) -> plain connection.
+ *  - `DATABASE_URL` set (e.g. Supabase session pooler) -> SSL on by default.
+ *  - `PG_HOST`/`PG_*` config -> SSL only when `PG_SSL=true`.
+ *  - With SSL: `PG_SSL_CA` (path, relative to backend/) -> `{ ca }`, else `{ rejectUnauthorized: true }`
+ *    (system CA store).
+ * @param {Record<string, string|undefined>} vars usually `process.env`
+ */
+export function buildPgConnection(vars = process.env) {
+  const get = (key, fallback = '') => {
+    const v = vars[key];
+    return v === undefined || v === '' ? fallback : String(v);
+  };
+  const sslFlag = get('PG_SSL').toLowerCase();
+  const sslOff = ['0', 'false', 'no', 'off'].includes(sslFlag);
+  const sslOn = ['1', 'true', 'yes', 'on'].includes(sslFlag);
+  const databaseUrl = get('DATABASE_URL');
+
+  let ssl = false;
+  if (!sslOff && (databaseUrl || sslOn)) {
+    const caPath = get('PG_SSL_CA');
+    if (caPath) {
+      const full = resolveFromRoot(caPath);
+      let ca;
+      try {
+        ca = fs.readFileSync(full);
+      } catch (err) {
+        throw new Error(`PG_SSL_CA: cannot read CA certificate at ${full} (${err.code ?? err.message})`);
+      }
+      ssl = { ca };
+    } else {
+      ssl = { rejectUnauthorized: true };
+    }
+  }
+
+  if (databaseUrl) return { connectionString: databaseUrl, ssl };
+  const port = Number.parseInt(get('PG_PORT'), 10);
+  return {
+    host: get('PG_HOST', 'localhost'),
+    port: Number.isFinite(port) ? port : 5432,
+    user: get('PG_USER', 'postgres'),
+    password: get('PG_PASSWORD', 'postgres'),
+    database: get('PG_DATABASE', 'studyplan'),
+    ssl,
+  };
+}
 
 export const env = {
   nodeEnv: str('NODE_ENV', 'development'),
@@ -41,15 +87,7 @@ export const env = {
     sqliteFilename: str('SQLITE_FILENAME', '') === ':memory:'
       ? ':memory:'
       : resolveFromRoot(str('SQLITE_FILENAME', './data/studyplan.sqlite3')),
-    databaseUrl: str('DATABASE_URL', ''),
-    pg: {
-      host: str('PG_HOST', 'localhost'),
-      port: int('PG_PORT', 5432),
-      user: str('PG_USER', 'postgres'),
-      password: str('PG_PASSWORD', 'postgres'),
-      database: str('PG_DATABASE', 'studyplan'),
-      ssl: bool('PG_SSL', false),
-    },
+    // PostgreSQL connection is built lazily by buildPgConnection() (reads the CA file).
   },
 
   jwt: {

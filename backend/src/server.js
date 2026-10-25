@@ -4,22 +4,14 @@ import qrcode from 'qrcode-terminal';
 import { createApp } from './app.js';
 import { closeDb, db } from './config/db.js';
 import { env } from './config/env.js';
-import { attachSocketServer } from './realtime/socket.js';
 
 async function main() {
   // Apply pending migrations automatically so `npm start` just works.
   const [, pending] = await db.migrate.latest();
   if (pending.length) console.log(`[db] applied migrations: ${pending.join(', ')}`);
 
-  const usersCount = await db('users').count({ c: '*' }).first();
-  if (Number(usersCount?.c ?? 0) === 0) {
-    await db.seed.run();
-    console.log('[db] empty database -> demo data seeded');
-  }
-
   const app = createApp();
   const server = http.createServer(app);
-  const io = attachSocketServer(server);
 
   server.listen(env.port, env.host, () => {
     const interfaces = Object.entries(os.networkInterfaces());
@@ -57,7 +49,6 @@ async function main() {
 
   const shutdown = async (signal) => {
     console.log(`\n[server] ${signal} received, shutting down...`);
-    io.close();
     server.close();
     await closeDb();
     process.exit(0);

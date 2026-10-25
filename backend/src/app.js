@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
@@ -6,10 +8,16 @@ import { env } from './config/env.js';
 import { errorHandler, notFoundHandler } from './middleware/error.js';
 import { router } from './routes/index.js';
 
-import fs from 'fs';
-import path from 'path';
+/** Flutter web build (`flutter build web`) next to the backend, if present. */
+function findWebDist() {
+  const candidates = [path.resolve('..', 'mobile', 'build', 'web'), path.resolve('mobile', 'build', 'web')];
+  return candidates.find((p) => fs.existsSync(path.join(p, 'index.html'))) ?? null;
+}
 
-export function createApp() {
+/**
+ * @param {{ webDist?: string|null }} [options] `webDist` overrides web build discovery (tests).
+ */
+export function createApp({ webDist = findWebDist() } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.use(helmet({
@@ -22,12 +30,13 @@ export function createApp() {
 
   app.use('/api', router);
 
-  const candidate1 = path.resolve('..', 'mobile', 'build', 'web');
-  const candidate2 = path.resolve('mobile', 'build', 'web');
-  const webDist = fs.existsSync(candidate1) ? candidate1 : (fs.existsSync(candidate2) ? candidate2 : null);
   if (webDist) {
+    // `root` keeps send's dotfile check on the requested file only, not on the build directory path.
+    const sendIndex = (_req, res) => res.sendFile('index.html', { root: webDist });
     app.use(express.static(webDist));
-    app.get('/', (_req, res) => res.sendFile(path.join(webDist, 'index.html')));
+    app.get('/', sendIndex);
+    // Invite links `<server>/join/ABC123`: the SPA reads the code from the URL.
+    app.get('/join/:code', sendIndex);
   } else {
     app.get('/', (_req, res) => res.json({ name: 'StudyPlan API', docs: '/api/health' }));
   }
