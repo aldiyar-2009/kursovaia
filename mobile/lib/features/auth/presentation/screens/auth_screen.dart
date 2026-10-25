@@ -41,7 +41,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   final _registerFormKey = GlobalKey<FormState>();
   final _registerNameController = TextEditingController();
   final _registerEmailController = TextEditingController();
-  final _registerInviteController = TextEditingController(text: 'AITU26');
+  final _registerInviteController = TextEditingController();
   final _registerPasswordController = TextEditingController();
   final _registerConfirmPasswordController = TextEditingController();
   bool _registerObscure = true;
@@ -80,14 +80,9 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     super.dispose();
   }
 
-  Future<void> _handleLogin({String? preEmail, String? prePassword}) async {
-    if (preEmail != null && prePassword != null) {
-      _loginEmailController.text = preEmail;
-      _loginPasswordController.text = prePassword;
-    } else {
-      if (!_loginFormKey.currentState!.validate()) {
-        return;
-      }
+  Future<void> _handleLogin() async {
+    if (!_loginFormKey.currentState!.validate()) {
+      return;
     }
 
     final email = _loginEmailController.text.trim();
@@ -385,60 +380,6 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                         _buildRegisterForm(),
                       ][_tabController.index],
                     ),
-
-                    const SizedBox(height: 24),
-                    const Divider(color: AppColors.border),
-                    const SizedBox(height: 12),
-
-                    // Demo Accounts Quick Fill
-                    const Text(
-                      'Тестовый вход без ввода пароля:',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 11, color: AppColors.textMuted),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.accent.withValues(alpha: 0.2),
-                              foregroundColor: AppColors.accent,
-                              elevation: 0,
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              side: const BorderSide(color: AppColors.accent, width: 1.2),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                            icon: const Icon(Icons.school_rounded, size: 16),
-                            label: const Text('Студент', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-                            onPressed: _isLoading
-                                ? null
-                                : () => _handleLogin(
-                                      preEmail: 'student@studyplan.dev',
-                                      prePassword: 'password123',
-                                    ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              side: const BorderSide(color: AppColors.border),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                            icon: const Icon(Icons.badge_rounded, size: 16, color: AppColors.accentCyan),
-                            label: const Text('Староста', style: TextStyle(fontSize: 12, color: AppColors.textPrimary)),
-                            onPressed: _isLoading
-                                ? null
-                                : () => _handleLogin(
-                                      preEmail: 'headman@studyplan.dev',
-                                      prePassword: 'password123',
-                                    ),
-                          ),
-                        ),
-                      ],
-                    ),
                   ],
                 ),
               ),
@@ -555,7 +496,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
             keyboardType: TextInputType.emailAddress,
             decoration: const InputDecoration(
               labelText: 'Email',
-              hintText: 'student@studyplan.dev',
+              hintText: 'example@university.edu',
               prefixIcon: Icon(Icons.email_outlined, size: 20, color: AppColors.textSecondary),
             ),
             validator: (value) {
@@ -573,10 +514,10 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
           TextFormField(
             controller: _registerInviteController,
             decoration: const InputDecoration(
-              labelText: 'Код группы (приглашение)',
-              hintText: 'Например, IVT21A',
+              labelText: 'Код группы (необязательно)',
+              hintText: 'Код из приглашения',
               prefixIcon: Icon(Icons.group_outlined, size: 20, color: AppColors.textSecondary),
-              helperText: 'Код группы выдается старостой (для демо: IVT21A)',
+              helperText: 'Можно вступить в группу и позже',
               helperStyle: TextStyle(fontSize: 11, color: AppColors.textMuted),
             ),
           ),
