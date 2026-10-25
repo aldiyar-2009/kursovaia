@@ -23,6 +23,22 @@ const int = (key, fallback) => {
 const resolveFromRoot = (p) => (path.isAbsolute(p) ? p : path.resolve(ROOT_DIR, p));
 
 /**
+ * Removes `sslmode` / `sslrootcert` / `sslcert` / `sslkey` / `ssl` query params from a
+ * connection string: pg lets them override the `ssl` object (e.g. `sslmode=require`
+ * would drop our `{ ca }` and certificate verification). Other params are kept verbatim.
+ */
+function stripSslParams(connectionString) {
+  const q = connectionString.indexOf('?');
+  if (q === -1) return connectionString;
+  const kept = connectionString
+    .slice(q + 1)
+    .split('&')
+    .filter((pair) => pair && !/^ssl[a-z]*$/i.test(pair.split('=')[0]));
+  const base = connectionString.slice(0, q);
+  return kept.length ? `${base}?${kept.join('&')}` : base;
+}
+
+/**
  * PostgreSQL connection for `pg` / Knex from raw environment variables.
  *
  * SSL rules (certificate verification is never disabled):
@@ -60,7 +76,7 @@ export function buildPgConnection(vars = process.env) {
     }
   }
 
-  if (databaseUrl) return { connectionString: databaseUrl, ssl };
+  if (databaseUrl) return { connectionString: stripSslParams(databaseUrl), ssl };
   const port = Number.parseInt(get('PG_PORT'), 10);
   return {
     host: get('PG_HOST', 'localhost'),
@@ -70,6 +86,30 @@ export function buildPgConnection(vars = process.env) {
     database: get('PG_DATABASE', 'studyplan'),
     ssl,
   };
+}
+
+/** Fallback JWT secret, allowed only for local SQLite development and tests. */
+export const DEV_JWT_SECRET = 'dev-only-insecure-secret';
+
+/**
+ * JWT signing secret from raw environment variables. Without `JWT_SECRET` the server
+ * refuses to start in production (`NODE_ENV=production`) or with PostgreSQL
+ * (`DB_CLIENT=pg`): a public fallback secret would let anyone forge tokens.
+ * @param {Record<string, string|undefined>} vars usually `process.env`
+ */
+export function resolveJwtSecret(vars = process.env) {
+  const secret = String(vars.JWT_SECRET ?? '').trim();
+  const strict = vars.NODE_ENV === 'production' || vars.DB_CLIENT === 'pg';
+  // The old .env.example placeholder is as public as the dev fallback.
+  const placeholder = secret === 'change-me-to-a-long-random-secret';
+  if (secret && !(strict && placeholder)) return secret;
+  if (strict) {
+    throw new Error(
+      'JWT_SECRET is required when NODE_ENV=production or DB_CLIENT=pg. Generate one with: '
+        + 'node -e "console.log(require(\'crypto\').randomBytes(48).toString(\'hex\'))"',
+    );
+  }
+  return DEV_JWT_SECRET;
 }
 
 export const env = {
@@ -91,7 +131,7 @@ export const env = {
   },
 
   jwt: {
-    secret: str('JWT_SECRET', 'dev-only-insecure-secret'),
+    secret: resolveJwtSecret(process.env),
     expiresIn: str('JWT_EXPIRES_IN', '30d'),
   },
   bcryptRounds: int('BCRYPT_ROUNDS', 10),

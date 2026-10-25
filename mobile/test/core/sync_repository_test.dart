@@ -13,6 +13,7 @@ void main() {
   late SyncRepository repo;
   Map<String, dynamic>? sentPayload;
   late Map<String, dynamic> serverChanges;
+  late List<Map<String, dynamic>> serverRejected;
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
@@ -20,12 +21,13 @@ void main() {
     apiClient = ApiClient(baseUrl: 'http://test.local/api');
     sentPayload = null;
     serverChanges = {};
+    serverRejected = [];
     apiClient.dio.interceptors.add(InterceptorsWrapper(onRequest: (options, handler) {
       sentPayload = options.data as Map<String, dynamic>;
       handler.resolve(Response(
         requestOptions: options,
         statusCode: 200,
-        data: {'server_time': 5000, 'changes': serverChanges},
+        data: {'server_time': 5000, 'changes': serverChanges, 'rejected': serverRejected},
       ));
     }));
     repo = SyncRepository(db: db, apiClient: apiClient);
@@ -217,5 +219,97 @@ void main() {
     expect(event.durationMin, 90);
 
     expect(await db.select(db.lmsMaterials).get(), isEmpty);
+  });
+
+  group('rejected rows', () {
+    Future<void> insertTask(String id, {bool deleted = false, String status = 'pending_update'}) =>
+        db.into(db.tasks).insert(TasksCompanion.insert(
+              id: id,
+              userId: 'u1',
+              title: 'Task $id',
+              isDeleted: Value(deleted),
+              updatedAt: BigInt.from(200),
+              syncStatus: Value(status),
+            ));
+
+    Future<Task?> task(String id) =>
+        (db.select(db.tasks)..where((t) => t.id.equals(id))).getSingleOrNull();
+
+    test('rows rejected for a non-stale reason stay pending; others become synced', () async {
+      await insertTask('ok');
+      await insertTask('bad');
+      await insertTask('bad-deleted', deleted: true);
+      serverRejected = [
+        {'table': 'tasks', 'id': 'bad', 'reason': 'forbidden'},
+        {'table': 'tasks', 'id': 'bad-deleted', 'reason': 'title is required'},
+        // Same id in another table must not affect the task.
+        {'table': 'subjects', 'id': 'ok', 'reason': 'forbidden'},
+      ];
+
+      final result = await repo.syncWithServer('u1');
+
+      expect((await task('ok'))!.syncStatus, 'synced');
+      expect((await task('bad'))!.syncStatus, 'pending_update');
+      final keptTombstone = await task('bad-deleted');
+      expect(keptTombstone, isNotNull, reason: 'a rejected delete must not be dropped locally');
+      expect(keptTombstone!.syncStatus, 'pending_update');
+      expect(await repo.getPendingChangesCount('u1'), 2);
+      expect(result.appliedCount, 1);
+    });
+
+    test('stale rejection marks the row synced and accepts the server version', () async {
+      await insertTask('t1');
+      serverRejected = [
+        {'table': 'tasks', 'id': 't1', 'reason': 'stale'},
+      ];
+      serverChanges = {
+        'tasks': [
+          {
+            'id': 't1',
+            'user_id': 'u1',
+            'title': 'Server title',
+            'priority': 2,
+            'status': 'done',
+            'is_group': false,
+            'is_deleted': false,
+            'updated_at': 900,
+          }
+        ],
+      };
+
+      await repo.syncWithServer('u1');
+
+      final row = (await task('t1'))!;
+      expect(row.syncStatus, 'synced');
+      expect(row.title, 'Server title');
+      expect(row.updatedAt, BigInt.from(900));
+      expect(await repo.getPendingChangesCount('u1'), 0);
+    });
+
+    test('a rejected row is pushed again on the next sync', () async {
+      await insertTask('bad');
+      serverRejected = [
+        {'table': 'tasks', 'id': 'bad', 'reason': 'subject_id not found'},
+      ];
+      await repo.syncWithServer('u1');
+
+      serverRejected = [];
+      await repo.syncWithServer('u1');
+
+      final pushed = (sentPayload!['changes'] as Map<String, dynamic>)['tasks'] as List;
+      expect(pushed.map((t) => (t as Map)['id']), ['bad']);
+      expect((await task('bad'))!.syncStatus, 'synced');
+    });
+  });
+
+  test('resetCursor sets last_synced_at back to 0', () async {
+    await repo.syncWithServer('u1');
+    expect(await repo.getLastSyncedAt(), 5000);
+
+    await repo.resetCursor();
+    expect(await repo.getLastSyncedAt(), 0);
+
+    await repo.syncWithServer('u1');
+    expect(sentPayload!['last_synced_at'], 0);
   });
 }

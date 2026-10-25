@@ -103,23 +103,36 @@ async function applyChanges(user, changes, now) {
   return { applied, rejected, forced };
 }
 
-/** Pull phase: everything changed on the server since the client's cursor. */
-async function collectChanges(user, lastSyncedAt, forced, applied) {
+/**
+ * Pull phase: everything changed on the server since the client's cursor.
+ * `fullGroupPull` additionally returns every live group task of the user's group
+ * regardless of the cursor: the join time is not stored, so a member who joined after
+ * their cursor would otherwise never receive tasks published before joining.
+ * (A cursor of 0 already returns everything live.)
+ */
+async function collectChanges(user, lastSyncedAt, forced, applied, fullGroupPull = false) {
   const initial = lastSyncedAt <= 0;
   const since = Math.max(0, lastSyncedAt - PULL_OVERLAP_MS);
   const out = {};
 
   for (const table of SYNC_ORDER) {
-    const q = db(table).where('server_updated_at', '>', since);
+    const q = db(table);
     if (table === 'tasks') {
-      q.andWhere((w) => {
+      const ownOrGroup = (w) => {
         w.where('user_id', user.id);
         if (user.group_id) w.orWhere((g) => g.where('is_group', true).andWhere('group_id', user.group_id));
+      };
+      q.where((changed) => {
+        changed.where('server_updated_at', '>', since).andWhere(ownOrGroup);
+        if (initial) changed.andWhere('is_deleted', false);
       });
+      if (fullGroupPull && user.group_id && !initial) {
+        q.orWhere((g) => g.where({ is_group: true, group_id: user.group_id, is_deleted: false }));
+      }
     } else {
-      q.andWhere('user_id', user.id);
+      q.where('server_updated_at', '>', since).andWhere('user_id', user.id);
+      if (initial) q.andWhere('is_deleted', false);
     }
-    if (initial) q.andWhere('is_deleted', false);
 
     // eslint-disable-next-line no-await-in-loop
     const rows = await q;
@@ -139,8 +152,9 @@ async function collectChanges(user, lastSyncedAt, forced, applied) {
 
 /**
  * Batch synchronisation entry point.
- * Request : { last_synced_at, changes: { <table in SYNC_ORDER>: rows[] } }
- * Response: { server_time, applied, rejected, changes, group }
+ * Request : { last_synced_at, changes: { <table in SYNC_ORDER>: rows[] }, full_group_pull?: boolean }
+ * Response: { server_time, applied: { <table>: id[] }, rejected: [{ table, id, reason }], changes, group }
+ * `reason === 'stale'` means the server copy won LWW (it is included in `changes`).
  */
 export async function synchronize(user, body) {
   const lastSyncedAt = Number(body?.last_synced_at ?? 0);
@@ -157,7 +171,8 @@ export async function synchronize(user, body) {
 
   const now = Date.now();
   const result = await applyChanges(user, changes, now);
-  const pulled = await collectChanges(user, lastSyncedAt, result.forced, result.applied);
+  const fullGroupPull = body?.full_group_pull === true;
+  const pulled = await collectChanges(user, lastSyncedAt, result.forced, result.applied, fullGroupPull);
   const group = user.group_id ? await db('groups').where({ id: user.group_id }).first() : null;
 
   return {

@@ -35,10 +35,18 @@ RLS без политик — это намеренно: таблицы недо
    DB_CLIENT=pg
    DATABASE_URL=postgresql://postgres.ncqwycbtfxboqyhmzbjr:<пароль>@aws-0-eu-central-1.pooler.supabase.com:5432/postgres
    PG_SSL_CA=./certs/supabase-ca.crt
+   JWT_SECRET=<длинная случайная строка>
    ```
 
    `DB_CLIENT=pg` обязателен — без него backend использует локальный SQLite.
    При заданном `DATABASE_URL` SSL включается автоматически, сертификат сервера проверяется.
+   Параметры `sslmode=` / `sslrootcert=` в `DATABASE_URL` игнорируются (вырезаются), чтобы не
+   отменить проверку сертификата через `PG_SSL_CA`.
+
+   **JWT_SECRET обязателен**, сгенерируйте:
+   `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`.
+   При `DB_CLIENT=pg` или `NODE_ENV=production` сервер без него не запустится (заглушка
+   `change-me-to-a-long-random-secret` тоже не принимается).
 
 4. **Проверка:**
 

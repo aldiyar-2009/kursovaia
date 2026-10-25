@@ -88,6 +88,52 @@ describe('POST /api/sync', () => {
     assert.equal((await authed(token).post('/api/sync').send({ last_synced_at: -5 })).status, 400);
   });
 
+  describe('joining a group pulls tasks published before joining', () => {
+    async function setup() {
+      const author = await registerUser('Author');
+      const g = await authed(author.token).post('/api/groups').send({ title: `JOIN-${uuid().slice(0, 6)}` });
+      const groupId = g.body.group.id;
+      const old = { id: uuid(), title: 'Старая групповая', priority: 2, status: 'inbox', is_group: true, group_id: groupId, is_deleted: false, updated_at: 1 };
+      const gone = { id: uuid(), title: 'Удалённая', priority: 2, status: 'inbox', is_group: true, group_id: groupId, is_deleted: true, updated_at: 1 };
+      const personal = { id: uuid(), title: 'Личная автора', priority: 2, status: 'inbox', is_group: false, is_deleted: false, updated_at: 1 };
+      const push = await authed(author.token).post('/api/sync').send({ changes: { tasks: [old, gone, personal] } });
+      assert.equal(push.body.applied.tasks.length, 3);
+
+      // The newcomer synced before joining: their cursor is already past the publication.
+      const newcomer = await registerUser('Newcomer');
+      const first = await authed(newcomer.token).post('/api/sync').send({ last_synced_at: 0 });
+      const cursor = first.body.server_time + 60_000;
+      const join = await authed(newcomer.token).post('/api/groups/join').send({ invite_code: g.body.group.invite_code });
+      assert.equal(join.status, 200);
+      return { newcomer, cursor, old, gone, personal };
+    }
+
+    test('incremental sync with the old cursor does not see them (the bug clients work around)', async () => {
+      const { newcomer, cursor, old } = await setup();
+      const res = await authed(newcomer.token).post('/api/sync').send({ last_synced_at: cursor });
+      assert.ok(!res.body.changes.tasks.some((t) => t.id === old.id));
+    });
+
+    test('after joining a group, a sync with last_synced_at=0 returns tasks published before joining', async () => {
+      const { newcomer, old, gone, personal } = await setup();
+      const res = await authed(newcomer.token).post('/api/sync').send({ last_synced_at: 0 });
+      const ids = res.body.changes.tasks.map((t) => t.id);
+      assert.ok(ids.includes(old.id), 'old group task is pulled');
+      assert.ok(!ids.includes(gone.id), 'deleted group tasks are not sent on a full pull');
+      assert.ok(!ids.includes(personal.id), "the author's personal tasks stay private");
+    });
+
+    test('full_group_pull: true returns all live group tasks even with a non-zero cursor', async () => {
+      const { newcomer, cursor, old, gone, personal } = await setup();
+      const res = await authed(newcomer.token).post('/api/sync').send({ last_synced_at: cursor, full_group_pull: true });
+      assert.equal(res.status, 200);
+      const ids = res.body.changes.tasks.map((t) => t.id);
+      assert.ok(ids.includes(old.id));
+      assert.ok(!ids.includes(gone.id));
+      assert.ok(!ids.includes(personal.id));
+    });
+  });
+
   test('student member can publish group task', async () => {
     const creator = await registerUser('Creator');
     const g = await authed(creator.token).post('/api/groups').send({ title: 'G-1' });
