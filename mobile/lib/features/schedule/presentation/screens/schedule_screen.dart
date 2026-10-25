@@ -6,13 +6,14 @@ import 'package:studyplan/core/database/subject_dao.dart';
 import 'package:studyplan/core/theme/app_theme.dart';
 import 'package:studyplan/core/theme/theme_ext.dart';
 import 'package:studyplan/core/utils/date_util.dart';
+import 'package:studyplan/core/widgets/ui/content_column.dart';
 import 'package:studyplan/core/widgets/ui/empty_state.dart';
 import 'package:studyplan/core/widgets/ui/list_row.dart';
 import 'package:studyplan/core/widgets/ui/status_label.dart';
 import 'package:studyplan/features/calendar/presentation/screens/academic_calendar_screen.dart';
 import 'package:studyplan/features/schedule/domain/schedule_rules.dart';
 import 'package:studyplan/features/schedule/presentation/widgets/lesson_edit_sheet.dart';
-import 'package:studyplan/features/schedule/presentation/widgets/segmented_toggle.dart';
+import 'package:studyplan/core/widgets/ui/segmented_toggle.dart';
 import 'package:studyplan/features/schedule/presentation/widgets/week_strip.dart';
 
 enum _Mode { lessons, calendar }
@@ -92,7 +93,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return Scaffold(
-      appBar: AppBar(
+      appBar: ContentAppBar(
         title: Text(l10n.schedule_title),
         actions: [
           if (_mode == _Mode.lessons)
@@ -101,28 +102,30 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               onPressed: _addLesson,
               icon: const Icon(Icons.add),
             ),
-          const SizedBox(width: 8),
         ],
       ),
-      body: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 720),
-          child: Column(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          // Left/right edge of the content column; the app bar title, the
+          // toggle and the lesson list all start here.
+          final inset = contentInset(constraints.maxWidth);
+          return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                padding: EdgeInsets.fromLTRB(inset, 0, inset, 8),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 360),
                     child: SegmentedToggle<_Mode>(
+                      key: const ValueKey('schedule-mode-toggle'),
+                      expand: true,
                       segments: [
                         (_Mode.lessons, l10n.schedule_tabLessons),
                         (_Mode.calendar, l10n.schedule_tabCalendar),
                       ],
-                      selected: _mode,
+                      value: _mode,
                       onChanged: (m) => setState(() => _mode = m),
                     ),
                   ),
@@ -130,17 +133,17 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               ),
               Expanded(
                 child: _mode == _Mode.lessons
-                    ? _lessonsBody(context)
+                    ? _lessonsBody(context, inset)
                     : AcademicCalendarView(today: _today),
               ),
             ],
-          ),
-        ),
+          );
+        },
       ),
     );
   }
 
-  Widget _lessonsBody(BuildContext context) {
+  Widget _lessonsBody(BuildContext context, double inset) {
     return StreamBuilder<List<Lesson>>(
       stream: _lessons,
       builder: (context, lessonSnap) => StreamBuilder<List<LmsEvent>>(
@@ -165,7 +168,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             final subjects = {
               for (final s in subjectSnap.data ?? const <Subject>[]) s.id: s,
             };
-            return _week(context, lessons, classes, subjects);
+            return _week(context, lessons, classes, subjects, inset);
           },
         ),
       ),
@@ -177,6 +180,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     List<Lesson> lessons,
     List<LmsEvent> classes,
     Map<String, Subject> subjects,
+    double inset,
   ) {
     final l10n = context.l10n;
     final p = context.palette;
@@ -219,7 +223,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 4, 4),
+          // IconButtons carry their own padding on the right.
+          padding: EdgeInsets.fromLTRB(inset, 8, inset - 12, 4),
           child: Row(
             children: [
               Expanded(
@@ -266,7 +271,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+          padding: EdgeInsets.symmetric(horizontal: inset - 2, vertical: 4),
           child: WeekStrip(
             monday: monday,
             selected: _selected,
@@ -277,7 +282,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         ),
         Expanded(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            padding: EdgeInsets.fromLTRB(inset, 16, inset, 24),
             children: [
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
@@ -285,8 +290,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   _capitalize(
                     DateFormat('EEEE, d MMMM', locale).format(_selected),
                   ),
-                  style: context.text.labelMedium!
-                      .copyWith(color: p.textSecondary),
+                  style: context.text.labelMedium!.copyWith(
+                    color: p.textSecondary,
+                  ),
                 ),
               ),
               if (entries.isEmpty)
@@ -295,8 +301,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   child: Text(
                     l10n.schedule_emptyDay,
                     textAlign: TextAlign.center,
-                    style: context.text.bodyMedium!
-                        .copyWith(color: p.textTertiary),
+                    style: context.text.bodyMedium!.copyWith(
+                      color: p.textTertiary,
+                    ),
                   ),
                 )
               else
@@ -405,8 +412,9 @@ class _EntryRow extends StatelessWidget {
                     title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: context.text.bodyMedium!
-                        .copyWith(fontWeight: FontWeight.w500),
+                    style: context.text.bodyMedium!.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   if (details.isNotEmpty) ...[
                     const SizedBox(height: 2),
@@ -422,7 +430,10 @@ class _EntryRow extends StatelessWidget {
             ),
             if (entry.isLms) ...[
               const SizedBox(width: 12),
-              StatusLabel(text: l10n.schedule_lmsLabel, tone: StatusTone.neutral),
+              StatusLabel(
+                text: l10n.schedule_lmsLabel,
+                tone: StatusTone.neutral,
+              ),
             ],
           ],
         ),

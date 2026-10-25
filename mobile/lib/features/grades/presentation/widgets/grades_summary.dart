@@ -26,8 +26,12 @@ class GradesSummary extends StatelessWidget {
     final l10n = context.l10n;
     final palette = context.palette;
     final valueStyle = context.text.titleLarge!.tabular;
-    final (scholarshipText, scholarshipTone) =
-        scholarshipLabel(l10n, scholarship);
+    final (scholarshipText, scholarshipTone) = scholarshipLabel(
+      l10n,
+      scholarship,
+    );
+    // Why a figure is «—»: averages count only courses with a total.
+    final noTotals = l10n.grades_summaryNoTotals;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -45,6 +49,7 @@ class GradesSummary extends StatelessWidget {
                 Expanded(
                   child: _Stat(
                     label: l10n.grades_average,
+                    caption: average == null ? noTotals : null,
                     child: Text(
                       average == null
                           ? l10n.grades_scoreEmpty
@@ -57,6 +62,7 @@ class GradesSummary extends StatelessWidget {
                 Expanded(
                   child: _Stat(
                     label: l10n.grades_gpaSemester,
+                    caption: gpa == null ? noTotals : null,
                     child: Text(
                       gpa == null ? l10n.grades_scoreEmpty : formatGpa(gpa!),
                       style: valueStyle,
@@ -70,10 +76,20 @@ class GradesSummary extends StatelessWidget {
                     child: Padding(
                       // Optically align the label with the numbers' baseline.
                       padding: const EdgeInsets.only(top: 4),
-                      child: StatusLabel(
-                        text: scholarshipText,
-                        tone: scholarshipTone,
-                      ),
+                      child: scholarship == ScholarshipStatus.unknown
+                          // Nothing to judge yet: plain text, not a badge.
+                          ? Text(
+                              scholarshipText,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: context.text.bodyMedium!.copyWith(
+                                color: palette.textSecondary,
+                              ),
+                            )
+                          : StatusLabel(
+                              text: scholarshipText,
+                              tone: scholarshipTone,
+                            ),
                     ),
                   ),
                 ),
@@ -86,8 +102,9 @@ class GradesSummary extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
             child: Text(
               l10n.grades_lastImport(formatDateTime(context, lastImport!)),
-              style: context.text.bodySmall!
-                  .copyWith(color: palette.textTertiary),
+              style: context.text.bodySmall!.copyWith(
+                color: palette.textTertiary,
+              ),
             ),
           ),
       ],
@@ -99,10 +116,14 @@ class _Stat extends StatelessWidget {
   final String label;
   final Widget child;
 
-  const _Stat({required this.label, required this.child});
+  /// Short explanation under an empty value.
+  final String? caption;
+
+  const _Stat({required this.label, required this.child, this.caption});
 
   @override
   Widget build(BuildContext context) {
+    final caption = this.caption;
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
       child: Column(
@@ -117,6 +138,17 @@ class _Stat extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Align(alignment: Alignment.centerLeft, child: child),
+          if (caption != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              caption,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: context.text.bodySmall!.copyWith(
+                color: context.palette.textTertiary,
+              ),
+            ),
+          ],
         ],
       ),
     );

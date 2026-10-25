@@ -17,9 +17,6 @@ CourseScores scoresOf(LmsCourse c) => CourseScores(
       credits: c.credits,
     );
 
-/// Max content width of grades screens on wide windows.
-const double kGradesMaxWidth = 720;
-
 /// Current semester =everything not explicitly past (inprogress, future,
 /// or a manual course without classification).
 bool isCurrentCourse(LmsCourse c) => c.classification != 'past';

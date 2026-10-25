@@ -153,6 +153,55 @@ void main() {
     await _dispose(tester, db);
   });
 
+  testWidgets('lesson sheet has a handle, close button and full-width save',
+      (tester) async {
+    await _pump(tester, db, size: const Size(390, 844));
+
+    await tester.tap(find.byTooltip('Добавить пару'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('app-sheet-handle')), findsOneWidget);
+    expect(find.byIcon(Icons.close), findsOneWidget);
+    final save = find.widgetWithText(FilledButton, 'Сохранить');
+    expect(save, findsOneWidget);
+    // Sheet is as wide as the screen here; the button spans it minus 16 px
+    // gutters on both sides.
+    expect(tester.getSize(save).width, 390 - 32);
+    expect(tester.getTopLeft(save).dx, 16);
+
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('app-sheet-handle')), findsNothing);
+    await _dispose(tester, db);
+  });
+
+  testWidgets('time picker opens in 24-hour input mode', (tester) async {
+    await _pump(tester, db, size: const Size(390, 844));
+
+    await tester.tap(find.byTooltip('Добавить пару'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('09:00'));
+    await tester.pumpAndSettle();
+
+    final picker = tester.widget<TimePickerDialog>(find.byType(TimePickerDialog));
+    expect(picker.initialEntryMode, TimePickerEntryMode.input);
+    expect(tester.takeException(), isNull);
+    await _dispose(tester, db);
+  });
+
+  testWidgets('app bar title starts at the content edge at 1280 px',
+      (tester) async {
+    await _pump(tester, db, size: const Size(1280, 900));
+
+    final titleX = tester.getTopLeft(find.text('Расписание')).dx;
+    final contentX = tester
+        .getTopLeft(find.byKey(const ValueKey('schedule-mode-toggle')))
+        .dx;
+    expect(contentX, (1280 - 720) / 2);
+    expect(titleX, contentX);
+    await _dispose(tester, db);
+  });
+
   testWidgets('switching to «Календарь» shows academic events',
       (tester) async {
     await _pump(tester, db, size: const Size(360, 740), theme: AppTheme.dark());

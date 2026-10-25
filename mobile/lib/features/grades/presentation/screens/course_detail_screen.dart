@@ -4,13 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:studyplan/core/database/app_database.dart';
 import 'package:studyplan/core/theme/app_theme.dart';
 import 'package:studyplan/core/theme/theme_ext.dart';
+import 'package:studyplan/core/widgets/ui/content_column.dart';
 import 'package:studyplan/core/widgets/ui/list_row.dart';
 import 'package:studyplan/core/widgets/ui/section_header.dart';
 import 'package:studyplan/core/widgets/ui/status_label.dart';
 import 'package:studyplan/features/grades/domain/grade_calculator.dart';
 import 'package:studyplan/features/grades/domain/grading_rules.dart';
 import 'package:studyplan/features/grades/presentation/grades_presentation.dart';
-import 'package:studyplan/features/grades/presentation/screens/course_form_screen.dart';
+import 'package:studyplan/features/grades/presentation/widgets/course_form_sheet.dart';
 import 'package:studyplan/features/grades/presentation/widgets/what_if_section.dart';
 
 /// One course: components, what is needed on the final, a what-if
@@ -32,8 +33,9 @@ class CourseDetailScreen extends StatefulWidget {
 }
 
 class _CourseDetailScreenState extends State<CourseDetailScreen> {
-  late final Stream<List<LmsCourse>> _courses =
-      widget.db.lmsDao.watchCourses(widget.userId);
+  late final Stream<List<LmsCourse>> _courses = widget.db.lmsDao.watchCourses(
+    widget.userId,
+  );
   bool _seen = false;
   bool _closing = false;
 
@@ -51,10 +53,12 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   }
 
   void _edit(LmsCourse c) {
-    Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (_) =>
-          CourseFormScreen(db: widget.db, userId: widget.userId, course: c),
-    ));
+    CourseFormSheet.show(
+      context,
+      db: widget.db,
+      userId: widget.userId,
+      course: c,
+    );
   }
 
   Future<void> _delete(LmsCourse c) async {
@@ -92,7 +96,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
         if (course != null) _seen = true;
         if (all != null && course == null && _seen) _closeWhenGone();
         return Scaffold(
-          appBar: AppBar(),
+          appBar: const ContentAppBar(),
           body: course == null
               ? const SizedBox.shrink()
               : _buildBody(context, course, all!),
@@ -118,126 +122,132 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     String score(double? v) =>
         v == null ? l10n.grades_scoreEmpty : formatScore(v);
 
-    return Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: kGradesMaxWidth),
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
-          children: [
-            _Header(course: c, total: total, status: statusFor(scores)),
-            SectionHeader(
-              l10n.grades_components,
-              trailing: manual
-                  ? TextButton(
-                      onPressed: () => _edit(c),
-                      style: TextButton.styleFrom(
-                        minimumSize: const Size(44, 32),
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        visualDensity: VisualDensity.compact,
-                      ),
-                      child: Text(l10n.grades_edit),
-                    )
-                  : null,
-            ),
-            ListGroup(
-              children: [
-                ListRow(
-                  title: l10n.grades_midterm,
-                  trailing: Text(score(c.registerMidterm)),
-                ),
-                ListRow(
-                  title: l10n.grades_endterm,
-                  trailing: Text(score(c.registerEndterm)),
-                ),
-                ListRow(
-                  title: l10n.grades_admission,
-                  trailing: Text(score(admission)),
-                ),
-                ListRow(
-                  title: l10n.grades_finalExam,
-                  trailing: Text(score(c.finalExam)),
-                ),
-                ListRow(
-                  title: l10n.grades_total,
-                  trailing: Text(
-                    total == null ? l10n.grades_noGrade : formatScore(total),
-                    style: TextStyle(
-                      color: total == null
-                          ? palette.textTertiary
-                          : palette.textPrimary,
-                      fontWeight:
-                          total == null ? FontWeight.w400 : FontWeight.w600,
+    return LayoutBuilder(
+      builder: (context, constraints) => ListView(
+        padding: contentPadding(constraints.maxWidth, bottom: 32),
+        children: [
+          _Header(
+            course: c,
+            total: total,
+            admission: admission,
+            status: statusFor(scores),
+          ),
+          SectionHeader(
+            l10n.grades_components,
+            trailing: manual
+                ? TextButton(
+                    onPressed: () => _edit(c),
+                    style: TextButton.styleFrom(
+                      minimumSize: const Size(44, 32),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      visualDensity: VisualDensity.compact,
                     ),
+                    child: Text(l10n.grades_edit),
+                  )
+                : null,
+          ),
+          ListGroup(
+            children: [
+              ListRow(
+                title: l10n.grades_midterm,
+                trailing: Text(score(c.registerMidterm)),
+              ),
+              ListRow(
+                title: l10n.grades_endterm,
+                trailing: Text(score(c.registerEndterm)),
+              ),
+              ListRow(
+                title: l10n.grades_admission,
+                trailing: Text(score(admission)),
+              ),
+              ListRow(
+                title: l10n.grades_finalExam,
+                trailing: Text(score(c.finalExam)),
+              ),
+              ListRow(
+                title: l10n.grades_total,
+                trailing: Text(
+                  total == null ? l10n.grades_noGrade : formatScore(total),
+                  style: TextStyle(
+                    color: total == null
+                        ? palette.textTertiary
+                        : palette.textPrimary,
+                    fontWeight: total == null
+                        ? FontWeight.w400
+                        : FontWeight.w600,
                   ),
                 ),
-              ],
-            ),
-            if (showNeeded) ...[
-              SectionHeader(l10n.grades_finalSection),
-              _NeededFinal(scores: scores, admission: admission),
-            ],
-            if (showWhatIf) ...[
-              SectionHeader(l10n.grades_whatIf),
-              WhatIfSection(
-                key: ValueKey('whatif-${c.id}'),
-                course: c,
-                semester: current ? semester : null,
               ),
             ],
-            SectionHeader(l10n.grades_course),
-            ListGroup(
-              children: [
-                ListRow(
-                  title: l10n.grades_creditsLabel,
-                  trailing: _CreditsStepper(
-                    credits: c.credits,
-                    onChange: (d) => _changeCredits(c, d),
-                  ),
-                ),
-                if (c.teacherName != null && c.teacherName!.isNotEmpty)
-                  ListRow(
-                    title: l10n.grades_teacher,
-                    trailing: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 200),
-                      child: Text(
-                        c.teacherName!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.end,
-                      ),
-                    ),
-                  ),
-                ListRow(
-                  title: l10n.grades_source,
-                  trailing: Text(
-                    manual ? l10n.grades_sourceManual : l10n.grades_sourceLms,
-                  ),
-                ),
-                if (c.importedAt != null)
-                  ListRow(
-                    title: l10n.grades_imported,
-                    trailing: Text(formatDateTime(
-                      context,
-                      DateTime.fromMillisecondsSinceEpoch(c.importedAt!.toInt()),
-                    )),
-                  ),
-              ],
-            ),
-            if (manual) ...[
-              const SizedBox(height: 24),
-              ListGroup(
-                children: [
-                  ListRow(
-                    title: l10n.grades_deleteCourse,
-                    titleColor: palette.danger,
-                    onTap: () => _delete(c),
-                  ),
-                ],
-              ),
-            ],
+          ),
+          if (showNeeded) ...[
+            SectionHeader(l10n.grades_finalSection),
+            _NeededFinal(scores: scores, admission: admission),
           ],
-        ),
+          if (showWhatIf) ...[
+            SectionHeader(l10n.grades_whatIf),
+            WhatIfSection(
+              key: ValueKey('whatif-${c.id}'),
+              course: c,
+              semester: current ? semester : null,
+            ),
+          ],
+          SectionHeader(l10n.grades_course),
+          ListGroup(
+            children: [
+              ListRow(
+                title: l10n.grades_creditsLabel,
+                trailing: _CreditsStepper(
+                  credits: c.credits,
+                  onChange: (d) => _changeCredits(c, d),
+                ),
+              ),
+              if (c.teacherName != null && c.teacherName!.isNotEmpty)
+                ListRow(
+                  title: l10n.grades_teacher,
+                  trailing: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 200),
+                    child: Text(
+                      c.teacherName!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.end,
+                    ),
+                  ),
+                ),
+              ListRow(
+                title: l10n.grades_source,
+                trailing: Text(
+                  manual ? l10n.grades_sourceManual : l10n.grades_sourceLms,
+                ),
+              ),
+              if (c.importedAt != null)
+                ListRow(
+                  title: l10n.grades_imported,
+                  trailing: Text(
+                    formatDateTime(
+                      context,
+                      DateTime.fromMillisecondsSinceEpoch(
+                        c.importedAt!.toInt(),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          if (manual) ...[
+            const SizedBox(height: 24),
+            ListGroup(
+              children: [
+                ListRow(
+                  title: l10n.grades_deleteCourse,
+                  titleColor: palette.danger,
+                  onTap: () => _delete(c),
+                ),
+              ],
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -246,21 +256,56 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
 class _Header extends StatelessWidget {
   final LmsCourse course;
   final double? total;
+  final double? admission;
   final CourseStatus status;
 
   const _Header({
     required this.course,
     required this.total,
+    required this.admission,
     required this.status,
   });
+
+  /// Big number with a small secondary suffix (letter or «допуск»).
+  Widget _figure(
+    BuildContext context,
+    double value,
+    String suffix, {
+    Key? key,
+  }) {
+    return Text.rich(
+      key: key,
+      TextSpan(
+        children: [
+          TextSpan(
+            text: formatScore(value),
+            style: context.text.headlineLarge!.tabular,
+          ),
+          TextSpan(
+            text: '  $suffix',
+            style: context.text.titleMedium!.copyWith(
+              color: context.palette.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final palette = context.palette;
     final label = courseStatusLabel(l10n, status);
+    final total = this.total;
+    final admission = this.admission;
+    // No total yet, but the admission rating is known: show it as the
+    // headline and say when the total appears.
+    final admissionOnly = total == null && admission != null;
+    // Starts at the column edge, like the row groups below (the list
+    // already provides the side padding).
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+      padding: const EdgeInsets.only(top: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -276,29 +321,34 @@ class _Header extends StatelessWidget {
             spacing: 12,
             runSpacing: 8,
             children: [
-              if (total == null)
-                Text(
-                  l10n.grades_noGrade,
-                  style: context.text.titleMedium!
-                      .copyWith(color: palette.textTertiary),
+              if (total != null)
+                _figure(context, total, letterFor(total).letter)
+              else if (admission != null)
+                _figure(
+                  context,
+                  admission,
+                  l10n.grades_admissionShort,
+                  key: const ValueKey('grades-header-admission'),
                 )
               else
-                Text.rich(
-                  TextSpan(children: [
-                    TextSpan(
-                      text: formatScore(total!),
-                      style: context.text.headlineLarge!.tabular,
-                    ),
-                    TextSpan(
-                      text: '  ${letterFor(total!).letter}',
-                      style: context.text.titleMedium!
-                          .copyWith(color: palette.textSecondary),
-                    ),
-                  ]),
+                Text(
+                  l10n.grades_noGrade,
+                  style: context.text.titleMedium!.copyWith(
+                    color: palette.textTertiary,
+                  ),
                 ),
               if (label != null) StatusLabel(text: label.$1, tone: label.$2),
             ],
           ),
+          if (admissionOnly) ...[
+            const SizedBox(height: 4),
+            Text(
+              l10n.grades_headerTotalAfterFinal,
+              style: context.text.bodySmall!.copyWith(
+                color: palette.textSecondary,
+              ),
+            ),
+          ],
         ],
       ),
     );

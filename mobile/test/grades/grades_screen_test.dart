@@ -7,8 +7,12 @@ import 'package:studyplan/core/database/app_database.dart';
 import 'package:studyplan/core/settings/app_settings.dart';
 import 'package:studyplan/core/theme/app_theme.dart';
 import 'package:studyplan/core/widgets/ui/empty_state.dart';
+import 'package:studyplan/core/widgets/ui/list_row.dart';
+import 'package:studyplan/core/widgets/ui/segmented_toggle.dart';
+import 'package:studyplan/core/widgets/ui/status_label.dart';
 import 'package:studyplan/features/grades/presentation/screens/course_detail_screen.dart';
 import 'package:studyplan/features/grades/presentation/screens/grades_screen.dart';
+import 'package:studyplan/features/grades/presentation/widgets/grades_summary.dart';
 import 'package:studyplan/l10n/generated/app_localizations.dart';
 
 Future<AppDatabase> _pump(
@@ -205,6 +209,94 @@ void main() {
     await tester.tap(find.text('Прошлые семестры'));
     await tester.pumpAndSettle();
     expect(find.text('Old course'), findsOneWidget);
+
+    await _dispose(tester, db);
+  });
+
+  testWidgets('course with admission but no total shows admission in header',
+      (tester) async {
+    final db = await _pump(
+      tester,
+      seed: (db) => _course(db, 'c1', 'Calculus', midterm: 80, endterm: 90),
+    );
+
+    await tester.tap(find.text('Calculus'));
+    await _settle(tester);
+
+    final header = find.byKey(const ValueKey('grades-header-admission'));
+    expect(header, findsOneWidget);
+    final headline = tester.widget<Text>(header).textSpan!.toPlainText();
+    expect(headline, contains('85.0'));
+    expect(headline, contains('допуск'));
+    expect(find.text('Итог появится после финального экзамена'), findsOneWidget);
+    // «нет оценки» is left only for the «Итог» row, not as the headline.
+    expect(find.text('нет оценки'), findsOneWidget);
+
+    // The header starts at the same x as the row groups (no double padding).
+    final title = tester.getTopLeft(find.text('Calculus')).dx;
+    final group = tester.getTopLeft(find.byType(ListGroup).first).dx;
+    expect(title, group);
+
+    await _dispose(tester, db);
+  });
+
+  testWidgets('summary explains «—» and shows unknown scholarship as text',
+      (tester) async {
+    final db = await _pump(
+      tester,
+      seed: (db) => _course(db, 'c1', 'Biology', source: 'lms',
+          classification: 'inprogress'),
+    );
+
+    expect(find.text('нет итоговых оценок'), findsNWidgets(2));
+    expect(find.text('Нет данных'), findsOneWidget);
+    expect(
+      find.ancestor(
+        of: find.text('Нет данных'),
+        matching: find.byType(StatusLabel),
+      ),
+      findsNothing,
+    );
+    // One add action: the app bar «+», no duplicate row in the list.
+    expect(find.byTooltip('Добавить предмет вручную'), findsOneWidget);
+    expect(find.text('Добавить предмет вручную'), findsNothing);
+
+    await _dispose(tester, db);
+  });
+
+  testWidgets('app bar title starts at the content edge at 1280 px',
+      (tester) async {
+    final db = await _pump(
+      tester,
+      size: const Size(1280, 900),
+      seed: (db) => _course(db, 'c1', 'Algebra', total: 80,
+          classification: 'inprogress'),
+    );
+
+    final titleX = tester.getTopLeft(find.text('Оценки')).dx;
+    final contentX = tester.getTopLeft(find.byType(GradesSummary)).dx;
+    expect(contentX, (1280 - 720) / 2);
+    expect(titleX, contentX);
+
+    await _dispose(tester, db);
+  });
+
+  testWidgets('course form is a sheet with the core segmented toggle',
+      (tester) async {
+    final db = await _pump(tester);
+
+    await tester.tap(find.text('Добавить предмет вручную'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('app-sheet-handle')), findsOneWidget);
+    expect(find.byType(SegmentedButton<bool>), findsNothing);
+    expect(find.byType(SegmentedToggle<bool>), findsOneWidget);
+    await tester.tap(find.text('Прошлый'));
+    await tester.pump();
+    final toggle = tester.widget<SegmentedToggle<bool>>(
+      find.byType(SegmentedToggle<bool>),
+    );
+    expect(toggle.value, isTrue);
 
     await _dispose(tester, db);
   });

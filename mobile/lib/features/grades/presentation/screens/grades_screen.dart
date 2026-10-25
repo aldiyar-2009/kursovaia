@@ -3,13 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:studyplan/core/database/app_database.dart';
 import 'package:studyplan/core/theme/app_theme.dart';
 import 'package:studyplan/core/theme/theme_ext.dart';
+import 'package:studyplan/core/widgets/ui/content_column.dart';
 import 'package:studyplan/core/widgets/ui/empty_state.dart';
 import 'package:studyplan/core/widgets/ui/list_row.dart';
 import 'package:studyplan/core/widgets/ui/section_header.dart';
 import 'package:studyplan/features/grades/domain/grade_calculator.dart';
 import 'package:studyplan/features/grades/presentation/grades_presentation.dart';
 import 'package:studyplan/features/grades/presentation/screens/course_detail_screen.dart';
-import 'package:studyplan/features/grades/presentation/screens/course_form_screen.dart';
+import 'package:studyplan/features/grades/presentation/widgets/course_form_sheet.dart';
 import 'package:studyplan/features/grades/presentation/widgets/course_row.dart';
 import 'package:studyplan/features/grades/presentation/widgets/grades_summary.dart';
 
@@ -53,19 +54,19 @@ class _GradesScreenState extends State<GradesScreen> {
   bool get _canImport => !kIsWeb && widget.onImportLms != null;
 
   void _openCourse(LmsCourse course) {
-    Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (_) => CourseDetailScreen(
-        db: widget.db,
-        userId: widget.userId,
-        courseId: course.id,
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => CourseDetailScreen(
+          db: widget.db,
+          userId: widget.userId,
+          courseId: course.id,
+        ),
       ),
-    ));
+    );
   }
 
   void _addManual() {
-    Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (_) => CourseFormScreen(db: widget.db, userId: widget.userId),
-    ));
+    CourseFormSheet.show(context, db: widget.db, userId: widget.userId);
   }
 
   @override
@@ -77,7 +78,7 @@ class _GradesScreenState extends State<GradesScreen> {
         final courses = snapshot.data;
         final hasCourses = courses != null && courses.isNotEmpty;
         return Scaffold(
-          appBar: AppBar(
+          appBar: ContentAppBar(
             title: Text(l10n.grades_title),
             actions: [
               if (hasCourses && _canImport)
@@ -86,20 +87,20 @@ class _GradesScreenState extends State<GradesScreen> {
                   icon: const Icon(Icons.sync_outlined),
                   onPressed: widget.onImportLms,
                 ),
+              // The empty state carries its own add action.
               if (hasCourses)
                 IconButton(
                   tooltip: l10n.grades_addManual,
                   icon: const Icon(Icons.add),
                   onPressed: _addManual,
                 ),
-              const SizedBox(width: 8),
             ],
           ),
           body: courses == null
               ? const SizedBox.shrink()
               : courses.isEmpty
-                  ? _buildEmpty(context)
-                  : _buildList(context, courses),
+              ? _buildEmpty(context)
+              : _buildList(context, courses),
         );
       },
     );
@@ -129,7 +130,6 @@ class _GradesScreenState extends State<GradesScreen> {
 
   Widget _buildList(BuildContext context, List<LmsCourse> courses) {
     final l10n = context.l10n;
-    final palette = context.palette;
     final current = courses.where(isCurrentCourse).toList();
     final past = courses.where((c) => !isCurrentCourse(c)).toList();
     final currentScores = current.map(scoresOf).toList();
@@ -142,59 +142,41 @@ class _GradesScreenState extends State<GradesScreen> {
             imports.reduce((a, b) => a > b ? a : b).toInt(),
           );
 
-    return Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: kGradesMaxWidth),
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-          children: [
-            GradesSummary(
-              average: weightedAverage(currentScores),
-              gpa: gpa(currentScores),
-              scholarship: scholarshipFor(currentScores),
-              lastImport: lastImport,
-            ),
-            _header(l10n.grades_currentSemester),
-            if (current.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Text(
-                  l10n.grades_currentEmpty,
-                  style: context.text.bodySmall,
-                ),
-              )
-            else
-              _CourseGroup(courses: current, onTap: _openCourse),
-            if (past.isNotEmpty) ...[
-              const SizedBox(height: 24),
-              _PastToggle(
-                expanded: _pastExpanded,
-                count: past.length,
-                overallGpa: overallGpa,
-                onTap: () => setState(() => _pastExpanded = !_pastExpanded),
+    return LayoutBuilder(
+      builder: (context, constraints) => ListView(
+        padding: contentPadding(constraints.maxWidth, top: 8, bottom: 32),
+        children: [
+          GradesSummary(
+            average: weightedAverage(currentScores),
+            gpa: gpa(currentScores),
+            scholarship: scholarshipFor(currentScores),
+            lastImport: lastImport,
+          ),
+          _header(l10n.grades_currentSemester),
+          if (current.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Text(
+                l10n.grades_currentEmpty,
+                style: context.text.bodySmall,
               ),
-              if (_pastExpanded) ...[
-                const SizedBox(height: 8),
-                _CourseGroup(courses: past, onTap: _openCourse),
-              ],
-            ],
+            )
+          else
+            _CourseGroup(courses: current, onTap: _openCourse),
+          if (past.isNotEmpty) ...[
             const SizedBox(height: 24),
-            Container(
-              decoration: BoxDecoration(
-                color: palette.surface,
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(color: palette.border),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: ListRow(
-                title: l10n.grades_addManual,
-                leading: const Icon(Icons.add),
-                onTap: _addManual,
-              ),
+            _PastToggle(
+              expanded: _pastExpanded,
+              count: past.length,
+              overallGpa: overallGpa,
+              onTap: () => setState(() => _pastExpanded = !_pastExpanded),
             ),
+            if (_pastExpanded) ...[
+              const SizedBox(height: 8),
+              _CourseGroup(courses: past, onTap: _openCourse),
+            ],
           ],
-        ),
+        ],
       ),
     );
   }

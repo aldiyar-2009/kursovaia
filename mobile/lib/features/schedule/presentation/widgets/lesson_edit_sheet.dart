@@ -7,9 +7,10 @@ import 'package:studyplan/core/database/subject_dao.dart';
 import 'package:studyplan/core/theme/app_theme.dart';
 import 'package:studyplan/core/theme/theme_ext.dart';
 import 'package:studyplan/core/utils/uuid_util.dart';
+import 'package:studyplan/core/widgets/ui/app_sheet.dart';
 import 'package:studyplan/core/widgets/ui/app_text_field.dart';
 import 'package:studyplan/features/schedule/domain/schedule_rules.dart';
-import 'package:studyplan/features/schedule/presentation/widgets/segmented_toggle.dart';
+import 'package:studyplan/core/widgets/ui/segmented_toggle.dart';
 
 enum _Repeat { every, even, odd, once }
 
@@ -42,11 +43,8 @@ class LessonEditSheet extends StatefulWidget {
     required DateTime initialDate,
     Lesson? lesson,
   }) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      constraints: const BoxConstraints(maxWidth: 560),
+    return showAppSheetCustom<void>(
+      context,
       builder: (_) => LessonEditSheet(
         db: db,
         userId: userId,
@@ -146,6 +144,8 @@ class _LessonEditSheetState extends State<LessonEditSheet> {
     final picked = await showTimePicker(
       context: context,
       initialTime: start ? _start : _end,
+      // Typed 24-hour input: the dial's numbers overlap on small windows.
+      initialEntryMode: TimePickerEntryMode.input,
       builder: (ctx, child) => MediaQuery(
         data: MediaQuery.of(ctx).copyWith(alwaysUse24HourFormat: true),
         child: child!,
@@ -199,13 +199,15 @@ class _LessonEditSheetState extends State<LessonEditSheet> {
       var subjectId = _subjectId;
       if (_creatingSubject) {
         subjectId = UuidUtil.generate();
-        await _subjectDao.insertSubject(SubjectsCompanion(
-          id: Value(subjectId),
-          userId: Value(widget.userId),
-          title: Value(newTitle),
-          updatedAt: now,
-          syncStatus: const Value('pending_create'),
-        ));
+        await _subjectDao.insertSubject(
+          SubjectsCompanion(
+            id: Value(subjectId),
+            userId: Value(widget.userId),
+            title: Value(newTitle),
+            updatedAt: now,
+            syncStatus: const Value('pending_create'),
+          ),
+        );
       }
       final once = _repeat == _Repeat.once;
       final room = _roomCtrl.text.trim();
@@ -226,11 +228,13 @@ class _LessonEditSheetState extends State<LessonEditSheet> {
       );
       final existing = widget.lesson;
       if (existing == null) {
-        await _lessonDao.insertLesson(fields.copyWith(
-          id: Value(UuidUtil.generate()),
-          userId: Value(widget.userId),
-          syncStatus: const Value('pending_create'),
-        ));
+        await _lessonDao.insertLesson(
+          fields.copyWith(
+            id: Value(UuidUtil.generate()),
+            userId: Value(widget.userId),
+            syncStatus: const Value('pending_create'),
+          ),
+        );
       } else {
         final status = existing.syncStatus == 'pending_create'
             ? 'pending_create'
@@ -281,154 +285,131 @@ class _LessonEditSheetState extends State<LessonEditSheet> {
     // Any Monday: only used to get localized weekday names.
     final monday = DateTime(2026, 1, 5);
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+    return AppSheetLayout(
+      title: _isEdit ? l10n.schedule_editLesson : l10n.schedule_addLesson,
+      primaryAction: FilledButton(
+        onPressed: _saving || _subjects == null ? null : _save,
+        child: Text(l10n.common_save),
+      ),
+      body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    _isEdit ? l10n.schedule_editLesson : l10n.schedule_addLesson,
-                    style: context.text.titleMedium,
-                  ),
-                ),
-                IconButton(
-                  tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close),
-                ),
-              ],
-            ),
+          _Label(l10n.schedule_fieldSubject),
+          _subjectField(context),
+          const SizedBox(height: 20),
+          _Label(l10n.schedule_fieldWeek),
+          SegmentedToggle<_Repeat>(
+            expand: true,
+            segments: [
+              (_Repeat.every, l10n.schedule_weekEvery),
+              (_Repeat.even, l10n.schedule_weekEven),
+              (_Repeat.odd, l10n.schedule_weekOdd),
+              (_Repeat.once, l10n.schedule_weekOnce),
+            ],
+            value: _repeat,
+            onChanged: (v) => setState(() => _repeat = v),
           ),
-          Flexible(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _Label(l10n.schedule_fieldSubject),
-                  _subjectField(context),
-                  const SizedBox(height: 20),
-                  _Label(l10n.schedule_fieldWeek),
-                  SegmentedToggle<_Repeat>(
-                    segments: [
-                      (_Repeat.every, l10n.schedule_weekEvery),
-                      (_Repeat.even, l10n.schedule_weekEven),
-                      (_Repeat.odd, l10n.schedule_weekOdd),
-                      (_Repeat.once, l10n.schedule_weekOnce),
-                    ],
-                    selected: _repeat,
-                    onChanged: (v) => setState(() => _repeat = v),
-                  ),
-                  const SizedBox(height: 20),
-                  if (_repeat == _Repeat.once) ...[
-                    _Label(l10n.schedule_fieldDate),
-                    _PickerField(
-                      value: _capitalize(
-                        DateFormat('EEEE, d MMMM y', locale).format(_date),
+          const SizedBox(height: 20),
+          if (_repeat == _Repeat.once) ...[
+            _Label(l10n.schedule_fieldDate),
+            _PickerField(
+              value: _capitalize(
+                DateFormat('EEEE, d MMMM y', locale).format(_date),
+              ),
+              onTap: _pickDate,
+              icon: Icons.calendar_today_outlined,
+            ),
+          ] else ...[
+            _Label(l10n.schedule_fieldDay),
+            SegmentedToggle<int>(
+              expand: true,
+              height: 40,
+              segments: [
+                for (var i = 0; i < 7; i++)
+                  (
+                    i + 1,
+                    _capitalize(
+                      weekdayFmt.format(
+                        DateTime(monday.year, monday.month, monday.day + i),
                       ),
-                      onTap: _pickDate,
-                      icon: Icons.calendar_today_outlined,
                     ),
-                  ] else ...[
-                    _Label(l10n.schedule_fieldDay),
-                    SegmentedToggle<int>(
-                      height: 40,
-                      segments: [
-                        for (var i = 0; i < 7; i++)
-                          (
-                            i + 1,
-                            _capitalize(weekdayFmt.format(
-                              DateTime(monday.year, monday.month, monday.day + i),
-                            )),
-                          ),
-                      ],
-                      selected: _weekday,
-                      onChanged: (v) => setState(() => _weekday = v),
+                  ),
+              ],
+              value: _weekday,
+              onChanged: (v) => setState(() => _weekday = v),
+            ),
+          ],
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _Label(l10n.schedule_fieldStart),
+                    _PickerField(
+                      value: hhmm(_toMinutes(_start)),
+                      tabular: true,
+                      onTap: () => _pickTime(start: true),
+                      icon: Icons.schedule_outlined,
                     ),
                   ],
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _Label(l10n.schedule_fieldStart),
-                            _PickerField(
-                              value: hhmm(_toMinutes(_start)),
-                              tabular: true,
-                              onTap: () => _pickTime(start: true),
-                              icon: Icons.schedule_outlined,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _Label(l10n.schedule_fieldEnd),
-                            _PickerField(
-                              value: hhmm(_toMinutes(_end)),
-                              tabular: true,
-                              error: _timeError != null,
-                              onTap: () => _pickTime(start: false),
-                              icon: Icons.schedule_outlined,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (_timeError != null) _ErrorText(_timeError!),
-                  const SizedBox(height: 20),
-                  _Label(l10n.schedule_fieldType),
-                  SegmentedToggle<String>(
-                    segments: [
-                      ('lecture', l10n.schedule_typeLecture),
-                      ('practice', l10n.schedule_typePractice),
-                      ('lab', l10n.schedule_typeLabShort),
-                    ],
-                    selected: _type,
-                    onChanged: (v) => setState(() => _type = v),
-                  ),
-                  const SizedBox(height: 20),
-                  AppTextField(
-                    controller: _roomCtrl,
-                    label: l10n.schedule_fieldRoom,
-                    hint: l10n.schedule_roomHint,
-                    textInputAction: TextInputAction.done,
-                  ),
-                ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _Label(l10n.schedule_fieldEnd),
+                    _PickerField(
+                      value: hhmm(_toMinutes(_end)),
+                      tabular: true,
+                      error: _timeError != null,
+                      onTap: () => _pickTime(start: false),
+                      icon: Icons.schedule_outlined,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (_timeError != null) _ErrorText(_timeError!),
+          const SizedBox(height: 20),
+          _Label(l10n.schedule_fieldType),
+          SegmentedToggle<String>(
+            expand: true,
+            segments: [
+              ('lecture', l10n.schedule_typeLecture),
+              ('practice', l10n.schedule_typePractice),
+              ('lab', l10n.schedule_typeLabShort),
+            ],
+            value: _type,
+            onChanged: (v) => setState(() => _type = v),
+          ),
+          const SizedBox(height: 20),
+          AppTextField(
+            controller: _roomCtrl,
+            label: l10n.schedule_fieldRoom,
+            hint: l10n.schedule_roomHint,
+            textInputAction: TextInputAction.done,
+          ),
+          if (_isEdit) ...[
+            const SizedBox(height: 16),
+            // Destructive action stays in the body; the pinned
+            // button is only for saving.
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: _saving ? null : _delete,
+                style: TextButton.styleFrom(
+                  foregroundColor: p.danger,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+                child: Text(l10n.schedule_deleteLesson),
               ),
             ),
-          ),
-          const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-            child: Row(
-              children: [
-                if (_isEdit)
-                  TextButton(
-                    onPressed: _saving ? null : _delete,
-                    style: TextButton.styleFrom(foregroundColor: p.danger),
-                    child: Text(l10n.schedule_deleteLesson),
-                  ),
-                const Spacer(),
-                FilledButton(
-                  onPressed: _saving || _subjects == null ? null : _save,
-                  child: Text(l10n.common_save),
-                ),
-              ],
-            ),
-          ),
+          ],
         ],
       ),
     );
@@ -474,8 +455,9 @@ class _LessonEditSheetState extends State<LessonEditSheet> {
               value: _newSubjectValue,
               child: Text(
                 l10n.schedule_subjectNew,
-                style: context.text.bodyMedium!
-                    .copyWith(color: context.palette.textSecondary),
+                style: context.text.bodyMedium!.copyWith(
+                  color: context.palette.textSecondary,
+                ),
               ),
             ),
           ],
@@ -489,10 +471,7 @@ class _LessonEditSheetState extends State<LessonEditSheet> {
             }
           }),
         ),
-        if (_creatingSubject) ...[
-          const SizedBox(height: 8),
-          newField,
-        ],
+        if (_creatingSubject) ...[const SizedBox(height: 8), newField],
       ],
     );
   }
@@ -514,8 +493,9 @@ class _Label extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 6),
       child: Text(
         text,
-        style: context.text.labelMedium!
-            .copyWith(color: context.palette.textSecondary),
+        style: context.text.labelMedium!.copyWith(
+          color: context.palette.textSecondary,
+        ),
       ),
     );
   }

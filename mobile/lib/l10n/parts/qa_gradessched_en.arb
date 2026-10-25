@@ -1,0 +1,5 @@
+{
+  "@@locale": "en",
+  "grades_summaryNoTotals": "no final grades yet",
+  "grades_headerTotalAfterFinal": "Total will appear after the final exam"
+}
