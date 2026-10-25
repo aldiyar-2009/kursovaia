@@ -11,6 +11,49 @@ import 'lms_webview_common.dart';
 bool get isLmsImportSupported =>
     Platform.isAndroid || Platform.isIOS || Platform.isWindows;
 
+/// Hosts whose cookies make up the LMS sign-in of the embedded browser.
+const _sessionHosts = [kLmsHost, 'login.microsoftonline.com'];
+
+/// Forgets the LMS / Microsoft sign-in of the embedded browser (called on
+/// logout of the app): deletes the cookies of [_sessionHosts] and, where the
+/// platform allows it, the web storage of those origins. Other sites are not
+/// touched. Never throws; a platform without an API simply skips that step.
+Future<void> clearLmsWebSession() async {
+  final cookies = CookieManager.instance();
+  for (final host in _sessionHosts) {
+    try {
+      await cookies.deleteCookies(url: WebUri('https://$host'));
+    } catch (_) {}
+    try {
+      // Cookies set for the parent domain (e.g. `.astanait.edu.kz`) too.
+      await cookies.deleteCookies(url: WebUri('https://$host'), domain: host);
+    } catch (_) {}
+  }
+  try {
+    final storage = WebStorageManager.instance();
+    if (Platform.isAndroid) {
+      for (final host in _sessionHosts) {
+        await storage.deleteOrigin(origin: 'https://$host');
+      }
+    } else if (Platform.isIOS) {
+      final records = await storage.fetchDataRecords(
+        dataTypes: WebsiteDataType.ALL,
+      );
+      // WebKit groups records by registrable domain (`astanait.edu.kz`).
+      final mine = records.where((r) {
+        final name = r.displayName ?? '';
+        return name.isNotEmpty && _sessionHosts.any((h) => h.endsWith(name));
+      }).toList();
+      if (mine.isNotEmpty) {
+        await storage.removeDataFor(
+          dataTypes: WebsiteDataType.ALL,
+          dataRecords: mine,
+        );
+      }
+    }
+  } catch (_) {}
+}
+
 /// Embedded browser for the Microsoft sign-in and the in-page import.
 ///
 /// The app never touches the login form, never reads cookies and never

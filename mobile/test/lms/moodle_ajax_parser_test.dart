@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:studyplan/features/lms/data/lms_models.dart';
 import 'package:studyplan/features/lms/data/moodle_ajax_parser.dart';
+import 'package:studyplan/features/lms/data/moodle_html_parser.dart'
+    show applyCourseGradeReport;
 import 'package:studyplan/features/lms/data/moodle_page_script.dart';
 
 String fixture(String name) =>
@@ -426,6 +428,234 @@ void main() {
       ]) {
         expect(r.errors[k], isNotNull, reason: k);
       }
+    });
+  });
+
+  group('grade normalisation', () {
+    const base = LmsCourseData(lmsCourseId: 1, title: 'C');
+
+    Map<String, dynamic> items(List<Map<String, dynamic>> rows) => {
+      'usergrades': [
+        {'gradeitems': rows},
+      ],
+    };
+
+    test('graderaw is scaled to percent by grademin/grademax', () {
+      final c = applyGradeItems(
+        base,
+        items([
+          {
+            'itemname': 'Register Midterm',
+            'itemtype': 'manual',
+            'graderaw': 30.0,
+            'grademin': 0,
+            'grademax': 40,
+          },
+          {
+            'itemname': 'Register Endterm',
+            'itemtype': 'manual',
+            'graderaw': 15.0,
+            'grademin': 10,
+            'grademax': 20,
+          },
+          {
+            'itemtype': 'course',
+            'graderaw': 150.0,
+            'grademin': 0,
+            'grademax': 200,
+          },
+        ]),
+      );
+      expect(c.midterm, 75.0);
+      expect(c.endterm, 50.0);
+      expect(c.total, 75.0);
+    });
+
+    test('percentageformatted is preferred when parseable', () {
+      final c = applyGradeItems(
+        base,
+        items([
+          {
+            'itemname': 'Register Midterm',
+            'itemtype': 'manual',
+            'graderaw': 30.0,
+            'grademax': 40,
+            'percentageformatted': '62,50 %',
+          },
+          {
+            'itemname': 'Register Endterm',
+            'itemtype': 'manual',
+            'graderaw': 30.0,
+            'grademax': 40,
+            'percentageformatted': '-',
+          },
+        ]),
+      );
+      expect(c.midterm, 62.5);
+      expect(c.endterm, 75.0);
+    });
+
+    test('scores are clamped to 0..100, non-finite becomes null', () {
+      final c = applyGradeItems(
+        base,
+        items([
+          {
+            'itemname': 'Register Midterm',
+            'itemtype': 'manual',
+            'graderaw': 130.0,
+            'grademax': 100,
+          },
+          {
+            'itemname': 'Register Endterm',
+            'itemtype': 'manual',
+            'graderaw': -5.0,
+            'grademax': 100,
+          },
+          {
+            'itemname': 'Final exam',
+            'itemtype': 'manual',
+            'graderaw': double.nan,
+            'grademax': 100,
+          },
+          {'itemtype': 'course', 'graderaw': 250.0, 'grademax': 100},
+        ]),
+      );
+      expect(c.midterm, 100.0);
+      expect(c.endterm, 0.0);
+      expect(c.finalExam, isNull);
+      expect(c.total, 100.0);
+    });
+
+    test('HTML report: grade with a 0–40 range is scaled to percent', () {
+      const html = '''
+<table class="user-grade"><tbody>
+<tr><th class="column-itemname"><span class="gradeitemheader">Register Midterm</span></th>
+<td class="column-grade">30,00</td><td class="column-range">0&ndash;40</td></tr>
+<tr><th class="column-itemname"><span class="gradeitemheader">Register Endterm</span></th>
+<td class="column-grade">90,00</td><td class="column-range">0&ndash;100</td></tr>
+<tr><th class="column-itemname courseitem"><span class="gradeitemheader">Course total</span></th>
+<td class="column-grade">60,00</td><td class="column-range">0-120</td></tr>
+</tbody></table>''';
+      final c = applyCourseGradeReport(base, html);
+      expect(c.midterm, 75.0);
+      expect(c.endterm, 90.0);
+      expect(c.total, 50.0);
+    });
+  });
+
+  group('partial imports', () {
+    Map<String, dynamic> input({
+      required Map<String, dynamic> courses,
+      Object? overview,
+      Map<String, dynamic> contents = const {},
+      Map<String, dynamic> contentPages = const {},
+      Map<String, dynamic> gradeItems = const {},
+    }) => {
+      'ajax': {
+        'courses': courses,
+        'deadlines': ok(_actionEvents),
+        'calendar': [ok(_monthly)],
+        'contents': contents,
+        'gradeItems': gradeItems,
+      },
+      'html': {
+        'overview': overview ?? err('HTTP 500'),
+        'profile': ok(fixture('profile.html')),
+        'contents': contentPages,
+        'gradeReports': <String, dynamic>{},
+      },
+    };
+
+    test('one failed classification without HTML cover -> courses and '
+        'materials errors', () {
+      final r = buildImportResult(
+        input(
+          courses: {'inprogress': ok(_enrolled), 'past': err('HTTP 500')},
+          contents: {'2543': ok(_contents), '2614': ok(<Object>[])},
+        ),
+      );
+      expect(r.errors['courses'], isNotNull);
+      expect(r.errors['materials'], isNotNull);
+      expect(r.courses, hasLength(2));
+    });
+
+    test('missing classification counts as failed', () {
+      final r = buildImportResult(
+        input(courses: {'inprogress': ok(_enrolled)}),
+      );
+      expect(r.errors['courses'], isNotNull);
+    });
+
+    test('failed classification covered by the overview -> no error; '
+        'the rest of the overview is classified', () {
+      final r = buildImportResult(
+        input(
+          courses: {'inprogress': ok(_enrolled), 'past': err('HTTP 500')},
+          overview: ok(fixture('grades_overview.html')),
+          contents: {'2543': ok(_contents), '2614': ok(<Object>[])},
+        ),
+      );
+      expect(r.errors.containsKey('courses'), isFalse);
+      expect(r.errors.containsKey('materials'), isFalse);
+      expect(r.courses, hasLength(6));
+      final byId = {for (final c in r.courses) c.lmsCourseId: c};
+      expect(byId[2543]!.classification, 'inprogress');
+      expect(byId[2752]!.classification, 'past');
+    });
+
+    test('HTML-only courses (all AJAX failed) are treated as inprogress', () {
+      final r = buildImportResult(
+        input(
+          courses: {'inprogress': err('denied'), 'past': err('denied')},
+          overview: ok(fixture('grades_overview.html')),
+        ),
+      );
+      expect(r.errors.containsKey('courses'), isFalse);
+      expect(r.courses, hasLength(6));
+      expect(r.courses.every((c) => c.classification == 'inprogress'), isTrue);
+    });
+
+    test('empty course list -> materials error (nothing to scope by)', () {
+      final r = buildImportResult(
+        input(
+          courses: {
+            'inprogress': ok({'courses': []}),
+            'past': ok({'courses': []}),
+          },
+        ),
+      );
+      expect(r.errors.containsKey('courses'), isFalse);
+      expect(r.errors['materials'], isNotNull);
+    });
+
+    test('materialCourseIds lists only courses whose contents loaded', () {
+      final r = buildImportResult(
+        input(
+          courses: {
+            'inprogress': ok(_enrolled),
+            'past': ok({'courses': []}),
+          },
+          contents: {'2543': ok(_contents), '2614': err('denied')},
+          contentPages: {'2614': err('HTTP 500')},
+        ),
+      );
+      expect(r.materialCourseIds, {2543});
+      expect(r.errors['materials'], isNotNull);
+    });
+
+    test('per-course grade failure is reported in failedGradeCourseIds', () {
+      final r = buildImportResult(
+        input(
+          courses: {
+            'inprogress': ok(_enrolled),
+            'past': ok({'courses': []}),
+          },
+          contents: {'2543': ok(_contents), '2614': ok(<Object>[])},
+          gradeItems: {'2543': ok(_gradeItems()), '2614': err('nope')},
+        ),
+      );
+      expect(r.failedGradeCourseIds, {2614});
+      expect(r.errors.containsKey('grades'), isFalse);
     });
   });
 

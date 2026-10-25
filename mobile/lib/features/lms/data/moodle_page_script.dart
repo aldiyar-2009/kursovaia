@@ -130,14 +130,24 @@ async function studyplanImport(sinceSec, untilSec) {
   var pages = await Promise.all([page('/grade/report/overview/index.php'), page('/user/profile.php')]);
   out.html.overview = pages[0];
   out.html.profile = pages[1];
-  if (allIds.length === 0 && pages[0].data) {
+  // A failed classification is covered by the overview (it lists every
+  // enrolled course); when `inprogress` failed, overview courses that are
+  // not known as past count as current (same rule as buildImportResult).
+  var inprogressFailed = !!courseResults[0].error;
+  var anyCourseFailed = courseResults.some(function (r) { return r.error; });
+  if (anyCourseFailed && pages[0].data) {
+    var pastIds = (courseResults[1].data && courseResults[1].data.courses || [])
+        .map(function (c) { return c.id; });
     var re = /course\/user\.php\?mode=grade&(?:amp;)?id=(\d+)/g;
     var m;
     while ((m = re.exec(pages[0].data)) !== null) {
       var id = parseInt(m[1], 10);
-      if (allIds.indexOf(id) < 0) allIds.push(id);
+      if (allIds.indexOf(id) < 0) {
+        allIds.push(id);
+        if (inprogressFailed && pastIds.indexOf(id) < 0 &&
+            currentIds.indexOf(id) < 0) currentIds.push(id);
+      }
     }
-    currentIds = allIds.slice();
   }
 
   // Deadlines: core_calendar_get_action_events_by_timesort (paged by 50).

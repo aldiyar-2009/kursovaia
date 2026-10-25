@@ -124,7 +124,7 @@ List<LmsCourseData> parseGradesOverview(String html) {
         lmsCourseId: id,
         title: title,
         teacherName: teacher,
-        total: parseMoodleScore(gradeText),
+        total: clampPercent(parseMoodleScore(gradeText)),
       ),
     );
   }
@@ -146,9 +146,26 @@ final _courseTotalRe = RegExp(
   caseSensitive: false,
 );
 
+final _unsignedNumberRe = RegExp(r'\d+(?:[.,]\d+)?');
+
+/// Parses a Moodle range cell (`"0–40"`, `"0-100"`, `"0,00–40,00"`) into
+/// `(min, max)`; `(null, null)` when it does not hold two numbers.
+(double?, double?) parseMoodleRange(String raw) {
+  final nums = _unsignedNumberRe
+      .allMatches(raw)
+      .map((m) => double.tryParse(m.group(0)!.replaceAll(',', '.')))
+      .toList();
+  if (nums.length < 2 || nums[0] == null || nums[1] == null) {
+    return (null, null);
+  }
+  return (nums[0], nums[1]);
+}
+
 /// Parses the user grade report of one course
 /// (`/course/user.php?mode=grade&id=N`, table `.user-grade`) and fills
 /// midterm / endterm / final / total and `gradeItemsJson` on [base].
+/// Scores become percent: the «Проценты» column when present, else the grade
+/// scaled by the range cell (e.g. `30` of `0–40` → 75).
 /// Name matching and the «нет оценки» rule: see [applyGradeItemList].
 /// Returns [base] unchanged when the page has no grade table.
 LmsCourseData applyCourseGradeReport(LmsCourseData base, String html) {
@@ -162,7 +179,15 @@ LmsCourseData applyCourseGradeReport(LmsCourseData base, String html) {
     final header = nameCell.querySelector('.gradeitemheader');
     final name = _visibleText(header ?? nameCell);
     if (name.isEmpty) continue;
-    final grade = parseMoodleScore(_visibleText(gradeCell));
+    final range = _visibleText(row.querySelector('td.column-range'));
+    final (min, max) = parseMoodleRange(range);
+    final grade =
+        parseMoodleScore(_visibleText(row.querySelector('td.column-percentage'))) ??
+        gradeToPercent(
+          parseMoodleScore(_visibleText(gradeCell)),
+          min: min,
+          max: max,
+        );
     final isCourseTotal =
         nameCell.classes.contains('courseitem') ||
         row.classes.contains('courseitem') ||
@@ -171,7 +196,6 @@ LmsCourseData applyCourseGradeReport(LmsCourseData base, String html) {
       courseTotal = grade;
       continue;
     }
-    final range = _visibleText(row.querySelector('td.column-range'));
     items.add(
       LmsGradeItem(
         name: name,

@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:studyplan/core/database/app_database.dart';
 import 'package:studyplan/core/settings/app_settings.dart';
 import 'package:studyplan/core/theme/app_theme.dart';
@@ -24,6 +27,21 @@ Widget _app(Widget home, {ThemeData? theme}) => MaterialApp(
       ],
       home: home,
     );
+
+class _FakeController implements LmsWebViewController {
+  _FakeController(this.output);
+
+  final String output;
+
+  @override
+  Future<bool> hasSesskey() async => true;
+
+  @override
+  Future<String> runImport({
+    required int sinceSec,
+    required int untilSec,
+  }) async => output;
+}
 
 void main() {
   test('web stub reports the import as unsupported', () {
@@ -59,6 +77,64 @@ void main() {
               .millisecondsSinceEpoch ~/
           1000,
     );
+  });
+
+  group('runLmsImport', () {
+    final output = jsonEncode({
+      'ajax': {
+        'courses': {
+          'inprogress': {
+            'data': {
+              'courses': [
+                {'id': 7, 'fullname': 'Algebra | T'},
+              ],
+            },
+          },
+          'past': {
+            'data': {'courses': []},
+          },
+        },
+      },
+      'html': {},
+    });
+
+    setUp(() => SharedPreferences.setMockInitialValues({}));
+
+    test('awaits beforeApply before writing to the database', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final log = <String>[];
+      final summary = await runLmsImport(
+        _FakeController(output),
+        db: db,
+        userId: 'u1',
+        now: DateTime(2026, 10, 26),
+        beforeApply: () async {
+          final rows = await db.select(db.lmsCourses).get();
+          log.add('before:${rows.length}');
+        },
+      );
+      expect(log, ['before:0']);
+      expect(summary.courses, 1);
+      expect(await db.select(db.lmsCourses).get(), hasLength(1));
+    });
+
+    test('a failing beforeApply (offline) does not stop the import', () async {
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final summary = await runLmsImport(
+        _FakeController(output),
+        db: db,
+        userId: 'u1',
+        now: DateTime(2026, 10, 26),
+        beforeApply: () async => throw Exception('offline'),
+      );
+      expect(summary.courses, 1);
+    });
+  });
+
+  test('stub clearLmsWebSession completes', () async {
+    await stub.clearLmsWebSession();
   });
 
   testWidgets('intro step shows the privacy sentence and the sign-in button',

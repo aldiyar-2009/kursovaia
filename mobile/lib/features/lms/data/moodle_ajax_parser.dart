@@ -198,6 +198,10 @@ String _num(double v) =>
 /// The `itemtype == 'course'` row is the course total; every other row is an
 /// item. Same name matching and «нет оценки» rule as the HTML report
 /// ([applyGradeItemList]).
+///
+/// Scores are stored as percent: `percentageformatted` when parseable, else
+/// `graderaw` (or `gradeformatted`) scaled by `grademin`/`grademax`
+/// ([gradeToPercent]); everything is clamped to 0..100.
 LmsCourseData applyGradeItems(LmsCourseData base, Object? json) {
   if (json is! Map) return base;
   final users = _maps(json['usergrades']);
@@ -205,9 +209,16 @@ LmsCourseData applyGradeItems(LmsCourseData base, Object? json) {
   final items = <LmsGradeItem>[];
   double? courseTotal;
   for (final g in _maps(users.first['gradeitems'])) {
+    final min = _double(g['grademin']);
+    final max = _double(g['grademax']);
     final grade =
-        _double(g['graderaw']) ??
-        html.parseMoodleScore(_plain(g['gradeformatted']));
+        html.parseMoodleScore(_plain(g['percentageformatted'])) ??
+        gradeToPercent(
+          _double(g['graderaw']) ??
+              html.parseMoodleScore(_plain(g['gradeformatted'])),
+          min: min,
+          max: max,
+        );
     if (g['itemtype'] == 'course') {
       courseTotal = grade;
       continue;
@@ -215,8 +226,6 @@ LmsCourseData applyGradeItems(LmsCourseData base, Object? json) {
     final name = _plain(g['itemname']);
     if (name.isEmpty) continue;
     var range = _plain(g['rangeformatted']);
-    final min = _double(g['grademin']);
-    final max = _double(g['grademax']);
     if (range.isEmpty && min != null && max != null) {
       range = '${_num(min)}–${_num(max)}';
     }
@@ -228,6 +237,10 @@ LmsCourseData applyGradeItems(LmsCourseData base, Object? json) {
 // ---------------------------------------------------------------------------
 // Result builder
 // ---------------------------------------------------------------------------
+
+/// Course classifications requested by `kMoodleImportScript`; each must load
+/// (or be covered by the grade overview) for the course list to be complete.
+const kRequiredCourseClassifications = ['inprogress', 'past'];
 
 /// One `{data: …}` / `{error: "…"}` entry produced by `kMoodleImportScript`.
 class _Entry {
@@ -264,17 +277,22 @@ String _firstError(Iterable<_Entry> entries) =>
 /// that fails both ways gets a message in `errors` and the other kinds are
 /// still filled. Never throws.
 ///
-/// * `courses` — AJAX enrolled courses (`inprogress` + `past`) else the grade
-///   overview page. Missing both → `errors['courses']` (the importer must then
-///   not delete anything).
+/// * `courses` — AJAX enrolled courses ([kRequiredCourseClassifications]).
+///   When any of them failed, the grade overview page fills the gap (its
+///   courses get the failed classification, `inprogress` when that one
+///   failed); when the overview is unavailable too, the list is incomplete →
+///   `errors['courses']` (the importer then deletes no course) and
+///   `errors['materials']`.
 /// * `grades` — per course: AJAX grade items, else the HTML course report,
-///   else the overview total. `errors['grades']` only when no grade source
-///   worked at all.
+///   else the overview total. Courses with neither report are listed in
+///   `failedGradeCourseIds` (the importer keeps their stored scores).
+///   `errors['grades']` only when no grade source worked at all.
 /// * `deadlines` — AJAX action events, else deadlines of the HTML month pages.
 /// * `classes` — attendance sessions of the AJAX monthly views, else of the
 ///   HTML month pages (no times there).
-/// * `materials` — AJAX course contents, else the HTML course page; any course
-///   failing both ways → `errors['materials']`.
+/// * `materials` — AJAX course contents, else the HTML course page; courses
+///   that loaded go to `materialCourseIds`. Any course failing both ways, an
+///   incomplete or empty course list → `errors['materials']`.
 /// * `profile` — HTML profile page.
 LmsImportResult buildImportResult(Map<String, dynamic> scriptOutput) {
   final errors = <String, String>{};
@@ -284,12 +302,21 @@ LmsImportResult buildImportResult(Map<String, dynamic> scriptOutput) {
   // ---- courses ----
   final courseEntries = _map(ajax['courses']);
   final courses = <int, LmsCourseData>{};
-  var ajaxCoursesOk = false;
-  for (final cls in ['inprogress', 'past', 'future']) {
+  final failedClasses = <String>[];
+  for (final cls in kRequiredCourseClassifications) {
     final e = _Entry(courseEntries[cls]);
-    if (!courseEntries.containsKey(cls) || !e.ok) continue;
-    ajaxCoursesOk = true;
+    if (!e.ok) {
+      failedClasses.add(cls);
+      continue;
+    }
     for (final c in parseEnrolledCourses(e.data, classification: cls)) {
+      courses.putIfAbsent(c.lmsCourseId, () => c);
+    }
+  }
+  // Optional extra classification (not requested by the script today).
+  final future = _Entry(courseEntries['future']);
+  if (future.ok) {
+    for (final c in parseEnrolledCourses(future.data, classification: 'future')) {
       courses.putIfAbsent(c.lmsCourseId, () => c);
     }
   }
@@ -298,14 +325,30 @@ LmsImportResult buildImportResult(Map<String, dynamic> scriptOutput) {
       ? const <LmsCourseData>[]
       : html.parseGradesOverview(overview.text!);
   final overviewById = {for (final c in overviewCourses) c.lmsCourseId: c};
-  if (!ajaxCoursesOk) {
-    for (final c in overviewCourses) {
-      courses[c.lmsCourseId] = c;
+  var coursesComplete = true;
+  if (failedClasses.isNotEmpty) {
+    // The overview lists every enrolled course, so it covers any failed
+    // classification. Courses it adds get the classification that failed:
+    // when both failed (or only `inprogress`), they are current courses.
+    final fillClass = failedClasses.contains('inprogress')
+        ? 'inprogress'
+        : failedClasses.first;
+    if (overviewCourses.isEmpty) {
+      coursesComplete = false;
+    } else {
+      for (final c in overviewCourses) {
+        courses.putIfAbsent(
+          c.lmsCourseId,
+          () => c.classification == null
+              ? c.copyWith(classification: fillClass)
+              : c,
+        );
+      }
     }
   }
-  if (courses.isEmpty && !ajaxCoursesOk && overviewCourses.isEmpty) {
+  if (!coursesComplete) {
     errors['courses'] = _firstError([
-      ...courseEntries.values.map(_Entry.new),
+      for (final cls in failedClasses) _Entry(courseEntries[cls]),
       overview,
     ]);
   }
@@ -315,6 +358,7 @@ LmsImportResult buildImportResult(Map<String, dynamic> scriptOutput) {
   final gradeReports = _map(pages['gradeReports']);
   var anyGradeSource = overview.text != null;
   final gradeFailures = <_Entry>[overview];
+  final failedGradeIds = <int>{};
   for (final id in courses.keys.toList()) {
     var c = courses[id]!;
     final fromOverview = overviewById[id];
@@ -330,6 +374,7 @@ LmsImportResult buildImportResult(Map<String, dynamic> scriptOutput) {
       c = html.applyCourseGradeReport(c, reportEntry.text!);
       anyGradeSource = true;
     } else {
+      failedGradeIds.add(id);
       gradeFailures
         ..add(itemsEntry)
         ..add(reportEntry);
@@ -390,6 +435,7 @@ LmsImportResult buildImportResult(Map<String, dynamic> scriptOutput) {
   final contents = _map(ajax['contents']);
   final contentPages = _map(pages['contents']);
   final materials = <LmsMaterialData>[];
+  final materialCourseIds = <int>{};
   final failedCourses = <String>[];
   final materialFailures = <_Entry>[];
   for (final key in {...contents.keys, ...contentPages.keys}) {
@@ -400,8 +446,10 @@ LmsImportResult buildImportResult(Map<String, dynamic> scriptOutput) {
     final p = _Entry(contentPages[key]);
     if (a.ok) {
       materials.addAll(parseCourseContents(a.data, id, title));
+      materialCourseIds.add(id);
     } else if (p.text != null) {
       materials.addAll(html.parseCourseContents(p.text!, id, title));
+      materialCourseIds.add(id);
     } else {
       failedCourses.add(title.isEmpty ? key : title);
       materialFailures
@@ -413,6 +461,10 @@ LmsImportResult buildImportResult(Map<String, dynamic> scriptOutput) {
     final reason = _firstError(materialFailures);
     final courseList = failedCourses.join(', ');
     errors['materials'] = reason.isEmpty ? courseList : '$reason: $courseList';
+  } else if (!coursesComplete || courses.isEmpty) {
+    // Without a complete course list the set of courses whose materials were
+    // requested is unknown: report it so the importer deletes nothing.
+    errors['materials'] = errors['courses'] ?? '';
   }
 
   // ---- profile ----
@@ -432,5 +484,7 @@ LmsImportResult buildImportResult(Map<String, dynamic> scriptOutput) {
     materials: materials,
     profile: profile,
     errors: errors,
+    failedGradeCourseIds: failedGradeIds,
+    materialCourseIds: materialCourseIds,
   );
 }
