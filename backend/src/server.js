@@ -11,12 +11,6 @@ async function main() {
   const [, pending] = await db.migrate.latest();
   if (pending.length) console.log(`[db] applied migrations: ${pending.join(', ')}`);
 
-  const usersCount = await db('users').count({ c: '*' }).first();
-  if (Number(usersCount?.c ?? 0) === 0) {
-    await db.seed.run();
-    console.log('[db] empty database -> demo data seeded');
-  }
-
   const app = createApp();
   const server = http.createServer(app);
   const io = attachSocketServer(server);

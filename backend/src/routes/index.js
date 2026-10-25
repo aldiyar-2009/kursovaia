@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import * as auth from '../controllers/auth.controller.js';
 import * as chat from '../controllers/chat.controller.js';
-import * as lms from '../controllers/lms.controller.js';
 import { sync } from '../controllers/sync.controller.js';
 import { requireAuth } from '../middleware/auth.js';
 
@@ -10,9 +9,6 @@ import * as materials from '../controllers/materials.controller.js';
 export const router = Router();
 
 router.get('/health', (_req, res) => res.json({ status: 'ok', time: Date.now() }));
-
-// AITU LMS Real-time Integration
-router.post('/lms/login', lms.loginLms);
 
 // Auth
 router.post('/auth/register', auth.register);
