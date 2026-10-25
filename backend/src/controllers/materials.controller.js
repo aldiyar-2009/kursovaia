@@ -8,8 +8,6 @@ import { newId } from '../utils/validators.js';
 
 fs.mkdirSync(env.uploadDir, { recursive: true });
 
-const SAFE_NAME_RE = /^[0-9a-f-]{36}(\.[a-z0-9]{1,8})?$/i;
-
 export const upload = multer({
   storage: multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, env.uploadDir),
@@ -42,7 +40,7 @@ export const remove = asyncHandler(async (req, res) => {
  */
 export const downloadFile = asyncHandler(async (req, res) => {
   const { name } = req.params;
-  if (!SAFE_NAME_RE.test(name)) throw notFound('File not found');
+  if (!materialsService.STORED_NAME_RE.test(name)) throw notFound('File not found');
   const material = await materialsService.findGroupMaterialByFile(req.user, name);
   if (!material || !fs.existsSync(path.join(env.uploadDir, name))) throw notFound('File not found');
   res.set('X-Content-Type-Options', 'nosniff');

@@ -77,6 +77,9 @@ async function removeStoredFile(filePath) {
   }
 }
 
+/** Names multer gives stored uploads: `<uuid><.ext>`. */
+export const STORED_NAME_RE = /^[0-9a-f-]{36}(\.[a-z0-9]{1,8})?$/i;
+
 /** Absolute path of a stored material file; basename() keeps it inside the upload dir. */
 const storedPath = (fileName) => path.join(env.uploadDir, path.basename(String(fileName)));
 
@@ -143,7 +146,12 @@ export async function deleteMaterial(user, id) {
   }
 
   await db('course_materials').where({ id }).del();
-  await removeStoredFile(storedPath(material.file_path));
+  // Only unlink names multer generated (legacy/seed rows may hold arbitrary names),
+  // and only when no other material still points at the same file.
+  if (STORED_NAME_RE.test(String(material.file_path))) {
+    const stillUsed = await db('course_materials').where({ file_path: material.file_path }).first();
+    if (!stillUsed) await removeStoredFile(storedPath(material.file_path));
+  }
   return { success: true };
 }
 
