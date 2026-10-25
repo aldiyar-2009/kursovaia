@@ -76,8 +76,8 @@ class CourseFile {
       subjectTitle: json['subject_title'] ?? 'Дисциплина',
       description: json['description'],
       fileName: json['file_name'] ?? 'document.pdf',
-      fileSize: (json['file_size'] as num?)?.toInt() ?? 1024 * 1024,
-      fileType: (json['file_type'] ?? 'pdf').toString().toLowerCase(),
+      fileSize: (json['file_size'] as num?)?.toInt() ?? 0,
+      fileType: (json['file_type'] ?? '').toString().toLowerCase(),
       category: json['category'] ?? 'lecture',
       uploaderName: json['uploader_name'] ?? 'Студент',
       createdAt: json['created_at'] != null
