@@ -2,7 +2,7 @@ name: Flutter Test & Analyze
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "redesign" ]
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
@@ -25,6 +25,10 @@ jobs:
       - name: Install dependencies
         working-directory: mobile
         run: flutter pub get
+
+      - name: Generate localizations
+        working-directory: mobile
+        run: dart run tool/merge_arb.dart && flutter gen-l10n
 
       - name: Analyze code
         working-directory: mobile

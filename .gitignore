@@ -41,3 +41,8 @@ Thumbs.db
 # Локальные артефакты инструментов
 .playwright-mcp/
 /~/
+
+# Временно: собираются tool/merge_arb.dart из lib/l10n/parts
+mobile/lib/l10n/app_*.arb
+mobile/lib/l10n/generated/
+.claude/settings.local.json
