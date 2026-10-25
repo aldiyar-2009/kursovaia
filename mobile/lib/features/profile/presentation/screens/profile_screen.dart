@@ -143,9 +143,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final email = _currentUser['email'] as String? ?? '';
     final role = _currentUser['role'] as String? ?? 'student';
     final isHeadman = role == 'headman';
-    final groupTitle = widget.group?['title'] as String? ?? 'ИВТ-21';
-    final semester = (widget.group?['semester'] as num? ?? 3).toInt();
-    final inviteCode = widget.group?['invite_code'] as String? ?? 'IVT21A';
+    final groupTitle = widget.group?['title'] as String?;
+    final semester = (widget.group?['semester'] as num?)?.toInt();
+    final inviteCode = widget.group?['invite_code'] as String?;
     final userId = _currentUser['id'] as String? ?? '';
 
     return Scaffold(
@@ -307,12 +307,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ],
                         ),
                         const SizedBox(height: 16),
-                        _buildInfoRow('Группа:', groupTitle),
+                        _buildInfoRow('Группа:', groupTitle ?? 'Группа не выбрана'),
                         const Divider(color: AppColors.border, height: 18),
-                        _buildInfoRow('Семестр:', '$semester семестр (2026/2027)'),
-                        const Divider(color: AppColors.border, height: 18),
-                        _buildInfoRow('Код приглашения:', inviteCode, isCode: true),
-                        const Divider(color: AppColors.border, height: 18),
+                        if (semester != null) ...[
+                          _buildInfoRow('Семестр:', '$semester'),
+                          const Divider(color: AppColors.border, height: 18),
+                        ],
+                        if (inviteCode != null) ...[
+                          _buildInfoRow('Код приглашения:', inviteCode, isCode: true),
+                          const Divider(color: AppColors.border, height: 18),
+                        ],
                         _buildInfoRow('Роль в системе:', isHeadman ? 'Староста (Полный доступ)' : 'Студент'),
                       ],
                     ),
