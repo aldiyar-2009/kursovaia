@@ -1,7 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:studyplan/core/settings/app_settings.dart';
+import 'package:studyplan/l10n/generated/app_localizations.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+
+/// Notification texts in the app language (no BuildContext here).
+Future<AppLocalizations> _strings() async =>
+    lookupAppLocalizations(await currentAppLocale());
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -22,9 +28,11 @@ class NotificationService {
       requestBadgePermission: true,
       requestSoundPermission: true,
     );
-    const linuxSettings = LinuxInitializationSettings(defaultActionName: 'Open notification');
+    final strings = await _strings();
+    final linuxSettings =
+        LinuxInitializationSettings(defaultActionName: strings.notify_openAction);
 
-    const initSettings = InitializationSettings(
+    final initSettings = InitializationSettings(
       android: androidSettings,
       iOS: darwinSettings,
       macOS: darwinSettings,
@@ -47,13 +55,15 @@ class NotificationService {
     if (!_isInitialized) return;
 
     final now = DateTime.now();
+    final strings = await _strings();
 
     // 24 hours before
     final reminder24h = dueDate.subtract(const Duration(hours: 24));
     if (reminder24h.isAfter(now)) {
       await _scheduleSingleNotification(
+        strings,
         id: baseId * 2,
-        title: 'Горит дедлайн: через 24 часа',
+        title: strings.notify_deadline24hTitle,
         body: taskTitle,
         scheduledTime: reminder24h,
       );
@@ -63,15 +73,17 @@ class NotificationService {
     final reminder2h = dueDate.subtract(const Duration(hours: 2));
     if (reminder2h.isAfter(now)) {
       await _scheduleSingleNotification(
+        strings,
         id: baseId * 2 + 1,
-        title: 'Срочный дедлайн: через 2 часа!',
+        title: strings.notify_deadline2hTitle,
         body: taskTitle,
         scheduledTime: reminder2h,
       );
     }
   }
 
-  Future<void> _scheduleSingleNotification({
+  Future<void> _scheduleSingleNotification(
+    AppLocalizations strings, {
     required int id,
     required String title,
     required String body,
@@ -79,14 +91,14 @@ class NotificationService {
   }) async {
     try {
       final tzTime = tz.TZDateTime.from(scheduledTime, tz.local);
-      const androidDetails = AndroidNotificationDetails(
+      final androidDetails = AndroidNotificationDetails(
         'deadlines_channel',
-        'Дедлайны и задачи',
-        channelDescription: 'Уведомления о сроках сдачи заданий',
+        strings.notify_channelName,
+        channelDescription: strings.notify_channelDescription,
         importance: Importance.high,
         priority: Priority.high,
       );
-      const notificationDetails = NotificationDetails(android: androidDetails);
+      final notificationDetails = NotificationDetails(android: androidDetails);
 
       await _notificationsPlugin.zonedSchedule(
         id: id,

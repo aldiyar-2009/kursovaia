@@ -1,29 +1,6 @@
+/// Academic week arithmetic. Dates shown to the user are formatted with
+/// `DateFormat(..., locale)` in the widgets, not here.
 abstract final class DateUtil {
-  static const _monthsRu = [
-    'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
-    'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
-  ];
-
-  static const _monthsEn = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-
-  static const _daysOfWeekRu = [
-    'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'
-  ];
-
-  static const _daysOfWeekEn = [
-    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
-  ];
-
-  static String formatHeaderDate(DateTime date, {bool isRu = true}) {
-    final day = date.day;
-    final month = isRu ? _monthsRu[date.month - 1] : _monthsEn[date.month - 1];
-    final dayOfWeek = isRu ? _daysOfWeekRu[date.weekday - 1] : _daysOfWeekEn[date.weekday - 1];
-    return '$day $month • $dayOfWeek';
-  }
-
   /// Academic week number of [date] (week 1 = the Monday–Sunday week that
   /// contains the semester start).
   ///
@@ -44,18 +21,5 @@ abstract final class DateUtil {
   /// True when [date] falls in an even academic week (see [academicWeekNumber]).
   static bool isEvenWeek(DateTime date, {DateTime? semesterStart}) {
     return academicWeekNumber(date, semesterStart: semesterStart).isEven;
-  }
-
-  static String weekName(DateTime date, {DateTime? semesterStart, bool isRu = true}) {
-    final even = isEvenWeek(date, semesterStart: semesterStart);
-    if (isRu) {
-      return even ? 'Четная неделя' : 'Нечетная неделя';
-    } else {
-      return even ? 'Even week' : 'Odd week';
-    }
-  }
-
-  static String fullHeaderContext(DateTime date, {DateTime? semesterStart, bool isRu = true}) {
-    return '${formatHeaderDate(date, isRu: isRu)} • ${weekName(date, semesterStart: semesterStart, isRu: isRu)}';
   }
 }

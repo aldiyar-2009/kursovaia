@@ -209,8 +209,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final l10n = context.l10n;
     setState(() => _exporting = true);
     try {
-      final ics =
-          await IcsExportService.generateScheduleIcs(widget.db, _userId);
+      final ics = await IcsExportService.generateScheduleIcs(
+        widget.db,
+        _userId,
+        untitledLesson: l10n.schedule_lessonUntitled,
+      );
       if (!ics.contains('BEGIN:VEVENT')) {
         _snack(l10n.profile_exportIcsEmpty);
         return;

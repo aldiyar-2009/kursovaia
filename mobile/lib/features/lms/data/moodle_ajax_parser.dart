@@ -251,8 +251,11 @@ Map<String, dynamic> _map(Object? v) =>
 List<_Entry> _entries(Object? v) =>
     v is List ? [for (final e in v) _Entry(e)] : const [];
 
-String _firstError(Iterable<_Entry> entries, String fallback) =>
-    entries.map((e) => e.error).whereType<String>().firstOrNull ?? fallback;
+/// First raw LMS error of [entries] (e.g. `HTTP 500`), or '' when none says
+/// why. The UI names the failed kind itself (localized) and shows this only
+/// as a detail, so no user-facing text is produced here.
+String _firstError(Iterable<_Entry> entries) =>
+    entries.map((e) => e.error).whereType<String>().firstOrNull ?? '';
 
 /// Turns the JSON object returned by `studyplanImport()` (see
 /// `moodle_page_script.dart`) into an [LmsImportResult].
@@ -304,7 +307,7 @@ LmsImportResult buildImportResult(Map<String, dynamic> scriptOutput) {
     errors['courses'] = _firstError([
       ...courseEntries.values.map(_Entry.new),
       overview,
-    ], 'Не удалось загрузить список курсов');
+    ]);
   }
 
   // ---- grades ----
@@ -334,10 +337,7 @@ LmsImportResult buildImportResult(Map<String, dynamic> scriptOutput) {
     courses[id] = c;
   }
   if (!anyGradeSource) {
-    errors['grades'] = _firstError(
-      gradeFailures,
-      'Не удалось загрузить оценки',
-    );
+    errors['grades'] = _firstError(gradeFailures);
   }
 
   // ---- calendar ----
@@ -361,7 +361,7 @@ LmsImportResult buildImportResult(Map<String, dynamic> scriptOutput) {
     errors['deadlines'] = _firstError([
       deadlines,
       ...htmlMonths,
-    ], 'Не удалось загрузить дедлайны');
+    ]);
   }
 
   final ajaxMonths = _entries(ajax['calendar']);
@@ -383,7 +383,7 @@ LmsImportResult buildImportResult(Map<String, dynamic> scriptOutput) {
     errors['classes'] = _firstError([
       ...ajaxMonths,
       ...htmlMonths,
-    ], 'Не удалось загрузить расписание');
+    ]);
   }
 
   // ---- materials ----
@@ -410,8 +410,9 @@ LmsImportResult buildImportResult(Map<String, dynamic> scriptOutput) {
     }
   }
   if (failedCourses.isNotEmpty) {
-    errors['materials'] =
-        '${_firstError(materialFailures, 'ошибка')}: ${failedCourses.join(', ')}';
+    final reason = _firstError(materialFailures);
+    final courseList = failedCourses.join(', ');
+    errors['materials'] = reason.isEmpty ? courseList : '$reason: $courseList';
   }
 
   // ---- profile ----
@@ -422,7 +423,7 @@ LmsImportResult buildImportResult(Map<String, dynamic> scriptOutput) {
     if (p.fullName.isNotEmpty) profile = p;
   }
   if (profile == null) {
-    errors['profile'] = profilePage.error ?? 'Не удалось прочитать профиль';
+    errors['profile'] = profilePage.error ?? '';
   }
 
   return LmsImportResult(

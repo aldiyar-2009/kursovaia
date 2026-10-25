@@ -7,11 +7,13 @@ class IcsExportService {
   /// Reads the user's lessons (and their subjects) from the local drift
   /// database and returns them as an iCalendar document. Deleted and
   /// cancelled lessons are skipped. Returns a calendar with no events when the
-  /// user has no lessons.
+  /// user has no lessons. [untitledLesson] (localized by the caller) is the
+  /// event title of a lesson with neither subject nor topic.
   static Future<String> generateScheduleIcs(
     AppDatabase db,
     String userId, {
     String calendarName = 'StudyPlan',
+    String untitledLesson = '',
     DateTime? now,
   }) async {
     final subjects = await (db.select(db.subjects)
@@ -47,7 +49,12 @@ class IcsExportService {
         },
     ];
 
-    return generateUniversityCalendarIcs(groupName: calendarName, lessons: rows, now: now);
+    return generateUniversityCalendarIcs(
+      groupName: calendarName,
+      lessons: rows,
+      untitledLesson: untitledLesson,
+      now: now,
+    );
   }
 
   /// Formats already prepared lesson rows as an iCalendar document.
@@ -59,6 +66,7 @@ class IcsExportService {
   static String generateUniversityCalendarIcs({
     required String groupName,
     required List<Map<String, dynamic>> lessons,
+    String untitledLesson = '',
     DateTime? now,
   }) {
     final current = now ?? DateTime.now();
@@ -116,7 +124,8 @@ class IcsExportService {
       line('BEGIN:VEVENT');
       line('UID:$uid@studyplan');
       line('DTSTAMP:$dtStamp');
-      line('SUMMARY:${_escape(title == null || title.isEmpty ? 'Занятие' : title)}');
+      final summary = title == null || title.isEmpty ? untitledLesson : title;
+      line('SUMMARY:${_escape(summary)}');
       if (teacher != null && teacher.isNotEmpty) {
         line('DESCRIPTION:${_escape(teacher)}');
       }
@@ -129,7 +138,7 @@ class IcsExportService {
       line('BEGIN:VALARM');
       line('TRIGGER:-PT15M');
       line('ACTION:DISPLAY');
-      line('DESCRIPTION:${_escape(title == null || title.isEmpty ? 'Занятие' : title)}');
+      line('DESCRIPTION:${_escape(summary)}');
       line('END:VALARM');
       line('END:VEVENT');
     }
