@@ -1,0 +1,59 @@
+{
+  "@@locale": "ru",
+  "home_weekEven": "Чётная неделя",
+  "home_weekOdd": "Нечётная неделя",
+  "home_now": "Сейчас",
+  "home_next": "Далее",
+  "home_laterToday": "Ещё сегодня",
+  "home_minutesLeft": "ещё {minutes} мин",
+  "@home_minutesLeft": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
+  "home_startsInMinutes": "через {minutes} мин",
+  "@home_startsInMinutes": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
+  "home_startsInHours": "через {hours} ч {minutes} мин",
+  "@home_startsInHours": {
+    "placeholders": {
+      "hours": {"type": "int"},
+      "minutes": {"type": "int"}
+    }
+  },
+  "home_lessonLecture": "Лекция",
+  "home_lessonPractice": "Практика",
+  "home_lessonLab": "Лабораторная",
+  "home_sourceLms": "LMS",
+  "home_sourceGroup": "Группа",
+  "home_deadlines": "Дедлайны",
+  "home_allTasks": "Все задания",
+  "home_dueToday": "Сегодня, {time}",
+  "@home_dueToday": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "home_dueTomorrow": "Завтра, {time}",
+  "@home_dueTomorrow": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "home_grades": "Оценки",
+  "home_allGrades": "Все оценки",
+  "home_firstStepsTitle": "С чего начать",
+  "home_firstStepsMessage": "Здесь появятся следующая пара, ближайшие дедлайны и последние оценки.",
+  "home_stepSchedule": "Добавить расписание",
+  "home_stepScheduleHint": "Пары по дням недели, с чётными и нечётными неделями",
+  "home_stepLms": "Импортировать оценки из LMS",
+  "home_stepLmsHint": "Вход через ваш аккаунт Microsoft АИТУ",
+  "home_stepGroup": "Вступить в группу или создать",
+  "home_stepGroupHint": "Общие дедлайны и материалы с одногруппниками",
+  "home_quietTitle": "Ничего срочного",
+  "home_quietMessage": "Пар на сегодня больше нет, дедлайнов на ближайшую неделю тоже.",
+  "home_openSchedule": "Открыть расписание"
+}

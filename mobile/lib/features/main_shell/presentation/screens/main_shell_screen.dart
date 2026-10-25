@@ -8,9 +8,10 @@ import 'package:studyplan/core/settings/app_settings.dart';
 import 'package:studyplan/core/sync/sync_bloc.dart';
 import 'package:studyplan/core/sync/sync_repository.dart';
 import 'package:studyplan/core/theme/theme_ext.dart';
-import 'package:studyplan/core/widgets/ui/empty_state.dart';
 import 'package:studyplan/features/auth/presentation/screens/auth_screen.dart';
 import 'package:studyplan/features/grades/presentation/screens/grades_screen.dart';
+import 'package:studyplan/features/group/presentation/screens/group_screen.dart';
+import 'package:studyplan/features/home/presentation/screens/home_screen.dart';
 import 'package:studyplan/features/more/presentation/screens/more_screen.dart';
 import 'package:studyplan/features/schedule/presentation/screens/schedule_screen.dart';
 import 'package:studyplan/features/tasks/presentation/screens/deadlines_screen.dart';
@@ -102,13 +103,15 @@ class _MainShellScreenState extends State<MainShellScreen> {
     final groupId = widget.group?['id'] as String?;
     switch (tab) {
       case AppTab.home:
-        return Scaffold(
-          appBar: AppBar(title: Text(l10n.nav_homeTitle)),
-          body: EmptyState(
-            title: l10n.nav_homeEmptyTitle,
-            message: l10n.nav_homeEmptyMessage,
-            actionLabel: l10n.nav_homeEmptyAction,
-            onAction: () => _select(AppTab.schedule),
+        return HomeScreen(
+          db: widget.db,
+          userId: userId,
+          groupId: groupId,
+          onOpenTab: _select,
+          onOpenGroup: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => GroupScreen(group: widget.group),
+            ),
           ),
         );
       case AppTab.schedule:
