@@ -1,0 +1,62 @@
+{
+  "@@locale": "ru",
+  "profile_title": "Профиль и настройки",
+  "profile_noName": "Без имени",
+  "profile_editName": "Изменить имя",
+  "profile_nameLabel": "Имя и фамилия",
+  "profile_nameRequired": "Введите имя",
+  "profile_nameSaved": "Имя сохранено",
+  "profile_nameSavedLocally": "Нет связи с сервером. Имя сохранено на этом устройстве",
+  "profile_sectionLms": "LMS",
+  "profile_lmsFullName": "ФИО",
+  "profile_lmsEmail": "Почта",
+  "profile_lmsConnect": "Подключить LMS",
+  "profile_lmsConnectHint": "Импорт оценок, дедлайнов и материалов",
+  "profile_sectionAppearance": "Оформление",
+  "profile_theme": "Тема",
+  "profile_themeSystem": "Системная",
+  "profile_themeLight": "Светлая",
+  "profile_themeDark": "Тёмная",
+  "profile_language": "Язык",
+  "profile_languageSystem": "Системный",
+  "profile_languageSystemHint": "Как на устройстве, если это русский, казахский или английский",
+  "profile_sectionNotifications": "Уведомления",
+  "profile_deadlineReminders": "Напоминания о дедлайнах",
+  "profile_deadlineRemindersHint": "За 24 часа и за 2 часа до срока",
+  "profile_remindersOn": "{count, plural, =0{Ближайших дедлайнов нет. Напоминания включены} one{Запланировано напоминаний для {count} дедлайна} few{Запланировано напоминаний для {count} дедлайнов} many{Запланировано напоминаний для {count} дедлайнов} other{Запланировано напоминаний для {count} дедлайна}}",
+  "@profile_remindersOn": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "profile_remindersOff": "Напоминания выключены",
+  "profile_sectionData": "Данные",
+  "profile_exportIcs": "Экспорт расписания (.ics)",
+  "profile_exportIcsHint": "Для Google Календаря, Outlook и Календаря Apple",
+  "profile_exportIcsEmpty": "В расписании нет пар. Добавьте их, чтобы экспортировать",
+  "profile_exportIcsDone": "Файл расписания сохранён",
+  "profile_exportIcsFailed": "Не удалось экспортировать расписание",
+  "profile_server": "Сервер",
+  "profile_logout": "Выйти",
+  "profile_logoutTitle": "Выйти из аккаунта?",
+  "profile_logoutMessage": "Данные на этом устройстве сохранятся.",
+  "profile_serverTitle": "Сервер",
+  "profile_serverMessage": "Адрес API, с которым приложение синхронизирует данные.",
+  "profile_serverUrlLabel": "Адрес API",
+  "profile_serverPresets": "Быстрый выбор",
+  "profile_serverPresetLocal": "Этот компьютер",
+  "profile_serverPresetEmulator": "Эмулятор Android",
+  "profile_serverPresetLan": "Локальная сеть",
+  "profile_serverTest": "Проверить",
+  "profile_serverTesting": "Проверка…",
+  "profile_serverOk": "Сервер доступен",
+  "profile_serverBadStatus": "Сервер ответил с кодом {code}",
+  "@profile_serverBadStatus": {
+    "placeholders": {
+      "code": {"type": "int"}
+    }
+  },
+  "profile_serverUnreachable": "Не удалось подключиться к серверу",
+  "profile_serverInvalid": "Введите адрес, начинающийся с http:// или https://",
+  "profile_serverSaved": "Адрес сервера сохранён"
+}

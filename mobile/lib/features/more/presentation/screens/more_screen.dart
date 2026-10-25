@@ -61,6 +61,7 @@ class MoreScreen extends StatelessWidget {
                 ProfileScreen(
                   db: db,
                   apiClient: apiClient,
+                  settings: settings,
                   user: user,
                   group: group,
                   onLogout: onLogout,

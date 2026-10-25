@@ -1,14 +1,21 @@
 import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:studyplan/core/database/app_database.dart';
 import 'package:studyplan/core/network/api_client.dart';
 import 'package:studyplan/core/settings/app_settings.dart';
-import 'package:studyplan/core/theme/app_colors.dart';
+import 'package:studyplan/core/theme/app_theme.dart';
+import 'package:studyplan/core/theme/theme_ext.dart';
 import 'package:studyplan/core/widgets/server_config_dialog.dart';
+import 'package:studyplan/core/widgets/ui/app_text_field.dart';
 import 'package:studyplan/features/main_shell/presentation/screens/main_shell_screen.dart';
 
+enum _AuthMode { signIn, signUp }
+
+/// Sign-in / sign-up. The invite code is prefilled only from a pending
+/// invite link (SharedPreferences `pending_invite_code`).
 class AuthScreen extends StatefulWidget {
   final ApiClient apiClient;
   final AppDatabase db;
@@ -23,156 +30,98 @@ class AuthScreen extends StatefulWidget {
     this.onLoginSuccess,
   });
 
+  /// SharedPreferences key of an invite code taken from a `/join/<code>` link.
+  static const pendingInviteKey = 'pending_invite_code';
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();
 }
 
-class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
+class _AuthScreenState extends State<AuthScreen> {
+  _AuthMode _mode = _AuthMode.signIn;
 
-  // Login controllers
-  final _loginFormKey = GlobalKey<FormState>();
-  final _loginEmailController = TextEditingController();
-  final _loginPasswordController = TextEditingController();
-  bool _loginObscure = true;
-
-  // Register controllers
-  final _registerFormKey = GlobalKey<FormState>();
-  final _registerNameController = TextEditingController();
-  final _registerEmailController = TextEditingController();
-  final _registerInviteController = TextEditingController();
-  final _registerPasswordController = TextEditingController();
-  final _registerConfirmPasswordController = TextEditingController();
-  bool _registerObscure = true;
-  bool _registerConfirmObscure = true;
+  // Replaced on mode switch so stale validation errors disappear.
+  var _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmController = TextEditingController();
+  final _inviteController = TextEditingController();
+  bool _obscure = true;
 
   bool _isLoading = false;
   String? _errorMessage;
 
-
-  final RegExp _emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+  static final _emailRegex = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _tabController.addListener(() {
-      if (!_tabController.indexIsChanging) {
-        setState(() {
-          _errorMessage = null;
-        });
-      }
-    });
+    _loadPendingInvite();
+  }
 
+  Future<void> _loadPendingInvite() async {
+    final prefs = await SharedPreferences.getInstance();
+    final code = prefs.getString(AuthScreen.pendingInviteKey)?.trim();
+    if (!mounted || code == null || code.isEmpty) return;
+    setState(() => _inviteController.text = code);
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
-    _loginEmailController.dispose();
-    _loginPasswordController.dispose();
-    _registerNameController.dispose();
-    _registerEmailController.dispose();
-    _registerInviteController.dispose();
-    _registerPasswordController.dispose();
-    _registerConfirmPasswordController.dispose();
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmController.dispose();
+    _inviteController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleLogin() async {
-    if (!_loginFormKey.currentState!.validate()) {
-      return;
-    }
-
-    final email = _loginEmailController.text.trim();
-    final password = _loginPasswordController.text;
-
+  void _setMode(_AuthMode mode) {
+    if (mode == _mode) return;
     setState(() {
-      _isLoading = true;
+      _mode = mode;
       _errorMessage = null;
+      _formKey = GlobalKey<FormState>();
     });
-
-
-    try {
-      final response = await widget.apiClient.dio.post('/auth/login', data: {
-        'email': email,
-        'password': password,
-      });
-
-      final data = response.data as Map<String, dynamic>;
-      final token = data['token'] as String;
-      final user = data['user'] as Map<String, dynamic>;
-      final group = data['group'] as Map<String, dynamic>?;
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('jwt_token', token);
-      await prefs.setString('user_data', jsonEncode(user));
-      if (group != null) {
-        await prefs.setString('group_data', jsonEncode(group));
-      }
-
-      widget.apiClient.updateToken(token);
-      if (widget.onLoginSuccess != null) {
-        widget.onLoginSuccess!();
-      } else {
-        if (!mounted) return;
-        Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-          PageRouteBuilder(
-            transitionDuration: const Duration(milliseconds: 350),
-            pageBuilder: (_, animation, _) => FadeTransition(
-              opacity: animation,
-              child: MainShellScreen(
-                db: widget.db,
-                apiClient: widget.apiClient,
-                settings: widget.settings,
-                user: user,
-                group: group,
-              ),
-            ),
-          ),
-          (route) => false,
-        );
-      }
-    } catch (e) {
-
-      setState(() {
-        if (e is DioException && e.response?.data != null) {
-          final errMap = e.response?.data['error'];
-          _errorMessage = errMap?['message'] ?? 'Неверный email или пароль';
-        } else {
-          _errorMessage = 'Не удалось подключиться к серверу';
-        }
-      });
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
   }
 
-  Future<void> _handleRegister() async {
-    if (!_registerFormKey.currentState!.validate()) {
-      return;
+  String _errorFor(Object e) {
+    final l10n = context.l10n;
+    if (e is DioException) {
+      final response = e.response;
+      if (response == null) return l10n.auth_errorNetwork;
+      final data = response.data;
+      final message = data is Map ? '${data['error']?['message'] ?? ''}' : '';
+      if (message.contains('Invite code')) return l10n.auth_errorInviteCode;
+      if (response.statusCode == 409) return l10n.auth_errorEmailTaken;
+      if (response.statusCode == 401) return l10n.auth_errorInvalidCredentials;
     }
+    return l10n.auth_errorGeneric;
+  }
 
-    final name = _registerNameController.text.trim();
-    final email = _registerEmailController.text.trim();
-    final inviteCode = _registerInviteController.text.trim();
-    final password = _registerPasswordController.text;
-
+  Future<void> _submit() async {
+    if (_isLoading || !_formKey.currentState!.validate()) return;
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
+    final signUp = _mode == _AuthMode.signUp;
+    final inviteCode = _inviteController.text.trim();
     try {
-      final payload = {
-        'name': name,
-        'email': email,
-        'password': password,
-        if (inviteCode.isNotEmpty) 'invite_code': inviteCode,
-      };
+      final response = signUp
+          ? await widget.apiClient.dio.post('/auth/register', data: {
+              'name': _nameController.text.trim(),
+              'email': _emailController.text.trim(),
+              'password': _passwordController.text,
+              if (inviteCode.isNotEmpty) 'invite_code': inviteCode,
+            })
+          : await widget.apiClient.dio.post('/auth/login', data: {
+              'email': _emailController.text.trim(),
+              'password': _passwordController.text,
+            });
 
-      final response = await widget.apiClient.dio.post('/auth/register', data: payload);
       final data = response.data as Map<String, dynamic>;
       final token = data['token'] as String;
       final user = data['user'] as Map<String, dynamic>;
@@ -183,56 +132,37 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
       await prefs.setString('user_data', jsonEncode(user));
       if (group != null) {
         await prefs.setString('group_data', jsonEncode(group));
+        // The pending invite has been used to join this group.
+        if (signUp && inviteCode.isNotEmpty) {
+          await prefs.remove(AuthScreen.pendingInviteKey);
+        }
       }
-
       widget.apiClient.updateToken(token);
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Регистрация успешна! Добро пожаловать в StudyPlan'),
-          backgroundColor: AppColors.success,
-        ),
-      );
 
       if (widget.onLoginSuccess != null) {
         widget.onLoginSuccess!();
-      } else {
-        if (!mounted) return;
-        Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-          PageRouteBuilder(
-            transitionDuration: const Duration(milliseconds: 350),
-            pageBuilder: (_, animation, _) => FadeTransition(
-              opacity: animation,
-              child: MainShellScreen(
-                db: widget.db,
-                apiClient: widget.apiClient,
-                settings: widget.settings,
-                user: user,
-                group: group,
-              ),
+        return;
+      }
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+        PageRouteBuilder<void>(
+          transitionDuration: const Duration(milliseconds: 200),
+          pageBuilder: (_, animation, _) => FadeTransition(
+            opacity: animation,
+            child: MainShellScreen(
+              db: widget.db,
+              apiClient: widget.apiClient,
+              settings: widget.settings,
+              user: user,
+              group: group,
             ),
           ),
-          (route) => false,
-        );
-      }
+        ),
+        (route) => false,
+      );
     } catch (e) {
-
-      setState(() {
-        if (e is DioException && e.response?.data != null) {
-          final errMap = e.response?.data['error'];
-          final msg = errMap?['message'] ?? 'Ошибка при регистрации';
-          if (msg.contains('already registered') || msg.contains('conflict')) {
-            _errorMessage = 'Пользователь с таким email уже зарегистрирован';
-          } else if (msg.contains('Invite code')) {
-            _errorMessage = 'Код группы не найден. Проверьте правильность кода';
-          } else {
-            _errorMessage = msg;
-          }
-        } else {
-          _errorMessage = 'Ошибка сети или соединения с сервером';
-        }
-      });
+      if (!mounted) return;
+      setState(() => _errorMessage = _errorFor(e));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -240,147 +170,84 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final palette = context.palette;
+    final signUp = _mode == _AuthMode.signUp;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 460),
-            child: Card(
-              color: AppColors.surface,
-              elevation: 8,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-                side: const BorderSide(color: AppColors.border, width: 1.2),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(32.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Brand Header
-                    Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Center(
-                          child: Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [AppColors.accent, AppColors.accentCyan],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(18),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.accent.withValues(alpha: 0.3),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(Icons.school_rounded, color: Colors.white, size: 32),
+      backgroundColor: palette.background,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 32),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: AutofillGroup(
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(l10n.common_appName, style: context.text.titleLarge),
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.auth_tagline,
+                        style: context.text.bodyMedium!
+                            .copyWith(color: palette.textSecondary),
+                      ),
+                      const SizedBox(height: 32),
+                      SegmentedButton<_AuthMode>(
+                        showSelectedIcon: false,
+                        expandedInsets: EdgeInsets.zero,
+                        segments: [
+                          ButtonSegment(
+                            value: _AuthMode.signIn,
+                            label: Text(l10n.auth_signIn),
                           ),
-                        ),
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: IconButton(
-                            icon: const Icon(Icons.settings_ethernet_rounded, size: 20, color: AppColors.textMuted),
-                            tooltip: 'Настройка подключения к API',
-                            onPressed: () => ServerConfigDialog.show(context, widget.apiClient),
+                          ButtonSegment(
+                            value: _AuthMode.signUp,
+                            label: Text(l10n.auth_signUp),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'StudyPlan',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Единое студенческое пространство',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Tab Selector: Вход / Регистрация
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.elevated,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: TabBar(
-                        controller: _tabController,
-                        indicatorSize: TabBarIndicatorSize.tab,
-                        dividerColor: Colors.transparent,
-                        indicator: BoxDecoration(
-                          color: AppColors.accent,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        labelColor: Colors.white,
-                        unselectedLabelColor: AppColors.textSecondary,
-                        labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-                        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
-                        tabs: const [
-                          Tab(text: 'Вход'),
-                          Tab(text: 'Регистрация'),
                         ],
+                        selected: {_mode},
+                        onSelectionChanged: (s) => _setMode(s.first),
                       ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Error Message Banner
-                    if (_errorMessage != null) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: AppColors.plate(AppColors.danger, 0.15),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.danger, width: 1),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.error_outline_rounded, color: AppColors.danger, size: 20),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                _errorMessage!,
-                                style: const TextStyle(color: AppColors.danger, fontSize: 13, fontWeight: FontWeight.w500),
-                              ),
-                            ),
-                          ],
+                      const SizedBox(height: 24),
+                      ..._fields(signUp),
+                      if (_errorMessage != null) ...[
+                        const SizedBox(height: 16),
+                        _ErrorBox(message: _errorMessage!),
+                      ],
+                      const SizedBox(height: 24),
+                      FilledButton(
+                        onPressed: _isLoading ? null : _submit,
+                        child: _isLoading
+                            ? SizedBox.square(
+                                dimension: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: palette.textSecondary,
+                                ),
+                              )
+                            : Text(signUp
+                                ? l10n.auth_submitSignUp
+                                : l10n.auth_submitSignIn),
+                      ),
+                      const SizedBox(height: 24),
+                      Center(
+                        child: TextButton(
+                          style: TextButton.styleFrom(
+                            foregroundColor: palette.textSecondary,
+                          ),
+                          onPressed: () => ServerConfigDialog.show(
+                            context,
+                            widget.apiClient,
+                          ),
+                          child: Text(l10n.auth_serverSettings),
                         ),
                       ),
-                      const SizedBox(height: 16),
                     ],
-
-                    // Tab Views
-                    AnimatedSize(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                      child: [
-                        _buildLoginForm(),
-                        _buildRegisterForm(),
-                      ][_tabController.index],
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -390,212 +257,110 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     );
   }
 
-  // --- LOGIN FORM ---
-  Widget _buildLoginForm() {
-    return Form(
-      key: _loginFormKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TextFormField(
-            controller: _loginEmailController,
-            keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(
-              labelText: 'Email',
-              hintText: 'example@university.edu',
-              prefixIcon: Icon(Icons.email_outlined, size: 20, color: AppColors.textSecondary),
-            ),
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Введите email';
-              }
-              if (!_emailRegex.hasMatch(value.trim())) {
-                return 'Некорректный формат email';
-              }
-
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _loginPasswordController,
-            obscureText: _loginObscure,
-            decoration: InputDecoration(
-              labelText: 'Пароль',
-              prefixIcon: const Icon(Icons.lock_outline, size: 20, color: AppColors.textSecondary),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _loginObscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                  size: 20,
-                  color: AppColors.textSecondary,
-                ),
-                onPressed: () => setState(() => _loginObscure = !_loginObscure),
-              ),
-            ),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Введите пароль';
-              }
-              return null;
-            },
-            onFieldSubmitted: (_) => _handleLogin(),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: _isLoading ? null : () => _handleLogin(),
-            child: _isLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                  )
-                : const Text('Войти в систему'),
-          ),
-          const SizedBox(height: 12),
-          TextButton(
-            onPressed: () {
-              _tabController.animateTo(1);
-            },
-            child: const Text(
-              'Еще нет аккаунта? Зарегистрироваться',
-              style: TextStyle(color: AppColors.accentCyan, fontSize: 13),
-            ),
-          ),
-        ],
+  List<Widget> _fields(bool signUp) {
+    final l10n = context.l10n;
+    final visibility = IconButton(
+      tooltip: _obscure ? l10n.auth_showPassword : l10n.auth_hidePassword,
+      icon: Icon(
+        _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+        size: 20,
       ),
+      onPressed: () => setState(() => _obscure = !_obscure),
     );
-  }
 
-  // --- REGISTER FORM ---
-  Widget _buildRegisterForm() {
-    return Form(
-      key: _registerFormKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TextFormField(
-            controller: _registerNameController,
-            decoration: const InputDecoration(
-              labelText: 'Имя и Фамилия',
-              hintText: 'Алихан Даулетов',
-              prefixIcon: Icon(Icons.person_outline, size: 20, color: AppColors.textSecondary),
-            ),
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Введите ваше имя и фамилию';
-              }
-              if (value.trim().length < 2) {
-                return 'Имя слишком короткое';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 14),
-          TextFormField(
-            controller: _registerEmailController,
-            keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(
-              labelText: 'Email',
-              hintText: 'example@university.edu',
-              prefixIcon: Icon(Icons.email_outlined, size: 20, color: AppColors.textSecondary),
-            ),
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Введите email';
-              }
-              if (!_emailRegex.hasMatch(value.trim())) {
-                return 'Некорректный формат email (пример: user@domain.com)';
-              }
-
-              return null;
-            },
-          ),
-          const SizedBox(height: 14),
-          TextFormField(
-            controller: _registerInviteController,
-            decoration: const InputDecoration(
-              labelText: 'Код группы (необязательно)',
-              hintText: 'Код из приглашения',
-              prefixIcon: Icon(Icons.group_outlined, size: 20, color: AppColors.textSecondary),
-              helperText: 'Можно вступить в группу и позже',
-              helperStyle: TextStyle(fontSize: 11, color: AppColors.textMuted),
-            ),
-          ),
-          const SizedBox(height: 14),
-          TextFormField(
-            controller: _registerPasswordController,
-            obscureText: _registerObscure,
-            decoration: InputDecoration(
-              labelText: 'Пароль',
-              prefixIcon: const Icon(Icons.lock_outline, size: 20, color: AppColors.textSecondary),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _registerObscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                  size: 20,
-                  color: AppColors.textSecondary,
-                ),
-                onPressed: () => setState(() => _registerObscure = !_registerObscure),
-              ),
-            ),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Введите пароль';
-              }
-              if (value.length < 6) {
-                return 'Пароль должен содержать минимум 6 символов';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 14),
-          TextFormField(
-            controller: _registerConfirmPasswordController,
-            obscureText: _registerConfirmObscure,
-            decoration: InputDecoration(
-              labelText: 'Подтвердите пароль',
-              prefixIcon: const Icon(Icons.lock_reset_rounded, size: 20, color: AppColors.textSecondary),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _registerConfirmObscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                  size: 20,
-                  color: AppColors.textSecondary,
-                ),
-                onPressed: () => setState(() => _registerConfirmObscure = !_registerConfirmObscure),
-              ),
-            ),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Повторите пароль';
-              }
-              if (value != _registerPasswordController.text) {
-                return 'Пароли не совпадают';
-              }
-              return null;
-            },
-            onFieldSubmitted: (_) => _handleRegister(),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: _isLoading ? null : _handleRegister,
-            child: _isLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                  )
-                : const Text('Зарегистрироваться'),
-          ),
-          const SizedBox(height: 12),
-          TextButton(
-            onPressed: () {
-              _tabController.animateTo(0);
-            },
-            child: const Text(
-              'Уже зарегистрированы? Войти',
-              style: TextStyle(color: AppColors.accent, fontSize: 13),
-            ),
-          ),
+    const gap = SizedBox(height: 16);
+    return [
+      if (signUp) ...[
+        AppTextField(
+          key: const ValueKey('auth_name'),
+          controller: _nameController,
+          label: l10n.auth_name,
+          textInputAction: TextInputAction.next,
+          autofillHints: const [AutofillHints.name],
+          validator: (v) => (v == null || v.trim().length < 2)
+              ? l10n.auth_errorNameRequired
+              : null,
+        ),
+        gap,
+      ],
+      AppTextField(
+        key: const ValueKey('auth_email'),
+        controller: _emailController,
+        label: l10n.auth_email,
+        keyboardType: TextInputType.emailAddress,
+        textInputAction: TextInputAction.next,
+        autofillHints: const [AutofillHints.email],
+        validator: (v) {
+          final value = v?.trim() ?? '';
+          if (value.isEmpty) return l10n.auth_errorEmailRequired;
+          if (!_emailRegex.hasMatch(value)) return l10n.auth_errorEmailInvalid;
+          return null;
+        },
+      ),
+      gap,
+      AppTextField(
+        key: const ValueKey('auth_password'),
+        controller: _passwordController,
+        label: l10n.auth_password,
+        obscureText: _obscure,
+        suffix: visibility,
+        textInputAction:
+            signUp ? TextInputAction.next : TextInputAction.done,
+        autofillHints: [
+          signUp ? AutofillHints.newPassword : AutofillHints.password,
         ],
+        validator: (v) {
+          if (v == null || v.isEmpty) return l10n.auth_errorPasswordRequired;
+          if (signUp && v.length < 6) return l10n.auth_errorPasswordShort;
+          return null;
+        },
+        onSubmitted: signUp ? null : (_) => _submit(),
+      ),
+      if (signUp) ...[
+        gap,
+        AppTextField(
+          key: const ValueKey('auth_confirm'),
+          controller: _confirmController,
+          label: l10n.auth_passwordRepeat,
+          obscureText: _obscure,
+          textInputAction: TextInputAction.next,
+          validator: (v) => v != _passwordController.text
+              ? l10n.auth_errorPasswordMismatch
+              : null,
+        ),
+        gap,
+        AppTextField(
+          key: const ValueKey('auth_invite'),
+          controller: _inviteController,
+          label: l10n.auth_inviteCode,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => _submit(),
+        ),
+      ],
+    ];
+  }
+}
+
+class _ErrorBox extends StatelessWidget {
+  final String message;
+
+  const _ErrorBox({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Semantics(
+      liveRegion: true,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: palette.dangerMuted,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
+        child: Text(
+          message,
+          style: context.text.bodySmall!.copyWith(color: palette.danger),
+        ),
       ),
     );
   }

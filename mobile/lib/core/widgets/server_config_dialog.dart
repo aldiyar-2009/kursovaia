@@ -2,8 +2,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:studyplan/core/network/api_client.dart';
-import 'package:studyplan/core/theme/app_colors.dart';
+import 'package:studyplan/core/theme/theme_ext.dart';
+import 'package:studyplan/core/widgets/ui/app_text_field.dart';
 
+/// Dialog for changing the API base URL at runtime.
 class ServerConfigDialog extends StatefulWidget {
   final ApiClient apiClient;
   final VoidCallback? onSaved;
@@ -14,10 +16,15 @@ class ServerConfigDialog extends StatefulWidget {
     this.onSaved,
   });
 
-  static Future<void> show(BuildContext context, ApiClient apiClient, {VoidCallback? onSaved}) {
+  static Future<void> show(
+    BuildContext context,
+    ApiClient apiClient, {
+    VoidCallback? onSaved,
+  }) {
     return showDialog(
       context: context,
-      builder: (ctx) => ServerConfigDialog(apiClient: apiClient, onSaved: onSaved),
+      builder: (ctx) =>
+          ServerConfigDialog(apiClient: apiClient, onSaved: onSaved),
     );
   }
 
@@ -25,15 +32,25 @@ class ServerConfigDialog extends StatefulWidget {
   State<ServerConfigDialog> createState() => _ServerConfigDialogState();
 }
 
+enum _TestState { idle, testing, ok, failed }
+
 class _ServerConfigDialogState extends State<ServerConfigDialog> {
   late final TextEditingController _urlController;
-  String? _testResult;
-  bool _isTesting = false;
+  _TestState _testState = _TestState.idle;
+  String? _testMessage;
+  String? _urlError;
+
+  static const _presets = <(String, String)>[
+    ('local', 'http://127.0.0.1:3000/api'),
+    ('emulator', 'http://10.0.2.2:3000/api'),
+    ('lan', 'http://192.168.8.72:3000/api'),
+  ];
 
   @override
   void initState() {
     super.initState();
-    _urlController = TextEditingController(text: widget.apiClient.dio.options.baseUrl);
+    _urlController =
+        TextEditingController(text: widget.apiClient.dio.options.baseUrl);
   }
 
   @override
@@ -42,13 +59,24 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
     super.dispose();
   }
 
-  Future<void> _testConnection() async {
-    final url = _urlController.text.trim();
-    if (url.isEmpty) return;
+  bool _isValid(String url) {
+    final uri = Uri.tryParse(url);
+    return uri != null &&
+        (uri.scheme == 'http' || uri.scheme == 'https') &&
+        uri.host.isNotEmpty;
+  }
 
+  Future<void> _testConnection() async {
+    final l10n = context.l10n;
+    final url = _urlController.text.trim();
+    if (!_isValid(url)) {
+      setState(() => _urlError = l10n.profile_serverInvalid);
+      return;
+    }
     setState(() {
-      _isTesting = true;
-      _testResult = 'Проверка соединения...';
+      _urlError = null;
+      _testState = _TestState.testing;
+      _testMessage = l10n.profile_serverTesting;
     });
 
     try {
@@ -58,159 +86,144 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
         receiveTimeout: const Duration(seconds: 4),
       ));
       final res = await testDio.get('/health');
-      if (res.statusCode == 200) {
-        setState(() {
-          _testResult = '✅ Сервер доступен (200 OK)';
-          _isTesting = false;
-        });
-      } else {
-        setState(() {
-          _testResult = '❌ Ответ сервера: ${res.statusCode}';
-          _isTesting = false;
-        });
-      }
-    } catch (_) {
+      if (!mounted) return;
       setState(() {
-        _testResult = '❌ Не удалось подключиться к $url';
-        _isTesting = false;
+        if (res.statusCode == 200) {
+          _testState = _TestState.ok;
+          _testMessage = l10n.profile_serverOk;
+        } else {
+          _testState = _TestState.failed;
+          _testMessage = l10n.profile_serverBadStatus(res.statusCode ?? 0);
+        }
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _testState = _TestState.failed;
+        _testMessage = l10n.profile_serverUnreachable;
       });
     }
   }
 
   Future<void> _save() async {
+    final l10n = context.l10n;
     final newUrl = _urlController.text.trim();
-    if (newUrl.isNotEmpty) {
-      widget.apiClient.updateBaseUrl(newUrl);
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('api_base_url', newUrl);
-      widget.onSaved?.call();
+    if (!_isValid(newUrl)) {
+      setState(() => _urlError = l10n.profile_serverInvalid);
+      return;
     }
-    if (mounted) {
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Адрес API сохранен: $newUrl'),
-          backgroundColor: AppColors.success,
-        ),
-      );
-    }
+    widget.apiClient.updateBaseUrl(newUrl);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('api_base_url', newUrl);
+    widget.onSaved?.call();
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    Navigator.of(context).pop();
+    messenger?.showSnackBar(SnackBar(content: Text(l10n.profile_serverSaved)));
+  }
+
+  String _presetLabel(String id) {
+    final l10n = context.l10n;
+    return switch (id) {
+      'local' => l10n.profile_serverPresetLocal,
+      'emulator' => l10n.profile_serverPresetEmulator,
+      _ => l10n.profile_serverPresetLan,
+    };
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final palette = context.palette;
+    final statusColor = switch (_testState) {
+      _TestState.ok => palette.success,
+      _TestState.failed => palette.danger,
+      _ => palette.textSecondary,
+    };
+
     return AlertDialog(
-      backgroundColor: AppColors.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: AppColors.border, width: 1.2),
-      ),
-      title: const Row(
-        children: [
-          Icon(Icons.dns_rounded, color: AppColors.accentCyan, size: 24),
-          SizedBox(width: 10),
-          Text(
-            'Настройка API сервера',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-          ),
-        ],
-      ),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'Укажите адрес бэкенда для связи приложения с базой данных:',
-              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: _urlController,
-              style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
-              decoration: const InputDecoration(
-                labelText: 'API Base URL',
-                hintText: 'http://192.168.8.72:3000/api',
-                prefixIcon: Icon(Icons.link_rounded, size: 20, color: AppColors.accent),
+      title: Text(l10n.profile_serverTitle),
+      content: SizedBox(
+        width: 400,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(l10n.profile_serverMessage),
+              const SizedBox(height: 16),
+              AppTextField(
+                controller: _urlController,
+                label: l10n.profile_serverUrlLabel,
+                hint: 'http://127.0.0.1:3000/api',
+                keyboardType: TextInputType.url,
+                errorText: _urlError,
+                onChanged: (_) {
+                  if (_urlError != null || _testState != _TestState.idle) {
+                    setState(() {
+                      _urlError = null;
+                      _testState = _TestState.idle;
+                      _testMessage = null;
+                    });
+                  }
+                },
+                onSubmitted: (_) => _save(),
               ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Быстрый выбор адреса:',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textMuted),
-            ),
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                ActionChip(
-                  backgroundColor: AppColors.elevated,
-                  label: const Text('Wi-Fi сеть (192.168.8.72)'),
-                  labelStyle: const TextStyle(fontSize: 11, color: AppColors.accentCyan),
-                  onPressed: () => setState(() => _urlController.text = 'http://192.168.8.72:3000/api'),
-                ),
-                ActionChip(
-                  backgroundColor: AppColors.elevated,
-                  label: const Text('Localhost (127.0.0.1)'),
-                  labelStyle: const TextStyle(fontSize: 11, color: AppColors.textPrimary),
-                  onPressed: () => setState(() => _urlController.text = 'http://127.0.0.1:3000/api'),
-                ),
-                ActionChip(
-                  backgroundColor: AppColors.elevated,
-                  label: const Text('Android Эмулятор (10.0.2.2)'),
-                  labelStyle: const TextStyle(fontSize: 11, color: AppColors.textPrimary),
-                  onPressed: () => setState(() => _urlController.text = 'http://10.0.2.2:3000/api'),
-                ),
-              ],
-            ),
-            if (_testResult != null) ...[
-              const SizedBox(height: 14),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: _testResult!.startsWith('✅')
-                      ? AppColors.success.withValues(alpha: 0.15)
-                      : AppColors.danger.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: _testResult!.startsWith('✅') ? AppColors.success : AppColors.danger,
-                    width: 1,
+              const SizedBox(height: 16),
+              Text(
+                l10n.profile_serverPresets,
+                style: context.text.labelMedium,
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final (id, url) in _presets)
+                    ActionChip(
+                      label: Text(_presetLabel(id)),
+                      tooltip: url,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => setState(() {
+                        _urlController.text = url;
+                        _urlError = null;
+                        _testState = _TestState.idle;
+                        _testMessage = null;
+                      }),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  OutlinedButton(
+                    onPressed: _testState == _TestState.testing
+                        ? null
+                        : _testConnection,
+                    child: Text(l10n.profile_serverTest),
                   ),
-                ),
-                child: Text(
-                  _testResult!,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: _testResult!.startsWith('✅') ? AppColors.accentCyan : AppColors.danger,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _testMessage ?? '',
+                      style:
+                          context.text.bodySmall!.copyWith(color: statusColor),
+                    ),
                   ),
-                ),
+                ],
               ),
             ],
-          ],
+          ),
         ),
       ),
       actions: [
         TextButton(
+          style: TextButton.styleFrom(foregroundColor: palette.textSecondary),
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Отмена', style: TextStyle(color: AppColors.textSecondary)),
+          child: Text(l10n.common_cancel),
         ),
-        TextButton.icon(
-          onPressed: _isTesting ? null : _testConnection,
-          icon: _isTesting
-              ? const SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.accentCyan),
-                )
-              : const Icon(Icons.wifi_tethering_rounded, size: 16),
-          label: const Text('Проверить связь'),
-        ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(backgroundColor: AppColors.accent),
-          onPressed: _save,
-          child: const Text('Сохранить'),
-        ),
+        FilledButton(onPressed: _save, child: Text(l10n.common_save)),
       ],
     );
   }

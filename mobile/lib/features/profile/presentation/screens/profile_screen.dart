@@ -1,566 +1,500 @@
 import 'dart:convert';
-import 'package:drift/drift.dart' as drift;
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:studyplan/core/database/app_database.dart';
 import 'package:studyplan/core/network/api_client.dart';
-import 'package:studyplan/core/theme/app_colors.dart';
+import 'package:studyplan/core/services/ics_export_service.dart';
+import 'package:studyplan/core/settings/app_settings.dart';
+import 'package:studyplan/core/theme/theme_ext.dart';
+import 'package:studyplan/core/utils/file_download_helper.dart';
 import 'package:studyplan/core/widgets/server_config_dialog.dart';
+import 'package:studyplan/core/widgets/ui/app_text_field.dart';
+import 'package:studyplan/core/widgets/ui/list_row.dart';
+import 'package:studyplan/core/widgets/ui/section_header.dart';
+import 'package:studyplan/features/profile/data/deadline_reminders.dart';
+import 'package:studyplan/features/profile/presentation/widgets/choice_screen.dart';
 
+/// Language names are always shown in their own language, so they are not
+/// translated and do not live in the ARB files.
+const _kLanguageNames = <String, String>{
+  'ru': 'Русский',
+  'en': 'English',
+  'kk': 'Қазақша',
+};
 
+/// Profile and app settings, grouped like system settings.
 class ProfileScreen extends StatefulWidget {
   final AppDatabase db;
   final ApiClient apiClient;
+  final AppSettings settings;
   final Map<String, dynamic> user;
   final Map<String, dynamic>? group;
   final VoidCallback onLogout;
   final ValueChanged<Map<String, dynamic>>? onUserUpdated;
 
+  /// Opens the LMS import. The «Подключить LMS» row is hidden when this is
+  /// null or on the web.
+  final VoidCallback? onImportLms;
+
   const ProfileScreen({
     super.key,
     required this.db,
     required this.apiClient,
+    required this.settings,
     required this.user,
     this.group,
     required this.onLogout,
     this.onUserUpdated,
+    this.onImportLms,
   });
+
+  /// SharedPreferences key with the LMS profile JSON written by the importer.
+  static const lmsProfileKey = 'lms.profile';
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  late Map<String, dynamic> _currentUser;
-  bool _isEditing = false;
-  final _nameController = TextEditingController();
+  late Map<String, dynamic> _user;
+  late final DeadlineReminders _reminders;
+  String? _lmsName;
+  String? _lmsEmail;
+  bool _remindersEnabled = false;
+  bool _remindersBusy = false;
+  bool _exporting = false;
+
+  String get _userId => _user['id'] as String? ?? '';
+  String? get _groupId => widget.group?['id'] as String?;
 
   @override
   void initState() {
     super.initState();
-    _currentUser = Map<String, dynamic>.from(widget.user);
-    _nameController.text = _currentUser['name'] as String? ?? '';
+    _user = Map<String, dynamic>.from(widget.user);
+    _reminders = DeadlineReminders(widget.db);
+    _loadPrefs();
   }
 
-  @override
-  void dispose() {
-    _nameController.dispose();
-    super.dispose();
+  Future<void> _loadPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? lmsName;
+    String? lmsEmail;
+    final raw = prefs.getString(ProfileScreen.lmsProfileKey);
+    if (raw != null) {
+      try {
+        final json = jsonDecode(raw) as Map<String, dynamic>;
+        lmsName = (json['fullName'] as String?)?.trim();
+        lmsEmail = (json['email'] as String?)?.trim();
+      } catch (_) {
+        // Corrupt value: treat as not connected.
+      }
+    }
+    if (!mounted) return;
+    setState(() {
+      _lmsName = (lmsName?.isEmpty ?? true) ? null : lmsName;
+      _lmsEmail = (lmsEmail?.isEmpty ?? true) ? null : lmsEmail;
+      _remindersEnabled = prefs.getBool(DeadlineReminders.prefsKey) ?? false;
+    });
   }
 
-  Future<void> _saveProfile() async {
-    final newName = _nameController.text.trim();
-    if (newName.isEmpty) return;
+  void _snack(String text) {
+    ScaffoldMessenger.maybeOf(context)
+        ?.showSnackBar(SnackBar(content: Text(text)));
+  }
 
+  // ---------------------------------------------------------------- name
+
+  Future<void> _editName() async {
+    final l10n = context.l10n;
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (_) => _EditNameDialog(initial: _user['name'] as String? ?? ''),
+    );
+    if (newName == null || newName == _user['name']) return;
+
+    final prefs = await SharedPreferences.getInstance();
     try {
-      final res = await widget.apiClient.dio.patch('/auth/me', data: {'name': newName});
-      final data = res.data as Map<String, dynamic>;
-      final updatedUser = data['user'] as Map<String, dynamic>;
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user_data', jsonEncode(updatedUser));
-
-      setState(() {
-        _currentUser = updatedUser;
-        _isEditing = false;
-      });
-
-      widget.onUserUpdated?.call(updatedUser);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Профиль успешно обновлен'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-      }
-    } catch (e) {
-      // Fallback: update locally if offline
-      setState(() {
-        _currentUser['name'] = newName;
-        _isEditing = false;
-      });
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user_data', jsonEncode(_currentUser));
-      widget.onUserUpdated?.call(_currentUser);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Имя сохранено локально'),
-            backgroundColor: AppColors.accent,
-          ),
-        );
-      }
+      final res =
+          await widget.apiClient.dio.patch('/auth/me', data: {'name': newName});
+      final updated = (res.data as Map<String, dynamic>)['user']
+          as Map<String, dynamic>;
+      await prefs.setString('user_data', jsonEncode(updated));
+      if (!mounted) return;
+      setState(() => _user = updated);
+      widget.onUserUpdated?.call(updated);
+      _snack(l10n.profile_nameSaved);
+    } catch (_) {
+      final updated = {..._user, 'name': newName};
+      await prefs.setString('user_data', jsonEncode(updated));
+      if (!mounted) return;
+      setState(() => _user = updated);
+      widget.onUserUpdated?.call(updated);
+      _snack(l10n.profile_nameSavedLocally);
     }
   }
 
-  void _confirmLogout() {
-    showDialog(
+  // ------------------------------------------------------------ settings
+
+  String _languageLabel(Locale? locale) => locale == null
+      ? context.l10n.profile_languageSystem
+      : _kLanguageNames[locale.languageCode] ?? locale.languageCode;
+
+  void _openTheme() {
+    final settings = widget.settings;
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (ctx) => ChoiceScreen<ThemeMode>(
+        title: ctx.l10n.profile_theme,
+        listenable: settings,
+        selected: () => settings.themeMode,
+        onSelected: settings.setThemeMode,
+        options: [
+          for (final mode in ThemeMode.values)
+            ChoiceOption(value: mode, title: _themeLabelIn(ctx, mode)),
+        ],
+      ),
+    ));
+  }
+
+  String _themeLabelIn(BuildContext ctx, ThemeMode mode) => switch (mode) {
+        ThemeMode.system => ctx.l10n.profile_themeSystem,
+        ThemeMode.light => ctx.l10n.profile_themeLight,
+        ThemeMode.dark => ctx.l10n.profile_themeDark,
+      };
+
+  void _openLanguage() {
+    final settings = widget.settings;
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (ctx) => ChoiceScreen<String>(
+        title: ctx.l10n.profile_language,
+        listenable: settings,
+        selected: () => settings.locale?.languageCode ?? '',
+        onSelected: (code) =>
+            settings.setLocale(code.isEmpty ? null : Locale(code)),
+        options: [
+          ChoiceOption(
+            value: '',
+            title: ctx.l10n.profile_languageSystem,
+            subtitle: ctx.l10n.profile_languageSystemHint,
+          ),
+          for (final locale in kSupportedLocales)
+            ChoiceOption(
+              value: locale.languageCode,
+              title: _kLanguageNames[locale.languageCode]!,
+            ),
+        ],
+      ),
+    ));
+  }
+
+  Future<void> _toggleReminders(bool enabled) async {
+    final l10n = context.l10n;
+    setState(() {
+      _remindersEnabled = enabled;
+      _remindersBusy = true;
+    });
+    try {
+      final count =
+          await _reminders.setEnabled(enabled, _userId, groupId: _groupId);
+      if (!mounted) return;
+      _snack(enabled ? l10n.profile_remindersOn(count) : l10n.profile_remindersOff);
+    } finally {
+      if (mounted) setState(() => _remindersBusy = false);
+    }
+  }
+
+  Future<void> _exportIcs() async {
+    final l10n = context.l10n;
+    setState(() => _exporting = true);
+    try {
+      final ics =
+          await IcsExportService.generateScheduleIcs(widget.db, _userId);
+      if (!ics.contains('BEGIN:VEVENT')) {
+        _snack(l10n.profile_exportIcsEmpty);
+        return;
+      }
+      const fileName = 'studyplan-schedule.ics';
+      final bytes = Uint8List.fromList(utf8.encode(ics));
+      if (kIsWeb) {
+        downloadBytesWeb(bytes, fileName);
+        _snack(l10n.profile_exportIcsDone);
+      } else {
+        await SharePlus.instance.share(ShareParams(
+          files: [
+            XFile.fromData(bytes, mimeType: 'text/calendar', name: fileName),
+          ],
+          fileNameOverrides: const [fileName],
+        ));
+      }
+    } catch (_) {
+      if (mounted) _snack(l10n.profile_exportIcsFailed);
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
+  Future<void> _confirmLogout() async {
+    final l10n = context.l10n;
+    final palette = context.palette;
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-          side: const BorderSide(color: AppColors.border),
-        ),
-        title: const Row(
-          children: [
-            Icon(Icons.logout_rounded, color: AppColors.danger, size: 24),
-            SizedBox(width: 10),
-            Text('Выход из системы', style: TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w700)),
-          ],
-        ),
-        content: const Text(
-          'Вы действительно хотите выйти из своего аккаунта? Локальные данные сохранятся на этом устройстве.',
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-        ),
+        title: Text(l10n.profile_logoutTitle),
+        content: Text(l10n.profile_logoutMessage),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Отмена', style: TextStyle(color: AppColors.textSecondary)),
+            style: TextButton.styleFrom(foregroundColor: palette.textSecondary),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.common_cancel),
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () {
-              Navigator.pop(ctx);
-              widget.onLogout();
-            },
-            child: const Text('Выйти'),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: palette.danger),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.profile_logout),
           ),
         ],
       ),
     );
+    if (confirmed == true) widget.onLogout();
+  }
+
+  // --------------------------------------------------------------- build
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final palette = context.palette;
+    final name = (_user['name'] as String?)?.trim();
+    final email = (_user['email'] as String?)?.trim();
+    final hasLms = _lmsName != null || _lmsEmail != null;
+    final canImportLms = widget.onImportLms != null && !kIsWeb;
+
+    Widget progress() => const SizedBox.square(
+          dimension: 16,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        );
+
+    final sections = <Widget>[
+      const SizedBox(height: 8),
+      ListGroup(children: [
+        ListRow(
+          title: (name == null || name.isEmpty) ? l10n.profile_noName : name,
+          subtitle: (email == null || email.isEmpty) ? null : email,
+          trailing: Tooltip(
+            message: l10n.profile_editName,
+            child: const Icon(Icons.edit_outlined),
+          ),
+          onTap: _editName,
+        ),
+      ]),
+      if (hasLms || canImportLms) ...[
+        SectionHeader(l10n.profile_sectionLms),
+        ListGroup(children: [
+          if (hasLms) ...[
+            if (_lmsName != null)
+              _ValueRow(label: l10n.profile_lmsFullName, value: _lmsName!),
+            if (_lmsEmail != null)
+              _ValueRow(label: l10n.profile_lmsEmail, value: _lmsEmail!),
+          ] else
+            ListRow(
+              title: l10n.profile_lmsConnect,
+              subtitle: l10n.profile_lmsConnectHint,
+              trailing: const ListRowChevron(),
+              onTap: widget.onImportLms,
+            ),
+        ]),
+      ],
+      SectionHeader(l10n.profile_sectionAppearance),
+      ListenableBuilder(
+        listenable: widget.settings,
+        builder: (context, _) => ListGroup(children: [
+          ListRow(
+            title: l10n.profile_theme,
+            trailing: _TrailingValue(
+              _themeLabelIn(context, widget.settings.themeMode),
+            ),
+            onTap: _openTheme,
+          ),
+          ListRow(
+            title: l10n.profile_language,
+            trailing: _TrailingValue(_languageLabel(widget.settings.locale)),
+            onTap: _openLanguage,
+          ),
+        ]),
+      ),
+      if (!kIsWeb) ...[
+        SectionHeader(l10n.profile_sectionNotifications),
+        ListGroup(children: [
+          MergeSemantics(
+            child: ListRow(
+              title: l10n.profile_deadlineReminders,
+              subtitle: l10n.profile_deadlineRemindersHint,
+              trailing: Switch(
+                value: _remindersEnabled,
+                onChanged: _remindersBusy ? null : _toggleReminders,
+              ),
+              onTap: _remindersBusy
+                  ? null
+                  : () => _toggleReminders(!_remindersEnabled),
+            ),
+          ),
+        ]),
+      ],
+      SectionHeader(l10n.profile_sectionData),
+      ListGroup(children: [
+        ListRow(
+          title: l10n.profile_exportIcs,
+          subtitle: l10n.profile_exportIcsHint,
+          trailing: _exporting ? progress() : null,
+          onTap: _exporting ? null : _exportIcs,
+        ),
+        ListRow(
+          title: l10n.profile_server,
+          subtitle: widget.apiClient.dio.options.baseUrl,
+          trailing: const ListRowChevron(),
+          onTap: () => ServerConfigDialog.show(
+            context,
+            widget.apiClient,
+            onSaved: () {
+              if (mounted) setState(() {});
+            },
+          ),
+        ),
+      ]),
+      const SizedBox(height: 32),
+      ListGroup(children: [
+        ListRow(
+          title: l10n.profile_logout,
+          titleColor: palette.danger,
+          onTap: _confirmLogout,
+        ),
+      ]),
+    ];
+
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.profile_title)),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+        children: [
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 640),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: sections,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Current value next to a chevron, e.g. «Тёмная ›».
+class _TrailingValue extends StatelessWidget {
+  final String value;
+
+  const _TrailingValue(this.value);
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 160),
+          child: Text(value, maxLines: 1, overflow: TextOverflow.ellipsis),
+        ),
+        const SizedBox(width: 4),
+        const ListRowChevron(),
+      ],
+    );
+  }
+}
+
+/// Read-only label / value row.
+class _ValueRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _ValueRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListRow(
+      title: label,
+      trailing: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 220),
+        child: Text(
+          value,
+          maxLines: 2,
+          textAlign: TextAlign.end,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    );
+  }
+}
+
+class _EditNameDialog extends StatefulWidget {
+  final String initial;
+
+  const _EditNameDialog({required this.initial});
+
+  @override
+  State<_EditNameDialog> createState() => _EditNameDialogState();
+}
+
+class _EditNameDialogState extends State<_EditNameDialog> {
+  late final TextEditingController _controller =
+      TextEditingController(text: widget.initial);
+  String? _error;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final value = _controller.text.trim();
+    if (value.isEmpty) {
+      setState(() => _error = context.l10n.profile_nameRequired);
+      return;
+    }
+    Navigator.of(context).pop(value);
   }
 
   @override
   Widget build(BuildContext context) {
-    final name = _currentUser['name'] as String? ?? 'Студент';
-    final email = _currentUser['email'] as String? ?? '';
-    final role = _currentUser['role'] as String? ?? 'student';
-    final isHeadman = role == 'headman';
-    final groupTitle = widget.group?['title'] as String?;
-    final semester = (widget.group?['semester'] as num?)?.toInt();
-    final inviteCode = widget.group?['invite_code'] as String?;
-    final userId = _currentUser['id'] as String? ?? '';
-
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Профиль пользователя', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        actions: [
-          IconButton(
-            tooltip: 'Выйти из системы',
-            icon: const Icon(Icons.logout_rounded, color: AppColors.danger),
-            onPressed: _confirmLogout,
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 640),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Top User Profile Card
-                Card(
-                  color: AppColors.surface,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    side: const BorderSide(color: AppColors.border),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      children: [
-                        // Avatar with Role badge
-                        Stack(
-                          alignment: Alignment.bottomRight,
-                          children: [
-                            CircleAvatar(
-                              radius: 44,
-                              backgroundColor: isHeadman
-                                  ? AppColors.plate(AppColors.accent, 0.3)
-                                  : AppColors.plate(AppColors.accentCyan, 0.3),
-                              child: Text(
-                                name.isNotEmpty ? name[0].toUpperCase() : '?',
-                                style: TextStyle(
-                                  fontSize: 36,
-                                  fontWeight: FontWeight.w800,
-                                  color: isHeadman ? AppColors.accent : AppColors.accentCyan,
-                                ),
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: isHeadman ? AppColors.accent : AppColors.accentCyan,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: AppColors.surface, width: 2),
-                              ),
-                              child: Text(
-                                isHeadman ? 'Староста' : 'Студент',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        if (_isEditing) ...[
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: _nameController,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Имя и фамилия',
-                                    isDense: true,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              IconButton(
-                                icon: const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 28),
-                                onPressed: _saveProfile,
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.cancel_rounded, color: AppColors.textSecondary, size: 28),
-                                onPressed: () {
-                                  setState(() {
-                                    _isEditing = false;
-                                    _nameController.text = _currentUser['name'] as String? ?? '';
-                                  });
-                                },
-                              ),
-                            ],
-                          ),
-                        ] else ...[
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                name,
-                                style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.accentCyan),
-                                tooltip: 'Редактировать имя',
-                                onPressed: () => setState(() => _isEditing = true),
-                              ),
-                            ],
-                          ),
-                        ],
-                        const SizedBox(height: 4),
-                        Text(
-                          email,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Group & Academic Info
-                Card(
-                  color: AppColors.surface,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    side: const BorderSide(color: AppColors.border),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(Icons.school_outlined, color: AppColors.accentCyan, size: 20),
-                            SizedBox(width: 8),
-                            Text(
-                              'Академическая группа',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        _buildInfoRow('Группа:', groupTitle ?? 'Группа не выбрана'),
-                        const Divider(color: AppColors.border, height: 18),
-                        if (semester != null) ...[
-                          _buildInfoRow('Семестр:', '$semester'),
-                          const Divider(color: AppColors.border, height: 18),
-                        ],
-                        if (inviteCode != null) ...[
-                          _buildInfoRow('Код приглашения:', inviteCode, isCode: true),
-                          const Divider(color: AppColors.border, height: 18),
-                        ],
-                        _buildInfoRow('Роль в системе:', isHeadman ? 'Староста (Полный доступ)' : 'Студент'),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Tasks & Deadlines Statistics (Criteria 8 & 9)
-                StreamBuilder<List<Task>>(
-                  stream: (widget.db.select(widget.db.tasks)
-                        ..where((t) => t.userId.equals(userId) & t.isDeleted.equals(false)))
-                      .watch(),
-                  builder: (context, snapshot) {
-                    final tasks = snapshot.data ?? [];
-                    final total = tasks.length;
-                    final completed = tasks.where((t) => t.status == 'completed').length;
-                    final pending = total - completed;
-                    final progress = total > 0 ? (completed / total) : 0.0;
-
-                    return Card(
-                      color: AppColors.surface,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        side: const BorderSide(color: AppColors.border),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(20.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Row(
-                              children: [
-                                Icon(Icons.analytics_outlined, color: AppColors.accent, size: 20),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Статистика успеваемости',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildStatTile('Всего задач', '$total', AppColors.textPrimary),
-                                ),
-                                Expanded(
-                                  child: _buildStatTile('В процессе', '$pending', AppColors.warning),
-                                ),
-                                Expanded(
-                                  child: _buildStatTile('Выполнено', '$completed', AppColors.success),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
-                              child: LinearProgressIndicator(
-                                value: progress,
-                                minHeight: 8,
-                                backgroundColor: AppColors.elevated,
-                                valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accentCyan),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: Text(
-                                '${(progress * 100).toInt()}% выполнено',
-                                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                // API Backend Connection Info Card
-                Card(
-                  color: AppColors.surface,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    side: const BorderSide(color: AppColors.border, width: 1),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Row(
-                              children: [
-                                Icon(Icons.dns_rounded, size: 18, color: AppColors.accentCyan),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Подключение к API серверу',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.tune_rounded, size: 18, color: AppColors.accent),
-                              tooltip: 'Сменить адрес API',
-                              onPressed: () => ServerConfigDialog.show(
-                                context,
-                                widget.apiClient,
-                                onSaved: () => setState(() {}),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: AppColors.elevated,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppColors.border),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.circle, size: 8, color: AppColors.success),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  widget.apiClient.dio.options.baseUrl,
-                                  style: const TextStyle(
-                                    fontFamily: 'monospace',
-                                    fontSize: 12,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Logout Action Button (Criteria 10)
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.danger.withValues(alpha: 0.15),
-                    foregroundColor: AppColors.danger,
-                    side: const BorderSide(color: AppColors.danger, width: 1.2),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  icon: const Icon(Icons.logout_rounded, size: 20),
-                  label: const Text(
-                    'Выйти из системы',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                  ),
-                  onPressed: _confirmLogout,
-                ),
-                const SizedBox(height: 24),
-              ],
-            ),
-          ),
+    final l10n = context.l10n;
+    return AlertDialog(
+      title: Text(l10n.profile_editName),
+      content: SizedBox(
+        width: 360,
+        child: AppTextField(
+          controller: _controller,
+          label: l10n.profile_nameLabel,
+          autofocus: true,
+          errorText: _error,
+          textInputAction: TextInputAction.done,
+          autofillHints: const [AutofillHints.name],
+          onSubmitted: (_) => _submit(),
         ),
       ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value, {bool isCode = false}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-        if (isCode)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: AppColors.elevated,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontFamily: 'monospace',
-                fontWeight: FontWeight.w700,
-                color: AppColors.accentCyan,
-                fontSize: 13,
-              ),
-            ),
-          )
-        else
-          Text(
-            value,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-              fontSize: 13,
-            ),
+      actions: [
+        TextButton(
+          style: TextButton.styleFrom(
+            foregroundColor: context.palette.textSecondary,
           ),
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.common_cancel),
+        ),
+        FilledButton(onPressed: _submit, child: Text(l10n.common_save)),
       ],
-    );
-  }
-
-  Widget _buildStatTile(String title, String value, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      decoration: BoxDecoration(
-        color: AppColors.elevated,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 11,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
