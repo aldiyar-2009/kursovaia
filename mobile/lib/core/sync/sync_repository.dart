@@ -21,6 +21,28 @@ class SyncRepository {
     await prefs.setInt(_lastSyncedKey, timestamp);
   }
 
+  /// Forgets the sync cursor so the next sync pulls the full server state
+  /// (call after joining/leaving a group and on logout).
+  Future<void> resetCursor() => setLastSyncedAt(0);
+
+  /// `table:id` keys of pushed rows the server rejected for a reason other than
+  /// `stale`. Such rows stay pending and are retried on the next sync. A `stale`
+  /// rejection means the server copy won LWW: the row is marked synced and the
+  /// server version (returned in `changes`) overwrites it on pull.
+  static Set<String> _rejectedKeys(Object? rejected) {
+    final keys = <String>{};
+    if (rejected is! List) return keys;
+    for (final item in rejected) {
+      if (item is! Map) continue;
+      final table = item['table'];
+      final id = item['id'];
+      if (table is! String || id is! String) continue;
+      if (item['reason'] == 'stale') continue;
+      keys.add('$table:$id');
+    }
+    return keys;
+  }
+
   Future<List<Subject>> _pendingSubjects(String userId) => (db.select(db.subjects)
         ..where((t) => t.userId.equals(userId) & t.syncStatus.isNotValue('synced')))
       .get();
@@ -183,11 +205,20 @@ class SyncRepository {
     final data = response.data as Map<String, dynamic>;
     final serverTime = data['server_time'] as int;
     final changes = data['changes'] as Map<String, dynamic>;
+    final rejectedKeys = _rejectedKeys(data['rejected']);
+    var keptCount = 0;
+    // Rows the server refused (except LWW `stale`) stay pending for a retry.
+    bool keepPending(String table, String id) {
+      if (!rejectedKeys.contains('$table:$id')) return false;
+      keptCount++;
+      return true;
+    }
 
     // 2. Mark local pending items as synced in transaction
     await db.transaction(() async {
       // Subjects
       for (final s in pendingSubjects) {
+        if (keepPending('subjects', s.id)) continue;
         if (s.isDeleted) {
           await (db.delete(db.subjects)..where((t) => t.id.equals(s.id))).go();
         } else {
@@ -199,6 +230,7 @@ class SyncRepository {
 
       // Lessons
       for (final l in pendingLessons) {
+        if (keepPending('lessons', l.id)) continue;
         if (l.isDeleted) {
           await (db.delete(db.lessons)..where((t) => t.id.equals(l.id))).go();
         } else {
@@ -210,6 +242,7 @@ class SyncRepository {
 
       // Tasks
       for (final t in pendingTasks) {
+        if (keepPending('tasks', t.id)) continue;
         if (t.isDeleted) {
           await (db.delete(db.tasks)..where((row) => row.id.equals(t.id))).go();
         } else {
@@ -221,6 +254,7 @@ class SyncRepository {
 
       // Subtasks
       for (final st in pendingSubtasks) {
+        if (keepPending('subtasks', st.id)) continue;
         if (st.isDeleted) {
           await (db.delete(db.subtasks)..where((t) => t.id.equals(st.id))).go();
         } else {
@@ -232,6 +266,7 @@ class SyncRepository {
 
       // LMS courses
       for (final c in pendingLmsCourses) {
+        if (keepPending('lms_courses', c.id)) continue;
         if (c.isDeleted) {
           await (db.delete(db.lmsCourses)..where((t) => t.id.equals(c.id))).go();
         } else {
@@ -243,6 +278,7 @@ class SyncRepository {
 
       // LMS events
       for (final e in pendingLmsEvents) {
+        if (keepPending('lms_events', e.id)) continue;
         if (e.isDeleted) {
           await (db.delete(db.lmsEvents)..where((t) => t.id.equals(e.id))).go();
         } else {
@@ -254,6 +290,7 @@ class SyncRepository {
 
       // LMS materials
       for (final m in pendingLmsMaterials) {
+        if (keepPending('lms_materials', m.id)) continue;
         if (m.isDeleted) {
           await (db.delete(db.lmsMaterials)..where((t) => t.id.equals(m.id))).go();
         } else {
@@ -467,7 +504,8 @@ class SyncRepository {
           pendingSubtasks.length +
           pendingLmsCourses.length +
           pendingLmsEvents.length +
-          pendingLmsMaterials.length,
+          pendingLmsMaterials.length -
+          keptCount,
     );
   }
 
