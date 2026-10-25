@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:studyplan/core/theme/app_theme.dart';
 import 'package:studyplan/core/theme/theme_ext.dart';
+import 'package:studyplan/core/utils/due_format.dart';
 import 'package:studyplan/core/widgets/ui/list_row.dart';
 import 'package:studyplan/core/widgets/ui/status_label.dart';
 import 'package:studyplan/features/grades/domain/grade_calculator.dart';
@@ -13,9 +14,6 @@ String _localeTag(BuildContext context) =>
 
 String _hm(BuildContext context, DateTime t) =>
     DateFormat.Hm(_localeTag(context)).format(t);
-
-String _capitalized(String s) =>
-    s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 
 /// `09:00–10:50`, or only the start when the end is unknown.
 String timeRange(BuildContext context, AgendaLesson l) {
@@ -36,6 +34,38 @@ String? lessonMeta(BuildContext context, AgendaLesson l) {
   final room = l.room?.trim();
   final parts = [?type, if (room != null && room.isNotEmpty) room];
   return parts.isEmpty ? null : parts.join(', ');
+}
+
+/// Section heading on Home. Unlike the shared `SectionHeader` it has no
+/// horizontal padding of its own: Home's list already sits in the content
+/// column, so the heading starts at the same x as the row groups below it.
+class HomeSectionHeader extends StatelessWidget {
+  final String title;
+  final Widget? trailing;
+
+  const HomeSectionHeader(this.title, {super.key, this.trailing});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 24, bottom: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Semantics(
+              header: true,
+              child: Text(
+                title,
+                style: context.text.labelMedium!
+                    .copyWith(color: context.palette.textSecondary),
+              ),
+            ),
+          ),
+          ?trailing,
+        ],
+      ),
+    );
+  }
 }
 
 /// Compact link on the right of a section header.
@@ -172,18 +202,6 @@ class DeadlineRow extends StatelessWidget {
     this.onTap,
   });
 
-  String _dueLabel(BuildContext context) {
-    final l10n = context.l10n;
-    final due = deadline.due;
-    final today = DateTime(now.year, now.month, now.day);
-    final day = DateTime(due.year, due.month, due.day);
-    final days = day.difference(today).inDays;
-    final time = _hm(context, due);
-    if (days == 0) return l10n.home_dueToday(time);
-    if (days == 1) return l10n.home_dueTomorrow(time);
-    return _capitalized(DateFormat('E, d MMM', _localeTag(context)).format(due));
-  }
-
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
@@ -228,7 +246,7 @@ class DeadlineRow extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             Text(
-              _dueLabel(context),
+              formatDue(context, deadline.due, now: now),
               style: context.text.bodySmall!
                   .copyWith(color: overdue ? p.danger : p.textSecondary)
                   .tabular,
@@ -292,11 +310,16 @@ class FirstSteps extends StatelessWidget {
   /// True when nothing else is on the screen above the checklist.
   final bool compactTop;
 
+  /// False where LMS import is unavailable (web): the grades step then
+  /// offers manual entry instead of the import.
+  final bool lmsImportAvailable;
+
   const FirstSteps({
     super.key,
     required this.steps,
     required this.onStep,
     this.compactTop = false,
+    this.lmsImportAvailable = true,
   });
 
   @override
@@ -306,12 +329,20 @@ class FirstSteps extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // No horizontal padding: the list already sits in the content
+        // column, so the heading lines up with the row group below.
         Padding(
-          padding: EdgeInsets.fromLTRB(16, compactTop ? 16 : 32, 16, 12),
+          padding: EdgeInsets.only(top: compactTop ? 16 : 32, bottom: 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(l10n.home_firstStepsTitle, style: context.text.titleMedium),
+              Semantics(
+                header: true,
+                child: Text(
+                  l10n.home_firstStepsTitle,
+                  style: context.text.titleMedium,
+                ),
+              ),
               const SizedBox(height: 4),
               Text(
                 l10n.home_firstStepsMessage,
@@ -329,12 +360,16 @@ class FirstSteps extends StatelessWidget {
                 leading: const Icon(Icons.radio_button_unchecked),
                 title: switch (step) {
                   FirstStep.schedule => l10n.home_stepSchedule,
-                  FirstStep.lms => l10n.home_stepLms,
+                  FirstStep.lms => lmsImportAvailable
+                      ? l10n.home_stepLms
+                      : l10n.home_stepGradesManual,
                   FirstStep.group => l10n.home_stepGroup,
                 },
                 subtitle: switch (step) {
                   FirstStep.schedule => l10n.home_stepScheduleHint,
-                  FirstStep.lms => l10n.home_stepLmsHint,
+                  FirstStep.lms => lmsImportAvailable
+                      ? l10n.home_stepLmsHint
+                      : l10n.home_stepGradesManualHint,
                   FirstStep.group => l10n.home_stepGroupHint,
                 },
                 trailing: const ListRowChevron(),

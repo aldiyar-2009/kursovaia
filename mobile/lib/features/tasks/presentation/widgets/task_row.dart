@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:studyplan/core/theme/app_theme.dart';
 import 'package:studyplan/core/theme/theme_ext.dart';
+import 'package:studyplan/core/utils/due_format.dart';
 import 'package:studyplan/core/widgets/ui/status_label.dart';
 import 'package:studyplan/features/tasks/domain/task_list_item.dart';
 
@@ -31,23 +31,6 @@ class TaskRow extends StatelessWidget {
     this.subtasks,
   });
 
-  String _formatDue(BuildContext context, DateTime due) {
-    final locale = Localizations.localeOf(context).toLanguageTag();
-    if (item.isDone) return DateFormat('d MMM', locale).format(due);
-    switch (bucketFor(due, now)) {
-      case TaskBucket.today:
-        return DateFormat.Hm(locale).format(due);
-      case TaskBucket.week:
-        return DateFormat('EEE, HH:mm', locale).format(due);
-      case TaskBucket.overdue:
-      case TaskBucket.later:
-      case TaskBucket.noDate:
-        return due.year == now.year
-            ? DateFormat('d MMM, HH:mm', locale).format(due)
-            : DateFormat('d MMM y', locale).format(due);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final p = context.palette;
@@ -55,6 +38,21 @@ class TaskRow extends StatelessWidget {
     final due = item.due;
     final overdue = !item.isDone && due != null && due.isBefore(now);
     final metaStyle = context.text.bodySmall!.tabular;
+    // Same wording as Home's deadline rows.
+    final dueText = due == null ? null : formatDue(context, due, now: now);
+    final hasLink = item.isLms && (item.lmsEvent!.url?.isNotEmpty ?? false);
+
+    // What a screen reader announces for the row: "title, due, status".
+    final summary = [
+      item.title,
+      if (dueText != null) l10n.tasks_rowDue(dueText),
+      item.isDone
+          ? l10n.tasks_statusDone
+          : overdue
+              ? l10n.tasks_statusOverdue
+              : l10n.tasks_statusOpen,
+      if (hasLink) l10n.tasks_openLink,
+    ].join(', ');
 
     final meta = <Widget>[
       if (!item.isDone && item.priority < 3)
@@ -62,9 +60,9 @@ class TaskRow extends StatelessWidget {
           color: item.priority == 1 ? p.danger : p.warning,
           label: item.priority == 1 ? l10n.tasks_priorityHigh : l10n.tasks_priorityMedium,
         ),
-      if (due != null)
+      if (dueText != null)
         Text(
-          _formatDue(context, due),
+          dueText,
           style: metaStyle.copyWith(color: overdue ? p.danger : p.textSecondary),
         ),
       if (item.context != null && item.context!.isNotEmpty)
@@ -90,7 +88,48 @@ class TaskRow extends StatelessWidget {
       if (item.isGroup) StatusLabel(text: l10n.tasks_labelGroup, tone: StatusTone.neutral),
     ];
 
-    final hasLink = item.isLms && (item.lmsEvent!.url?.isNotEmpty ?? false);
+    final details = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  item.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.bodyMedium!.copyWith(
+                    color: item.isDone ? p.textTertiary : p.textPrimary,
+                    decoration: item.isDone ? TextDecoration.lineThrough : null,
+                    decorationColor: p.textTertiary,
+                  ),
+                ),
+                if (meta.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: meta,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        if (hasLink) ...[
+          const SizedBox(width: 8),
+          Padding(
+            padding: const EdgeInsets.only(top: 9),
+            child: Icon(Icons.open_in_new, size: 16, color: p.textTertiary),
+          ),
+        ],
+      ],
+    );
 
     final row = ConstrainedBox(
       constraints: const BoxConstraints(minHeight: 56),
@@ -99,54 +138,28 @@ class TaskRow extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Its own semantics node: "mark as done, <title>", checked state.
             _CheckCircle(
               key: ValueKey('task-check-${item.id}'),
               done: item.isDone,
               onPressed: onToggle,
               tooltip: item.isDone ? l10n.tasks_markNotDone : l10n.tasks_markDone,
+              semanticLabel:
+                  '${item.isDone ? l10n.tasks_markNotDone : l10n.tasks_markDone}, '
+                  '${item.title}',
             ),
+            // The rest of the row is one node that opens the details.
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      item.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: context.text.bodyMedium!.copyWith(
-                        color: item.isDone ? p.textTertiary : p.textPrimary,
-                        decoration: item.isDone ? TextDecoration.lineThrough : null,
-                        decorationColor: p.textTertiary,
-                      ),
-                    ),
-                    if (meta.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 4,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: meta,
-                      ),
-                    ],
-                  ],
-                ),
+              child: Semantics(
+                key: ValueKey('task-open-${item.id}'),
+                container: true,
+                button: onTap != null,
+                label: summary,
+                onTap: onTap,
+                excludeSemantics: true,
+                child: details,
               ),
             ),
-            if (hasLink) ...[
-              const SizedBox(width: 8),
-              Padding(
-                padding: const EdgeInsets.only(top: 9),
-                child: Icon(
-                  Icons.open_in_new,
-                  size: 16,
-                  color: p.textTertiary,
-                  semanticLabel: l10n.tasks_openLink,
-                ),
-              ),
-            ],
           ],
         ),
       ),
@@ -155,7 +168,8 @@ class TaskRow extends StatelessWidget {
     if (onTap == null) return row;
     return Material(
       type: MaterialType.transparency,
-      child: InkWell(onTap: onTap, child: row),
+      // Semantics come from the nodes above, not from the ink well.
+      child: InkWell(onTap: onTap, excludeFromSemantics: true, child: row),
     );
   }
 }
@@ -188,12 +202,14 @@ class _CheckCircle extends StatelessWidget {
   final bool done;
   final VoidCallback? onPressed;
   final String tooltip;
+  final String semanticLabel;
 
   const _CheckCircle({
     super.key,
     required this.done,
     required this.onPressed,
     required this.tooltip,
+    required this.semanticLabel,
   });
 
   @override
@@ -217,10 +233,12 @@ class _CheckCircle extends StatelessWidget {
       child: done ? Icon(Icons.check, size: 14, color: p.onPrimary) : null,
     );
     return Semantics(
+      container: true,
       checked: done,
       enabled: enabled,
       button: enabled,
-      label: tooltip,
+      label: semanticLabel,
+      onTap: onPressed,
       excludeSemantics: true,
       child: SizedBox(
         width: 44,

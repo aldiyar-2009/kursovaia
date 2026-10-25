@@ -4,15 +4,17 @@ import 'package:drift/drift.dart' as drift;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:studyplan/core/database/app_database.dart';
 import 'package:studyplan/core/database/task_dao.dart';
 import 'package:studyplan/core/services/file_storage_service.dart';
 import 'package:studyplan/core/theme/app_theme.dart';
 import 'package:studyplan/core/theme/theme_ext.dart';
+import 'package:studyplan/core/utils/due_format.dart';
 import 'package:studyplan/core/utils/uuid_util.dart';
+import 'package:studyplan/core/widgets/ui/app_sheet.dart';
 import 'package:studyplan/core/widgets/ui/app_text_field.dart';
 import 'package:studyplan/core/widgets/ui/list_row.dart';
+import 'package:studyplan/core/widgets/ui/segmented_toggle.dart';
 
 /// Create / edit sheet for a task: title, description, due date, subject,
 /// priority, group publishing, subtasks and attachments.
@@ -56,11 +58,8 @@ class TaskDetailBottomSheet extends StatefulWidget {
     String? groupTitle,
     Map<String, String> memberNames = const {},
   }) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      constraints: const BoxConstraints(maxWidth: 640),
+    return showAppSheetCustom<void>(
+      context,
       builder: (_) => TaskDetailBottomSheet(
         db: db,
         userId: userId,
@@ -163,8 +162,6 @@ class _TaskDetailBottomSheetState extends State<TaskDetailBottomSheet> {
     super.dispose();
   }
 
-  String _locale(BuildContext context) => Localizations.localeOf(context).toLanguageTag();
-
   Future<void> _pickFile() async {
     final result = await FilePicker.pickFiles();
     if (result.isNotEmpty && result.first.path != null) {
@@ -219,14 +216,18 @@ class _TaskDetailBottomSheetState extends State<TaskDetailBottomSheet> {
       builder: (ctx) => SimpleDialog(
         title: Text(l10n.tasks_subject),
         children: [
-          SimpleDialogOption(
-            onPressed: () => Navigator.pop(ctx, ''),
-            child: Text(l10n.tasks_subjectNone),
+          _SubjectOption(
+            key: const ValueKey('tasks-subject-none'),
+            title: l10n.tasks_subjectNone,
+            selected: _subjectId == null,
+            onTap: () => Navigator.pop(ctx, ''),
           ),
           for (final s in subjects)
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(ctx, s.id),
-              child: Text(s.title, maxLines: 2, overflow: TextOverflow.ellipsis),
+            _SubjectOption(
+              key: ValueKey('tasks-subject-${s.id}'),
+              title: s.title,
+              selected: s.id == _subjectId,
+              onTap: () => Navigator.pop(ctx, s.id),
             ),
         ],
       ),
@@ -346,67 +347,68 @@ class _TaskDetailBottomSheetState extends State<TaskDetailBottomSheet> {
     messenger.showSnackBar(SnackBar(content: Text(l10n.tasks_deleted)));
   }
 
-  String _formatDue(BuildContext context, DateTime d) => DateFormat(
-        d.year == DateTime.now().year ? 'd MMMM, HH:mm' : 'd MMM y, HH:mm',
-        _locale(context),
-      ).format(d);
+  /// Due moment with time, worded like the task rows and Home.
+  String _formatDue(BuildContext context, DateTime d) =>
+      formatDue(context, d, withTime: true);
 
   String _formatSize(int bytes) => (bytes / 1024).toStringAsFixed(1);
 
   @override
   Widget build(BuildContext context) {
-    final p = context.palette;
     final l10n = context.l10n;
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final editable = !_loading && !_readOnly;
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottomInset),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 8),
-          Center(
-            child: Container(
-              width: 32,
-              height: 4,
-              decoration: BoxDecoration(
-                color: p.border,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
+    return AppSheetLayout(
+      title: _isEdit ? l10n.tasks_sheetEdit : l10n.tasks_sheetNew,
+      body: _loading
+          ? const Padding(
+              padding: EdgeInsets.all(32),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          : _readOnly
+              ? _buildReadOnly(context)
+              : _buildForm(context),
+      primaryAction: editable
+          ? FilledButton(
+              key: const ValueKey('tasks-save'),
+              onPressed: _save,
+              child: Text(l10n.common_save),
+            )
+          : null,
+    );
+  }
+
+  /// Title input: label above, wraps to up to three lines for long names.
+  Widget _titleField(BuildContext context) {
+    final l10n = context.l10n;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          l10n.tasks_fieldTitle,
+          style: context.text.labelMedium!
+              .copyWith(color: context.palette.textSecondary),
+        ),
+        const SizedBox(height: 6),
+        TextFormField(
+          key: const ValueKey('tasks-title-field'),
+          controller: _titleController,
+          autofocus: !_isEdit,
+          minLines: 1,
+          maxLines: 3,
+          keyboardType: TextInputType.text,
+          textInputAction: TextInputAction.next,
+          style: context.text.bodyMedium,
+          decoration: InputDecoration(
+            hintText: l10n.tasks_fieldTitleHint,
+            errorText: _titleError,
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    _isEdit ? l10n.tasks_sheetEdit : l10n.tasks_sheetNew,
-                    style: context.text.titleMedium,
-                  ),
-                ),
-                IconButton(
-                  tooltip: l10n.tasks_close,
-                  icon: Icon(Icons.close, color: p.textSecondary),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-          ),
-          Flexible(
-            child: _loading
-                ? const Padding(
-                    padding: EdgeInsets.all(32),
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                : SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                    child: _readOnly ? _buildReadOnly(context) : _buildForm(context),
-                  ),
-          ),
-        ],
-      ),
+          onChanged: (_) {
+            if (_titleError != null) setState(() => _titleError = null);
+          },
+        ),
+      ],
     );
   }
 
@@ -443,7 +445,10 @@ class _TaskDetailBottomSheetState extends State<TaskDetailBottomSheet> {
                 visualDensity: VisualDensity.compact,
                 icon: const Icon(Icons.close, size: 18),
                 onPressed: () => setState(() => _dueDate = null),
-              ),
+              )
+            else
+              const SizedBox(width: 4),
+            const ListRowChevron(),
           ],
         ),
       ),
@@ -486,17 +491,7 @@ class _TaskDetailBottomSheetState extends State<TaskDetailBottomSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        AppTextField(
-          controller: _titleController,
-          label: l10n.tasks_fieldTitle,
-          hint: l10n.tasks_fieldTitleHint,
-          errorText: _titleError,
-          autofocus: !_isEdit,
-          textInputAction: TextInputAction.next,
-          onChanged: (_) {
-            if (_titleError != null) setState(() => _titleError = null);
-          },
-        ),
+        _titleField(context),
         const SizedBox(height: 16),
         AppTextField(
           controller: _descController,
@@ -507,15 +502,16 @@ class _TaskDetailBottomSheetState extends State<TaskDetailBottomSheet> {
         const SizedBox(height: 24),
         ListGroup(children: properties),
         _label(context, l10n.tasks_priority),
-        SegmentedButton<int>(
-          showSelectedIcon: false,
+        SegmentedToggle<int>(
+          key: const ValueKey('tasks-priority'),
+          expand: true,
           segments: [
-            ButtonSegment(value: 1, label: Text(l10n.tasks_priorityHighShort)),
-            ButtonSegment(value: 2, label: Text(l10n.tasks_priorityMediumShort)),
-            ButtonSegment(value: 3, label: Text(l10n.tasks_priorityLowShort)),
+            (1, l10n.tasks_priorityHighShort),
+            (2, l10n.tasks_priorityMediumShort),
+            (3, l10n.tasks_priorityLowShort),
           ],
-          selected: {_priority},
-          onSelectionChanged: (s) => setState(() => _priority = s.first),
+          value: _priority,
+          onChanged: (v) => setState(() => _priority = v),
         ),
         _label(context, l10n.tasks_subtasks),
         if (visibleSubtasks.isNotEmpty) ...[
@@ -577,15 +573,8 @@ class _TaskDetailBottomSheetState extends State<TaskDetailBottomSheet> {
               label: Text(l10n.tasks_attach),
             ),
           ),
-        const SizedBox(height: 32),
-        FilledButton(
-          key: const ValueKey('tasks-save'),
-          style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-          onPressed: _save,
-          child: Text(l10n.common_save),
-        ),
         if (_existing != null) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: 24),
           TextButton(
             style: TextButton.styleFrom(
               foregroundColor: p.danger,
@@ -673,6 +662,61 @@ class _TrailingValue extends StatelessWidget {
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: maxWidth.clamp(120, 320)),
       child: Row(mainAxisSize: MainAxisSize.min, children: children),
+    );
+  }
+}
+
+/// One choice in the subject picker: at least 48 px tall, with a check on
+/// the current subject.
+class _SubjectOption extends StatelessWidget {
+  final String title;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _SubjectOption({
+    super.key,
+    required this.title,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    return Semantics(
+      selected: selected,
+      button: true,
+      child: InkWell(
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.text.bodyMedium!.copyWith(
+                      color: p.textPrimary,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 20,
+                  child: selected
+                      ? Icon(Icons.check, size: 20, color: p.primary)
+                      : null,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

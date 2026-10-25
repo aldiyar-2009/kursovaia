@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:studyplan/core/database/app_database.dart';
@@ -9,16 +9,13 @@ import 'package:studyplan/core/database/subject_dao.dart';
 import 'package:studyplan/core/database/task_dao.dart';
 import 'package:studyplan/core/theme/theme_ext.dart';
 import 'package:studyplan/core/utils/date_util.dart';
+import 'package:studyplan/core/widgets/ui/content_column.dart';
 import 'package:studyplan/core/widgets/ui/empty_state.dart';
 import 'package:studyplan/core/widgets/ui/list_row.dart';
-import 'package:studyplan/core/widgets/ui/section_header.dart';
 import 'package:studyplan/features/home/domain/home_agenda.dart';
 import 'package:studyplan/features/home/presentation/widgets/home_rows.dart';
 import 'package:studyplan/features/home/presentation/widgets/now_block.dart';
 import 'package:studyplan/features/main_shell/presentation/screens/main_shell_screen.dart';
-
-/// Content column never grows wider than this on large windows.
-const double _kMaxContentWidth = 720;
 
 /// «Главная»: what is happening today, what is due this week and which
 /// grades changed last — read reactively from drift, nothing invented.
@@ -39,6 +36,10 @@ class HomeScreen extends StatefulWidget {
   /// Source of "now"; injectable for tests.
   final DateTime Function() clock;
 
+  /// Whether the grades step offers the LMS import; on web it offers manual
+  /// entry instead. Defaults to `!kIsWeb`; injectable for tests.
+  final bool? lmsImportAvailable;
+
   const HomeScreen({
     super.key,
     required this.db,
@@ -47,6 +48,7 @@ class HomeScreen extends StatefulWidget {
     this.onOpenGroup,
     this.groupId,
     this.clock = DateTime.now,
+    this.lmsImportAvailable,
   });
 
   @override
@@ -140,25 +142,18 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final now = widget.clock();
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Side gutter: 16 on phones, centres a 720 px column on wide windows;
-        // the title lines up with the content column.
-        final side =
-            math.max(16.0, (constraints.maxWidth - _kMaxContentWidth) / 2);
-        return Scaffold(
-          appBar: AppBar(
-            toolbarHeight: 64,
-            titleSpacing: side,
-            title: _DateTitle(now: now),
-          ),
-          body: _ready ? _content(context, now, side) : const SizedBox.shrink(),
-        );
-      },
+    return Scaffold(
+      appBar: ContentAppBar(title: _DateTitle(now: now)),
+      body: _ready
+          ? LayoutBuilder(
+              builder: (context, constraints) =>
+                  _content(context, now, constraints.maxWidth),
+            )
+          : const SizedBox.shrink(),
     );
   }
 
-  Widget _content(BuildContext context, DateTime now, double side) {
+  Widget _content(BuildContext context, DateTime now, double width) {
     final l10n = context.l10n;
 
     final today = lessonsForDay(
@@ -197,7 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 8),
         NowBlock(lesson: upcoming.first, now: now),
         if (upcoming.length > 1) ...[
-          SectionHeader(l10n.home_laterToday),
+          HomeSectionHeader(l10n.home_laterToday),
           ListGroup(
             dividerIndent: 16 + LessonRow.timeColumnWidth,
             children: [
@@ -207,7 +202,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ],
       if (deadlines.isNotEmpty) ...[
-        SectionHeader(
+        HomeSectionHeader(
           l10n.home_deadlines,
           trailing: SectionLink(
             label: l10n.home_allTasks,
@@ -224,7 +219,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ]),
       ],
       if (grades.isNotEmpty) ...[
-        SectionHeader(
+        HomeSectionHeader(
           l10n.home_grades,
           trailing: SectionLink(
             label: l10n.home_allGrades,
@@ -243,6 +238,7 @@ class _HomeScreenState extends State<HomeScreen> {
         FirstSteps(
           steps: steps,
           compactTop: !hasSections,
+          lmsImportAvailable: widget.lmsImportAvailable ?? !kIsWeb,
           onStep: (step) {
             switch (step) {
               case FirstStep.schedule:
@@ -257,10 +253,7 @@ class _HomeScreenState extends State<HomeScreen> {
       const SizedBox(height: 32),
     ];
 
-    return ListView(
-      padding: EdgeInsets.symmetric(horizontal: side),
-      children: children,
-    );
+    return ListView(padding: contentPadding(width), children: children);
   }
 }
 

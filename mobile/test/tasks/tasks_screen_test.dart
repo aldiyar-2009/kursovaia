@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,6 +21,7 @@ Future<AppDatabase> _pump(
   ThemeData? theme,
   Size size = const Size(400, 800),
   Future<void> Function(AppDatabase db)? seed,
+  DateTime Function() clock = DateTime.now,
 }) async {
   SharedPreferences.setMockInitialValues({});
   tester.view.physicalSize = size;
@@ -38,11 +40,17 @@ Future<AppDatabase> _pump(
       GlobalWidgetsLocalizations.delegate,
       GlobalCupertinoLocalizations.delegate,
     ],
-    home: TasksScreen(db: db, userId: _user, group: group),
+    home: TasksScreen(db: db, userId: _user, group: group, clock: clock),
   ));
   await _settle(tester);
   return db;
 }
+
+/// A filter chip by its label (row labels like «LMS» use the same text).
+Finder _chip(String label) => find.descendant(
+      of: find.byKey(const ValueKey('tasks-filters')),
+      matching: find.text(label),
+    );
 
 /// Lets drift streams emit (real async), then rebuilds.
 Future<void> _settle(WidgetTester tester) async {
@@ -119,7 +127,7 @@ void main() {
   testWidgets('filter «Группа» without a group explains how to join', (tester) async {
     final db = await _pump(tester, group: null);
 
-    await tester.tap(find.byKey(const ValueKey('tasks-filter-group')));
+    await tester.tap(_chip('Группа'));
     await _settle(tester);
 
     expect(find.byType(EmptyState), findsOneWidget);
@@ -149,9 +157,9 @@ void main() {
 
     // Done items leave the active list and appear under «Выполненные».
     expect(find.text('Quiz 2'), findsNothing);
-    await tester.ensureVisible(find.byKey(const ValueKey('tasks-filter-done')));
+    await tester.ensureVisible(_chip('Выполненные'));
     await tester.pump();
-    await tester.tap(find.byKey(const ValueKey('tasks-filter-done')));
+    await tester.tap(_chip('Выполненные'));
     await _settle(tester);
     expect(find.text('Quiz 2'), findsOneWidget);
     await _dispose(tester, db);
@@ -245,6 +253,142 @@ void main() {
     await tester.tap(find.byTooltip('Новое задание'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+    await _dispose(tester, db);
+  });
+
+  testWidgets('filter row scrolls and all 5 chips are reachable on a narrow phone',
+      (tester) async {
+    final db = await _pump(tester, size: const Size(320, 640));
+
+    final filters = find.byKey(const ValueKey('tasks-filters'));
+    final scrollable =
+        find.descendant(of: filters, matching: find.byType(Scrollable));
+    expect(scrollable, findsOneWidget);
+
+    const labels = {
+      'Все': 'Заданий нет',
+      'Мои': 'Своих заданий нет',
+      'Группа': 'Вы не состоите в группе',
+      'LMS': 'Дедлайнов из LMS нет',
+      'Выполненные': 'Выполненных заданий нет',
+    };
+    for (final MapEntry(key: label, value: empty) in labels.entries) {
+      await tester.scrollUntilVisible(_chip(label), 40, scrollable: scrollable);
+      await tester.pump();
+      final rect = tester.getRect(_chip(label));
+      expect(rect.left >= 0 && rect.right <= 320, isTrue, reason: label);
+      await tester.tap(_chip(label));
+      await _settle(tester);
+      expect(find.text(empty), findsOneWidget, reason: label);
+    }
+    expect(tester.takeException(), isNull);
+    await _dispose(tester, db);
+  });
+
+  testWidgets('task sheet has a handle, a close button and a pinned save button',
+      (tester) async {
+    final db = await _pump(tester);
+    await tester.tap(find.byTooltip('Новое задание'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('app-sheet-handle')), findsOneWidget);
+    expect(find.byTooltip('Закрыть'), findsOneWidget);
+
+    // Save is full width (sheet width minus the 16 px gutters).
+    final save = find.byKey(const ValueKey('tasks-save'));
+    expect(save, findsOneWidget);
+    expect(tester.getSize(save).width, 400 - 32);
+
+    // Title wraps to up to three lines.
+    final title = tester.widget<TextField>(find.descendant(
+      of: find.byKey(const ValueKey('tasks-title-field')),
+      matching: find.byType(TextField),
+    ));
+    expect(title.minLines, 1);
+    expect(title.maxLines, 3);
+
+    // Priority uses the shared toggle; «Срок» has a chevron like «Предмет».
+    expect(find.byKey(const ValueKey('tasks-priority')), findsOneWidget);
+    expect(find.byType(SegmentedButton<int>), findsNothing);
+    expect(find.byIcon(Icons.chevron_right), findsNWidgets(2));
+
+    await tester.tap(find.byTooltip('Закрыть'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('app-sheet-handle')), findsNothing);
+    await _dispose(tester, db);
+  });
+
+  testWidgets('subject picker marks the current subject and has 48 px rows',
+      (tester) async {
+    final db = await _pump(
+      tester,
+      seed: (db) async {
+        await db.into(db.subjects).insert(SubjectsCompanion.insert(
+              id: 's1',
+              userId: _user,
+              title: 'Физика',
+              updatedAt: _ms(DateTime.now()),
+            ));
+      },
+    );
+    await tester.tap(find.byTooltip('Новое задание'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Предмет'));
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+    await tester.pumpAndSettle();
+
+    final none = find.byKey(const ValueKey('tasks-subject-none'));
+    final physics = find.byKey(const ValueKey('tasks-subject-s1'));
+    expect(tester.getSize(none).height, greaterThanOrEqualTo(48));
+    expect(tester.getSize(physics).height, greaterThanOrEqualTo(48));
+    expect(find.descendant(of: none, matching: find.byIcon(Icons.check)), findsOneWidget);
+    expect(find.descendant(of: physics, matching: find.byIcon(Icons.check)), findsNothing);
+    await tester.tap(physics);
+    await tester.pumpAndSettle();
+    expect(find.text('Физика'), findsOneWidget);
+    await _dispose(tester, db);
+  });
+
+  testWidgets('each task row is its own semantics node that opens details',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    final now = DateTime(2026, 10, 26, 9, 30);
+    final db = await _pump(
+      tester,
+      clock: () => now,
+      seed: (db) => _insertTask(db,
+          id: 't1', title: 'Lab report', due: DateTime(2026, 10, 27, 18)),
+    );
+
+    expect(find.text('Завтра, 18:00'), findsOneWidget);
+    expect(
+      tester.getSemantics(find.byKey(const ValueKey('task-open-t1'))),
+      matchesSemantics(
+        label: 'Lab report, срок: Завтра, 18:00, не выполнено',
+        isButton: true,
+        hasTapAction: true,
+      ),
+    );
+    expect(
+      tester.getSemantics(find.byKey(const ValueKey('task-check-t1'))),
+      matchesSemantics(
+        label: 'Отметить выполненным, Lab report',
+        isButton: true,
+        hasCheckedState: true,
+        isEnabled: true,
+        hasEnabledState: true,
+        hasTapAction: true,
+      ),
+    );
+
+    // Activating the row node opens the task sheet.
+    final node = tester.getSemantics(find.byKey(const ValueKey('task-open-t1')));
+    node.owner!.performAction(node.id, SemanticsAction.tap);
+    await tester.pumpAndSettle();
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+    await tester.pumpAndSettle();
+    expect(find.text('Задание'), findsOneWidget);
+    handle.dispose();
     await _dispose(tester, db);
   });
 
