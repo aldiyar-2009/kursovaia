@@ -15,7 +15,6 @@ import 'package:studyplan/features/auth/presentation/screens/auth_screen.dart';
 import 'package:studyplan/features/files/presentation/screens/files_screen.dart';
 import 'package:studyplan/features/calendar/presentation/screens/academic_calendar_screen.dart';
 import 'package:studyplan/features/campus_map/presentation/screens/campus_map_screen.dart';
-import 'package:studyplan/features/chat/presentation/screens/group_chat_screen.dart';
 import 'package:studyplan/features/grades/presentation/screens/grades_screen.dart';
 import 'package:studyplan/features/portal/presentation/screens/portal_screen.dart';
 import 'package:studyplan/features/profile/presentation/screens/profile_screen.dart';
@@ -264,13 +263,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
       case AppSection.reminders:
         return const RemindersScreen();
       case AppSection.chat:
-        return GroupChatScreen(
-          db: widget.db,
-          userId: userId,
-          userName: userName,
-          userRole: userRole,
-          groupId: groupId,
-        );
+        return const SizedBox.shrink();
       case AppSection.admin:
         return AdminPanelScreen(
           userRole: userRole,

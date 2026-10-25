@@ -2974,627 +2974,6 @@ class SubtasksCompanion extends UpdateCompanion<Subtask> {
   }
 }
 
-class $ChatMessagesTable extends ChatMessages
-    with TableInfo<$ChatMessagesTable, ChatMessage> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $ChatMessagesTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedColumn<String> id = GeneratedColumn<String>(
-    'id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _groupIdMeta = const VerificationMeta(
-    'groupId',
-  );
-  @override
-  late final GeneratedColumn<String> groupId = GeneratedColumn<String>(
-    'group_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _senderIdMeta = const VerificationMeta(
-    'senderId',
-  );
-  @override
-  late final GeneratedColumn<String> senderId = GeneratedColumn<String>(
-    'sender_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _senderNameMeta = const VerificationMeta(
-    'senderName',
-  );
-  @override
-  late final GeneratedColumn<String> senderName = GeneratedColumn<String>(
-    'sender_name',
-    aliasedName,
-    false,
-    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 120),
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _messageTypeMeta = const VerificationMeta(
-    'messageType',
-  );
-  @override
-  late final GeneratedColumn<String> messageType = GeneratedColumn<String>(
-    'message_type',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    defaultValue: const Constant('text'),
-  );
-  static const VerificationMeta _contentMeta = const VerificationMeta(
-    'content',
-  );
-  @override
-  late final GeneratedColumn<String> content = GeneratedColumn<String>(
-    'content',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _payloadJsonMeta = const VerificationMeta(
-    'payloadJson',
-  );
-  @override
-  late final GeneratedColumn<String> payloadJson = GeneratedColumn<String>(
-    'payload_json',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _isPinnedMeta = const VerificationMeta(
-    'isPinned',
-  );
-  @override
-  late final GeneratedColumn<bool> isPinned = GeneratedColumn<bool>(
-    'is_pinned',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("is_pinned" IN (0, 1))',
-    ),
-    defaultValue: const Constant(false),
-  );
-  static const VerificationMeta _createdAtMeta = const VerificationMeta(
-    'createdAt',
-  );
-  @override
-  late final GeneratedColumn<BigInt> createdAt = GeneratedColumn<BigInt>(
-    'created_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.bigInt,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
-    'syncStatus',
-  );
-  @override
-  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
-    'sync_status',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    defaultValue: const Constant('synced'),
-  );
-  @override
-  List<GeneratedColumn> get $columns => [
-    id,
-    groupId,
-    senderId,
-    senderName,
-    messageType,
-    content,
-    payloadJson,
-    isPinned,
-    createdAt,
-    syncStatus,
-  ];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'chat_messages';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<ChatMessage> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
-    }
-    if (data.containsKey('group_id')) {
-      context.handle(
-        _groupIdMeta,
-        groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_groupIdMeta);
-    }
-    if (data.containsKey('sender_id')) {
-      context.handle(
-        _senderIdMeta,
-        senderId.isAcceptableOrUnknown(data['sender_id']!, _senderIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_senderIdMeta);
-    }
-    if (data.containsKey('sender_name')) {
-      context.handle(
-        _senderNameMeta,
-        senderName.isAcceptableOrUnknown(data['sender_name']!, _senderNameMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_senderNameMeta);
-    }
-    if (data.containsKey('message_type')) {
-      context.handle(
-        _messageTypeMeta,
-        messageType.isAcceptableOrUnknown(
-          data['message_type']!,
-          _messageTypeMeta,
-        ),
-      );
-    }
-    if (data.containsKey('content')) {
-      context.handle(
-        _contentMeta,
-        content.isAcceptableOrUnknown(data['content']!, _contentMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_contentMeta);
-    }
-    if (data.containsKey('payload_json')) {
-      context.handle(
-        _payloadJsonMeta,
-        payloadJson.isAcceptableOrUnknown(
-          data['payload_json']!,
-          _payloadJsonMeta,
-        ),
-      );
-    }
-    if (data.containsKey('is_pinned')) {
-      context.handle(
-        _isPinnedMeta,
-        isPinned.isAcceptableOrUnknown(data['is_pinned']!, _isPinnedMeta),
-      );
-    }
-    if (data.containsKey('created_at')) {
-      context.handle(
-        _createdAtMeta,
-        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
-    }
-    if (data.containsKey('sync_status')) {
-      context.handle(
-        _syncStatusMeta,
-        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
-      );
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  ChatMessage map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return ChatMessage(
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}id'],
-      )!,
-      groupId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}group_id'],
-      )!,
-      senderId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}sender_id'],
-      )!,
-      senderName: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}sender_name'],
-      )!,
-      messageType: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}message_type'],
-      )!,
-      content: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}content'],
-      )!,
-      payloadJson: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}payload_json'],
-      ),
-      isPinned: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}is_pinned'],
-      )!,
-      createdAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.bigInt,
-        data['${effectivePrefix}created_at'],
-      )!,
-      syncStatus: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}sync_status'],
-      )!,
-    );
-  }
-
-  @override
-  $ChatMessagesTable createAlias(String alias) {
-    return $ChatMessagesTable(attachedDatabase, alias);
-  }
-}
-
-class ChatMessage extends DataClass implements Insertable<ChatMessage> {
-  final String id;
-  final String groupId;
-  final String senderId;
-  final String senderName;
-  final String messageType;
-  final String content;
-  final String? payloadJson;
-  final bool isPinned;
-  final BigInt createdAt;
-  final String syncStatus;
-  const ChatMessage({
-    required this.id,
-    required this.groupId,
-    required this.senderId,
-    required this.senderName,
-    required this.messageType,
-    required this.content,
-    this.payloadJson,
-    required this.isPinned,
-    required this.createdAt,
-    required this.syncStatus,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
-    map['group_id'] = Variable<String>(groupId);
-    map['sender_id'] = Variable<String>(senderId);
-    map['sender_name'] = Variable<String>(senderName);
-    map['message_type'] = Variable<String>(messageType);
-    map['content'] = Variable<String>(content);
-    if (!nullToAbsent || payloadJson != null) {
-      map['payload_json'] = Variable<String>(payloadJson);
-    }
-    map['is_pinned'] = Variable<bool>(isPinned);
-    map['created_at'] = Variable<BigInt>(createdAt);
-    map['sync_status'] = Variable<String>(syncStatus);
-    return map;
-  }
-
-  ChatMessagesCompanion toCompanion(bool nullToAbsent) {
-    return ChatMessagesCompanion(
-      id: Value(id),
-      groupId: Value(groupId),
-      senderId: Value(senderId),
-      senderName: Value(senderName),
-      messageType: Value(messageType),
-      content: Value(content),
-      payloadJson: payloadJson == null && nullToAbsent
-          ? const Value.absent()
-          : Value(payloadJson),
-      isPinned: Value(isPinned),
-      createdAt: Value(createdAt),
-      syncStatus: Value(syncStatus),
-    );
-  }
-
-  factory ChatMessage.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return ChatMessage(
-      id: serializer.fromJson<String>(json['id']),
-      groupId: serializer.fromJson<String>(json['groupId']),
-      senderId: serializer.fromJson<String>(json['senderId']),
-      senderName: serializer.fromJson<String>(json['senderName']),
-      messageType: serializer.fromJson<String>(json['messageType']),
-      content: serializer.fromJson<String>(json['content']),
-      payloadJson: serializer.fromJson<String?>(json['payloadJson']),
-      isPinned: serializer.fromJson<bool>(json['isPinned']),
-      createdAt: serializer.fromJson<BigInt>(json['createdAt']),
-      syncStatus: serializer.fromJson<String>(json['syncStatus']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<String>(id),
-      'groupId': serializer.toJson<String>(groupId),
-      'senderId': serializer.toJson<String>(senderId),
-      'senderName': serializer.toJson<String>(senderName),
-      'messageType': serializer.toJson<String>(messageType),
-      'content': serializer.toJson<String>(content),
-      'payloadJson': serializer.toJson<String?>(payloadJson),
-      'isPinned': serializer.toJson<bool>(isPinned),
-      'createdAt': serializer.toJson<BigInt>(createdAt),
-      'syncStatus': serializer.toJson<String>(syncStatus),
-    };
-  }
-
-  ChatMessage copyWith({
-    String? id,
-    String? groupId,
-    String? senderId,
-    String? senderName,
-    String? messageType,
-    String? content,
-    Value<String?> payloadJson = const Value.absent(),
-    bool? isPinned,
-    BigInt? createdAt,
-    String? syncStatus,
-  }) => ChatMessage(
-    id: id ?? this.id,
-    groupId: groupId ?? this.groupId,
-    senderId: senderId ?? this.senderId,
-    senderName: senderName ?? this.senderName,
-    messageType: messageType ?? this.messageType,
-    content: content ?? this.content,
-    payloadJson: payloadJson.present ? payloadJson.value : this.payloadJson,
-    isPinned: isPinned ?? this.isPinned,
-    createdAt: createdAt ?? this.createdAt,
-    syncStatus: syncStatus ?? this.syncStatus,
-  );
-  ChatMessage copyWithCompanion(ChatMessagesCompanion data) {
-    return ChatMessage(
-      id: data.id.present ? data.id.value : this.id,
-      groupId: data.groupId.present ? data.groupId.value : this.groupId,
-      senderId: data.senderId.present ? data.senderId.value : this.senderId,
-      senderName: data.senderName.present
-          ? data.senderName.value
-          : this.senderName,
-      messageType: data.messageType.present
-          ? data.messageType.value
-          : this.messageType,
-      content: data.content.present ? data.content.value : this.content,
-      payloadJson: data.payloadJson.present
-          ? data.payloadJson.value
-          : this.payloadJson,
-      isPinned: data.isPinned.present ? data.isPinned.value : this.isPinned,
-      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
-      syncStatus: data.syncStatus.present
-          ? data.syncStatus.value
-          : this.syncStatus,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('ChatMessage(')
-          ..write('id: $id, ')
-          ..write('groupId: $groupId, ')
-          ..write('senderId: $senderId, ')
-          ..write('senderName: $senderName, ')
-          ..write('messageType: $messageType, ')
-          ..write('content: $content, ')
-          ..write('payloadJson: $payloadJson, ')
-          ..write('isPinned: $isPinned, ')
-          ..write('createdAt: $createdAt, ')
-          ..write('syncStatus: $syncStatus')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(
-    id,
-    groupId,
-    senderId,
-    senderName,
-    messageType,
-    content,
-    payloadJson,
-    isPinned,
-    createdAt,
-    syncStatus,
-  );
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is ChatMessage &&
-          other.id == this.id &&
-          other.groupId == this.groupId &&
-          other.senderId == this.senderId &&
-          other.senderName == this.senderName &&
-          other.messageType == this.messageType &&
-          other.content == this.content &&
-          other.payloadJson == this.payloadJson &&
-          other.isPinned == this.isPinned &&
-          other.createdAt == this.createdAt &&
-          other.syncStatus == this.syncStatus);
-}
-
-class ChatMessagesCompanion extends UpdateCompanion<ChatMessage> {
-  final Value<String> id;
-  final Value<String> groupId;
-  final Value<String> senderId;
-  final Value<String> senderName;
-  final Value<String> messageType;
-  final Value<String> content;
-  final Value<String?> payloadJson;
-  final Value<bool> isPinned;
-  final Value<BigInt> createdAt;
-  final Value<String> syncStatus;
-  final Value<int> rowid;
-  const ChatMessagesCompanion({
-    this.id = const Value.absent(),
-    this.groupId = const Value.absent(),
-    this.senderId = const Value.absent(),
-    this.senderName = const Value.absent(),
-    this.messageType = const Value.absent(),
-    this.content = const Value.absent(),
-    this.payloadJson = const Value.absent(),
-    this.isPinned = const Value.absent(),
-    this.createdAt = const Value.absent(),
-    this.syncStatus = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  ChatMessagesCompanion.insert({
-    required String id,
-    required String groupId,
-    required String senderId,
-    required String senderName,
-    this.messageType = const Value.absent(),
-    required String content,
-    this.payloadJson = const Value.absent(),
-    this.isPinned = const Value.absent(),
-    required BigInt createdAt,
-    this.syncStatus = const Value.absent(),
-    this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       groupId = Value(groupId),
-       senderId = Value(senderId),
-       senderName = Value(senderName),
-       content = Value(content),
-       createdAt = Value(createdAt);
-  static Insertable<ChatMessage> custom({
-    Expression<String>? id,
-    Expression<String>? groupId,
-    Expression<String>? senderId,
-    Expression<String>? senderName,
-    Expression<String>? messageType,
-    Expression<String>? content,
-    Expression<String>? payloadJson,
-    Expression<bool>? isPinned,
-    Expression<BigInt>? createdAt,
-    Expression<String>? syncStatus,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (groupId != null) 'group_id': groupId,
-      if (senderId != null) 'sender_id': senderId,
-      if (senderName != null) 'sender_name': senderName,
-      if (messageType != null) 'message_type': messageType,
-      if (content != null) 'content': content,
-      if (payloadJson != null) 'payload_json': payloadJson,
-      if (isPinned != null) 'is_pinned': isPinned,
-      if (createdAt != null) 'created_at': createdAt,
-      if (syncStatus != null) 'sync_status': syncStatus,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  ChatMessagesCompanion copyWith({
-    Value<String>? id,
-    Value<String>? groupId,
-    Value<String>? senderId,
-    Value<String>? senderName,
-    Value<String>? messageType,
-    Value<String>? content,
-    Value<String?>? payloadJson,
-    Value<bool>? isPinned,
-    Value<BigInt>? createdAt,
-    Value<String>? syncStatus,
-    Value<int>? rowid,
-  }) {
-    return ChatMessagesCompanion(
-      id: id ?? this.id,
-      groupId: groupId ?? this.groupId,
-      senderId: senderId ?? this.senderId,
-      senderName: senderName ?? this.senderName,
-      messageType: messageType ?? this.messageType,
-      content: content ?? this.content,
-      payloadJson: payloadJson ?? this.payloadJson,
-      isPinned: isPinned ?? this.isPinned,
-      createdAt: createdAt ?? this.createdAt,
-      syncStatus: syncStatus ?? this.syncStatus,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<String>(id.value);
-    }
-    if (groupId.present) {
-      map['group_id'] = Variable<String>(groupId.value);
-    }
-    if (senderId.present) {
-      map['sender_id'] = Variable<String>(senderId.value);
-    }
-    if (senderName.present) {
-      map['sender_name'] = Variable<String>(senderName.value);
-    }
-    if (messageType.present) {
-      map['message_type'] = Variable<String>(messageType.value);
-    }
-    if (content.present) {
-      map['content'] = Variable<String>(content.value);
-    }
-    if (payloadJson.present) {
-      map['payload_json'] = Variable<String>(payloadJson.value);
-    }
-    if (isPinned.present) {
-      map['is_pinned'] = Variable<bool>(isPinned.value);
-    }
-    if (createdAt.present) {
-      map['created_at'] = Variable<BigInt>(createdAt.value);
-    }
-    if (syncStatus.present) {
-      map['sync_status'] = Variable<String>(syncStatus.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('ChatMessagesCompanion(')
-          ..write('id: $id, ')
-          ..write('groupId: $groupId, ')
-          ..write('senderId: $senderId, ')
-          ..write('senderName: $senderName, ')
-          ..write('messageType: $messageType, ')
-          ..write('content: $content, ')
-          ..write('payloadJson: $payloadJson, ')
-          ..write('isPinned: $isPinned, ')
-          ..write('createdAt: $createdAt, ')
-          ..write('syncStatus: $syncStatus, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
 class $AttachmentsTable extends Attachments
     with TableInfo<$AttachmentsTable, Attachment> {
   @override
@@ -4116,6 +3495,2799 @@ class AttachmentsCompanion extends UpdateCompanion<Attachment> {
   }
 }
 
+class $LmsCoursesTable extends LmsCourses
+    with TableInfo<$LmsCoursesTable, LmsCourse> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LmsCoursesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('manual'),
+  );
+  static const VerificationMeta _lmsCourseIdMeta = const VerificationMeta(
+    'lmsCourseId',
+  );
+  @override
+  late final GeneratedColumn<int> lmsCourseId = GeneratedColumn<int>(
+    'lms_course_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _subjectIdMeta = const VerificationMeta(
+    'subjectId',
+  );
+  @override
+  late final GeneratedColumn<String> subjectId = GeneratedColumn<String>(
+    'subject_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _classificationMeta = const VerificationMeta(
+    'classification',
+  );
+  @override
+  late final GeneratedColumn<String> classification = GeneratedColumn<String>(
+    'classification',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 255,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _teacherNameMeta = const VerificationMeta(
+    'teacherName',
+  );
+  @override
+  late final GeneratedColumn<String> teacherName = GeneratedColumn<String>(
+    'teacher_name',
+    aliasedName,
+    true,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 160),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _creditsMeta = const VerificationMeta(
+    'credits',
+  );
+  @override
+  late final GeneratedColumn<int> credits = GeneratedColumn<int>(
+    'credits',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(5),
+  );
+  static const VerificationMeta _registerMidtermMeta = const VerificationMeta(
+    'registerMidterm',
+  );
+  @override
+  late final GeneratedColumn<double> registerMidterm = GeneratedColumn<double>(
+    'register_midterm',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _registerEndtermMeta = const VerificationMeta(
+    'registerEndterm',
+  );
+  @override
+  late final GeneratedColumn<double> registerEndterm = GeneratedColumn<double>(
+    'register_endterm',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _finalExamMeta = const VerificationMeta(
+    'finalExam',
+  );
+  @override
+  late final GeneratedColumn<double> finalExam = GeneratedColumn<double>(
+    'final_exam',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _totalMeta = const VerificationMeta('total');
+  @override
+  late final GeneratedColumn<double> total = GeneratedColumn<double>(
+    'total',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _gradeItemsJsonMeta = const VerificationMeta(
+    'gradeItemsJson',
+  );
+  @override
+  late final GeneratedColumn<String> gradeItemsJson = GeneratedColumn<String>(
+    'grade_items_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _importedAtMeta = const VerificationMeta(
+    'importedAt',
+  );
+  @override
+  late final GeneratedColumn<BigInt> importedAt = GeneratedColumn<BigInt>(
+    'imported_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.bigInt,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isDeletedMeta = const VerificationMeta(
+    'isDeleted',
+  );
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+    'is_deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<BigInt> updatedAt = GeneratedColumn<BigInt>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.bigInt,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('synced'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    source,
+    lmsCourseId,
+    subjectId,
+    classification,
+    title,
+    teacherName,
+    credits,
+    registerMidterm,
+    registerEndterm,
+    finalExam,
+    total,
+    gradeItemsJson,
+    importedAt,
+    isDeleted,
+    updatedAt,
+    syncStatus,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'lms_courses';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LmsCourse> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    }
+    if (data.containsKey('lms_course_id')) {
+      context.handle(
+        _lmsCourseIdMeta,
+        lmsCourseId.isAcceptableOrUnknown(
+          data['lms_course_id']!,
+          _lmsCourseIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('subject_id')) {
+      context.handle(
+        _subjectIdMeta,
+        subjectId.isAcceptableOrUnknown(data['subject_id']!, _subjectIdMeta),
+      );
+    }
+    if (data.containsKey('classification')) {
+      context.handle(
+        _classificationMeta,
+        classification.isAcceptableOrUnknown(
+          data['classification']!,
+          _classificationMeta,
+        ),
+      );
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('teacher_name')) {
+      context.handle(
+        _teacherNameMeta,
+        teacherName.isAcceptableOrUnknown(
+          data['teacher_name']!,
+          _teacherNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('credits')) {
+      context.handle(
+        _creditsMeta,
+        credits.isAcceptableOrUnknown(data['credits']!, _creditsMeta),
+      );
+    }
+    if (data.containsKey('register_midterm')) {
+      context.handle(
+        _registerMidtermMeta,
+        registerMidterm.isAcceptableOrUnknown(
+          data['register_midterm']!,
+          _registerMidtermMeta,
+        ),
+      );
+    }
+    if (data.containsKey('register_endterm')) {
+      context.handle(
+        _registerEndtermMeta,
+        registerEndterm.isAcceptableOrUnknown(
+          data['register_endterm']!,
+          _registerEndtermMeta,
+        ),
+      );
+    }
+    if (data.containsKey('final_exam')) {
+      context.handle(
+        _finalExamMeta,
+        finalExam.isAcceptableOrUnknown(data['final_exam']!, _finalExamMeta),
+      );
+    }
+    if (data.containsKey('total')) {
+      context.handle(
+        _totalMeta,
+        total.isAcceptableOrUnknown(data['total']!, _totalMeta),
+      );
+    }
+    if (data.containsKey('grade_items_json')) {
+      context.handle(
+        _gradeItemsJsonMeta,
+        gradeItemsJson.isAcceptableOrUnknown(
+          data['grade_items_json']!,
+          _gradeItemsJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('imported_at')) {
+      context.handle(
+        _importedAtMeta,
+        importedAt.isAcceptableOrUnknown(data['imported_at']!, _importedAtMeta),
+      );
+    }
+    if (data.containsKey('is_deleted')) {
+      context.handle(
+        _isDeletedMeta,
+        isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LmsCourse map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LmsCourse(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      lmsCourseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}lms_course_id'],
+      ),
+      subjectId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}subject_id'],
+      ),
+      classification: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}classification'],
+      ),
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      teacherName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}teacher_name'],
+      ),
+      credits: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}credits'],
+      )!,
+      registerMidterm: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}register_midterm'],
+      ),
+      registerEndterm: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}register_endterm'],
+      ),
+      finalExam: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}final_exam'],
+      ),
+      total: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}total'],
+      ),
+      gradeItemsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}grade_items_json'],
+      ),
+      importedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.bigInt,
+        data['${effectivePrefix}imported_at'],
+      ),
+      isDeleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_deleted'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.bigInt,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+    );
+  }
+
+  @override
+  $LmsCoursesTable createAlias(String alias) {
+    return $LmsCoursesTable(attachedDatabase, alias);
+  }
+}
+
+class LmsCourse extends DataClass implements Insertable<LmsCourse> {
+  final String id;
+  final String userId;
+  final String source;
+  final int? lmsCourseId;
+  final String? subjectId;
+  final String? classification;
+  final String title;
+  final String? teacherName;
+  final int credits;
+  final double? registerMidterm;
+  final double? registerEndterm;
+  final double? finalExam;
+  final double? total;
+  final String? gradeItemsJson;
+  final BigInt? importedAt;
+  final bool isDeleted;
+  final BigInt updatedAt;
+  final String syncStatus;
+  const LmsCourse({
+    required this.id,
+    required this.userId,
+    required this.source,
+    this.lmsCourseId,
+    this.subjectId,
+    this.classification,
+    required this.title,
+    this.teacherName,
+    required this.credits,
+    this.registerMidterm,
+    this.registerEndterm,
+    this.finalExam,
+    this.total,
+    this.gradeItemsJson,
+    this.importedAt,
+    required this.isDeleted,
+    required this.updatedAt,
+    required this.syncStatus,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    map['source'] = Variable<String>(source);
+    if (!nullToAbsent || lmsCourseId != null) {
+      map['lms_course_id'] = Variable<int>(lmsCourseId);
+    }
+    if (!nullToAbsent || subjectId != null) {
+      map['subject_id'] = Variable<String>(subjectId);
+    }
+    if (!nullToAbsent || classification != null) {
+      map['classification'] = Variable<String>(classification);
+    }
+    map['title'] = Variable<String>(title);
+    if (!nullToAbsent || teacherName != null) {
+      map['teacher_name'] = Variable<String>(teacherName);
+    }
+    map['credits'] = Variable<int>(credits);
+    if (!nullToAbsent || registerMidterm != null) {
+      map['register_midterm'] = Variable<double>(registerMidterm);
+    }
+    if (!nullToAbsent || registerEndterm != null) {
+      map['register_endterm'] = Variable<double>(registerEndterm);
+    }
+    if (!nullToAbsent || finalExam != null) {
+      map['final_exam'] = Variable<double>(finalExam);
+    }
+    if (!nullToAbsent || total != null) {
+      map['total'] = Variable<double>(total);
+    }
+    if (!nullToAbsent || gradeItemsJson != null) {
+      map['grade_items_json'] = Variable<String>(gradeItemsJson);
+    }
+    if (!nullToAbsent || importedAt != null) {
+      map['imported_at'] = Variable<BigInt>(importedAt);
+    }
+    map['is_deleted'] = Variable<bool>(isDeleted);
+    map['updated_at'] = Variable<BigInt>(updatedAt);
+    map['sync_status'] = Variable<String>(syncStatus);
+    return map;
+  }
+
+  LmsCoursesCompanion toCompanion(bool nullToAbsent) {
+    return LmsCoursesCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      source: Value(source),
+      lmsCourseId: lmsCourseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lmsCourseId),
+      subjectId: subjectId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(subjectId),
+      classification: classification == null && nullToAbsent
+          ? const Value.absent()
+          : Value(classification),
+      title: Value(title),
+      teacherName: teacherName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(teacherName),
+      credits: Value(credits),
+      registerMidterm: registerMidterm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(registerMidterm),
+      registerEndterm: registerEndterm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(registerEndterm),
+      finalExam: finalExam == null && nullToAbsent
+          ? const Value.absent()
+          : Value(finalExam),
+      total: total == null && nullToAbsent
+          ? const Value.absent()
+          : Value(total),
+      gradeItemsJson: gradeItemsJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gradeItemsJson),
+      importedAt: importedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(importedAt),
+      isDeleted: Value(isDeleted),
+      updatedAt: Value(updatedAt),
+      syncStatus: Value(syncStatus),
+    );
+  }
+
+  factory LmsCourse.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LmsCourse(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      source: serializer.fromJson<String>(json['source']),
+      lmsCourseId: serializer.fromJson<int?>(json['lmsCourseId']),
+      subjectId: serializer.fromJson<String?>(json['subjectId']),
+      classification: serializer.fromJson<String?>(json['classification']),
+      title: serializer.fromJson<String>(json['title']),
+      teacherName: serializer.fromJson<String?>(json['teacherName']),
+      credits: serializer.fromJson<int>(json['credits']),
+      registerMidterm: serializer.fromJson<double?>(json['registerMidterm']),
+      registerEndterm: serializer.fromJson<double?>(json['registerEndterm']),
+      finalExam: serializer.fromJson<double?>(json['finalExam']),
+      total: serializer.fromJson<double?>(json['total']),
+      gradeItemsJson: serializer.fromJson<String?>(json['gradeItemsJson']),
+      importedAt: serializer.fromJson<BigInt?>(json['importedAt']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+      updatedAt: serializer.fromJson<BigInt>(json['updatedAt']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'source': serializer.toJson<String>(source),
+      'lmsCourseId': serializer.toJson<int?>(lmsCourseId),
+      'subjectId': serializer.toJson<String?>(subjectId),
+      'classification': serializer.toJson<String?>(classification),
+      'title': serializer.toJson<String>(title),
+      'teacherName': serializer.toJson<String?>(teacherName),
+      'credits': serializer.toJson<int>(credits),
+      'registerMidterm': serializer.toJson<double?>(registerMidterm),
+      'registerEndterm': serializer.toJson<double?>(registerEndterm),
+      'finalExam': serializer.toJson<double?>(finalExam),
+      'total': serializer.toJson<double?>(total),
+      'gradeItemsJson': serializer.toJson<String?>(gradeItemsJson),
+      'importedAt': serializer.toJson<BigInt?>(importedAt),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
+      'updatedAt': serializer.toJson<BigInt>(updatedAt),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+    };
+  }
+
+  LmsCourse copyWith({
+    String? id,
+    String? userId,
+    String? source,
+    Value<int?> lmsCourseId = const Value.absent(),
+    Value<String?> subjectId = const Value.absent(),
+    Value<String?> classification = const Value.absent(),
+    String? title,
+    Value<String?> teacherName = const Value.absent(),
+    int? credits,
+    Value<double?> registerMidterm = const Value.absent(),
+    Value<double?> registerEndterm = const Value.absent(),
+    Value<double?> finalExam = const Value.absent(),
+    Value<double?> total = const Value.absent(),
+    Value<String?> gradeItemsJson = const Value.absent(),
+    Value<BigInt?> importedAt = const Value.absent(),
+    bool? isDeleted,
+    BigInt? updatedAt,
+    String? syncStatus,
+  }) => LmsCourse(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    source: source ?? this.source,
+    lmsCourseId: lmsCourseId.present ? lmsCourseId.value : this.lmsCourseId,
+    subjectId: subjectId.present ? subjectId.value : this.subjectId,
+    classification: classification.present
+        ? classification.value
+        : this.classification,
+    title: title ?? this.title,
+    teacherName: teacherName.present ? teacherName.value : this.teacherName,
+    credits: credits ?? this.credits,
+    registerMidterm: registerMidterm.present
+        ? registerMidterm.value
+        : this.registerMidterm,
+    registerEndterm: registerEndterm.present
+        ? registerEndterm.value
+        : this.registerEndterm,
+    finalExam: finalExam.present ? finalExam.value : this.finalExam,
+    total: total.present ? total.value : this.total,
+    gradeItemsJson: gradeItemsJson.present
+        ? gradeItemsJson.value
+        : this.gradeItemsJson,
+    importedAt: importedAt.present ? importedAt.value : this.importedAt,
+    isDeleted: isDeleted ?? this.isDeleted,
+    updatedAt: updatedAt ?? this.updatedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+  );
+  LmsCourse copyWithCompanion(LmsCoursesCompanion data) {
+    return LmsCourse(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      source: data.source.present ? data.source.value : this.source,
+      lmsCourseId: data.lmsCourseId.present
+          ? data.lmsCourseId.value
+          : this.lmsCourseId,
+      subjectId: data.subjectId.present ? data.subjectId.value : this.subjectId,
+      classification: data.classification.present
+          ? data.classification.value
+          : this.classification,
+      title: data.title.present ? data.title.value : this.title,
+      teacherName: data.teacherName.present
+          ? data.teacherName.value
+          : this.teacherName,
+      credits: data.credits.present ? data.credits.value : this.credits,
+      registerMidterm: data.registerMidterm.present
+          ? data.registerMidterm.value
+          : this.registerMidterm,
+      registerEndterm: data.registerEndterm.present
+          ? data.registerEndterm.value
+          : this.registerEndterm,
+      finalExam: data.finalExam.present ? data.finalExam.value : this.finalExam,
+      total: data.total.present ? data.total.value : this.total,
+      gradeItemsJson: data.gradeItemsJson.present
+          ? data.gradeItemsJson.value
+          : this.gradeItemsJson,
+      importedAt: data.importedAt.present
+          ? data.importedAt.value
+          : this.importedAt,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LmsCourse(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('source: $source, ')
+          ..write('lmsCourseId: $lmsCourseId, ')
+          ..write('subjectId: $subjectId, ')
+          ..write('classification: $classification, ')
+          ..write('title: $title, ')
+          ..write('teacherName: $teacherName, ')
+          ..write('credits: $credits, ')
+          ..write('registerMidterm: $registerMidterm, ')
+          ..write('registerEndterm: $registerEndterm, ')
+          ..write('finalExam: $finalExam, ')
+          ..write('total: $total, ')
+          ..write('gradeItemsJson: $gradeItemsJson, ')
+          ..write('importedAt: $importedAt, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncStatus: $syncStatus')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    source,
+    lmsCourseId,
+    subjectId,
+    classification,
+    title,
+    teacherName,
+    credits,
+    registerMidterm,
+    registerEndterm,
+    finalExam,
+    total,
+    gradeItemsJson,
+    importedAt,
+    isDeleted,
+    updatedAt,
+    syncStatus,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LmsCourse &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.source == this.source &&
+          other.lmsCourseId == this.lmsCourseId &&
+          other.subjectId == this.subjectId &&
+          other.classification == this.classification &&
+          other.title == this.title &&
+          other.teacherName == this.teacherName &&
+          other.credits == this.credits &&
+          other.registerMidterm == this.registerMidterm &&
+          other.registerEndterm == this.registerEndterm &&
+          other.finalExam == this.finalExam &&
+          other.total == this.total &&
+          other.gradeItemsJson == this.gradeItemsJson &&
+          other.importedAt == this.importedAt &&
+          other.isDeleted == this.isDeleted &&
+          other.updatedAt == this.updatedAt &&
+          other.syncStatus == this.syncStatus);
+}
+
+class LmsCoursesCompanion extends UpdateCompanion<LmsCourse> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String> source;
+  final Value<int?> lmsCourseId;
+  final Value<String?> subjectId;
+  final Value<String?> classification;
+  final Value<String> title;
+  final Value<String?> teacherName;
+  final Value<int> credits;
+  final Value<double?> registerMidterm;
+  final Value<double?> registerEndterm;
+  final Value<double?> finalExam;
+  final Value<double?> total;
+  final Value<String?> gradeItemsJson;
+  final Value<BigInt?> importedAt;
+  final Value<bool> isDeleted;
+  final Value<BigInt> updatedAt;
+  final Value<String> syncStatus;
+  final Value<int> rowid;
+  const LmsCoursesCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.source = const Value.absent(),
+    this.lmsCourseId = const Value.absent(),
+    this.subjectId = const Value.absent(),
+    this.classification = const Value.absent(),
+    this.title = const Value.absent(),
+    this.teacherName = const Value.absent(),
+    this.credits = const Value.absent(),
+    this.registerMidterm = const Value.absent(),
+    this.registerEndterm = const Value.absent(),
+    this.finalExam = const Value.absent(),
+    this.total = const Value.absent(),
+    this.gradeItemsJson = const Value.absent(),
+    this.importedAt = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LmsCoursesCompanion.insert({
+    required String id,
+    required String userId,
+    this.source = const Value.absent(),
+    this.lmsCourseId = const Value.absent(),
+    this.subjectId = const Value.absent(),
+    this.classification = const Value.absent(),
+    required String title,
+    this.teacherName = const Value.absent(),
+    this.credits = const Value.absent(),
+    this.registerMidterm = const Value.absent(),
+    this.registerEndterm = const Value.absent(),
+    this.finalExam = const Value.absent(),
+    this.total = const Value.absent(),
+    this.gradeItemsJson = const Value.absent(),
+    this.importedAt = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    required BigInt updatedAt,
+    this.syncStatus = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       title = Value(title),
+       updatedAt = Value(updatedAt);
+  static Insertable<LmsCourse> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? source,
+    Expression<int>? lmsCourseId,
+    Expression<String>? subjectId,
+    Expression<String>? classification,
+    Expression<String>? title,
+    Expression<String>? teacherName,
+    Expression<int>? credits,
+    Expression<double>? registerMidterm,
+    Expression<double>? registerEndterm,
+    Expression<double>? finalExam,
+    Expression<double>? total,
+    Expression<String>? gradeItemsJson,
+    Expression<BigInt>? importedAt,
+    Expression<bool>? isDeleted,
+    Expression<BigInt>? updatedAt,
+    Expression<String>? syncStatus,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (source != null) 'source': source,
+      if (lmsCourseId != null) 'lms_course_id': lmsCourseId,
+      if (subjectId != null) 'subject_id': subjectId,
+      if (classification != null) 'classification': classification,
+      if (title != null) 'title': title,
+      if (teacherName != null) 'teacher_name': teacherName,
+      if (credits != null) 'credits': credits,
+      if (registerMidterm != null) 'register_midterm': registerMidterm,
+      if (registerEndterm != null) 'register_endterm': registerEndterm,
+      if (finalExam != null) 'final_exam': finalExam,
+      if (total != null) 'total': total,
+      if (gradeItemsJson != null) 'grade_items_json': gradeItemsJson,
+      if (importedAt != null) 'imported_at': importedAt,
+      if (isDeleted != null) 'is_deleted': isDeleted,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LmsCoursesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String>? source,
+    Value<int?>? lmsCourseId,
+    Value<String?>? subjectId,
+    Value<String?>? classification,
+    Value<String>? title,
+    Value<String?>? teacherName,
+    Value<int>? credits,
+    Value<double?>? registerMidterm,
+    Value<double?>? registerEndterm,
+    Value<double?>? finalExam,
+    Value<double?>? total,
+    Value<String?>? gradeItemsJson,
+    Value<BigInt?>? importedAt,
+    Value<bool>? isDeleted,
+    Value<BigInt>? updatedAt,
+    Value<String>? syncStatus,
+    Value<int>? rowid,
+  }) {
+    return LmsCoursesCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      source: source ?? this.source,
+      lmsCourseId: lmsCourseId ?? this.lmsCourseId,
+      subjectId: subjectId ?? this.subjectId,
+      classification: classification ?? this.classification,
+      title: title ?? this.title,
+      teacherName: teacherName ?? this.teacherName,
+      credits: credits ?? this.credits,
+      registerMidterm: registerMidterm ?? this.registerMidterm,
+      registerEndterm: registerEndterm ?? this.registerEndterm,
+      finalExam: finalExam ?? this.finalExam,
+      total: total ?? this.total,
+      gradeItemsJson: gradeItemsJson ?? this.gradeItemsJson,
+      importedAt: importedAt ?? this.importedAt,
+      isDeleted: isDeleted ?? this.isDeleted,
+      updatedAt: updatedAt ?? this.updatedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (lmsCourseId.present) {
+      map['lms_course_id'] = Variable<int>(lmsCourseId.value);
+    }
+    if (subjectId.present) {
+      map['subject_id'] = Variable<String>(subjectId.value);
+    }
+    if (classification.present) {
+      map['classification'] = Variable<String>(classification.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (teacherName.present) {
+      map['teacher_name'] = Variable<String>(teacherName.value);
+    }
+    if (credits.present) {
+      map['credits'] = Variable<int>(credits.value);
+    }
+    if (registerMidterm.present) {
+      map['register_midterm'] = Variable<double>(registerMidterm.value);
+    }
+    if (registerEndterm.present) {
+      map['register_endterm'] = Variable<double>(registerEndterm.value);
+    }
+    if (finalExam.present) {
+      map['final_exam'] = Variable<double>(finalExam.value);
+    }
+    if (total.present) {
+      map['total'] = Variable<double>(total.value);
+    }
+    if (gradeItemsJson.present) {
+      map['grade_items_json'] = Variable<String>(gradeItemsJson.value);
+    }
+    if (importedAt.present) {
+      map['imported_at'] = Variable<BigInt>(importedAt.value);
+    }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<BigInt>(updatedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LmsCoursesCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('source: $source, ')
+          ..write('lmsCourseId: $lmsCourseId, ')
+          ..write('subjectId: $subjectId, ')
+          ..write('classification: $classification, ')
+          ..write('title: $title, ')
+          ..write('teacherName: $teacherName, ')
+          ..write('credits: $credits, ')
+          ..write('registerMidterm: $registerMidterm, ')
+          ..write('registerEndterm: $registerEndterm, ')
+          ..write('finalExam: $finalExam, ')
+          ..write('total: $total, ')
+          ..write('gradeItemsJson: $gradeItemsJson, ')
+          ..write('importedAt: $importedAt, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LmsEventsTable extends LmsEvents
+    with TableInfo<$LmsEventsTable, LmsEvent> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LmsEventsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lmsEventIdMeta = const VerificationMeta(
+    'lmsEventId',
+  );
+  @override
+  late final GeneratedColumn<int> lmsEventId = GeneratedColumn<int>(
+    'lms_event_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lmsCourseIdMeta = const VerificationMeta(
+    'lmsCourseId',
+  );
+  @override
+  late final GeneratedColumn<int> lmsCourseId = GeneratedColumn<int>(
+    'lms_course_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 255,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _courseTitleMeta = const VerificationMeta(
+    'courseTitle',
+  );
+  @override
+  late final GeneratedColumn<String> courseTitle = GeneratedColumn<String>(
+    'course_title',
+    aliasedName,
+    true,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _eventTypeMeta = const VerificationMeta(
+    'eventType',
+  );
+  @override
+  late final GeneratedColumn<String> eventType = GeneratedColumn<String>(
+    'event_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('other'),
+  );
+  static const VerificationMeta _moduleNameMeta = const VerificationMeta(
+    'moduleName',
+  );
+  @override
+  late final GeneratedColumn<String> moduleName = GeneratedColumn<String>(
+    'module_name',
+    aliasedName,
+    true,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 64),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _startsAtMeta = const VerificationMeta(
+    'startsAt',
+  );
+  @override
+  late final GeneratedColumn<BigInt> startsAt = GeneratedColumn<BigInt>(
+    'starts_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.bigInt,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _durationMinMeta = const VerificationMeta(
+    'durationMin',
+  );
+  @override
+  late final GeneratedColumn<int> durationMin = GeneratedColumn<int>(
+    'duration_min',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _locationMeta = const VerificationMeta(
+    'location',
+  );
+  @override
+  late final GeneratedColumn<String> location = GeneratedColumn<String>(
+    'location',
+    aliasedName,
+    true,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 128),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _urlMeta = const VerificationMeta('url');
+  @override
+  late final GeneratedColumn<String> url = GeneratedColumn<String>(
+    'url',
+    aliasedName,
+    true,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 1024),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isDoneMeta = const VerificationMeta('isDone');
+  @override
+  late final GeneratedColumn<bool> isDone = GeneratedColumn<bool>(
+    'is_done',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_done" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _importedAtMeta = const VerificationMeta(
+    'importedAt',
+  );
+  @override
+  late final GeneratedColumn<BigInt> importedAt = GeneratedColumn<BigInt>(
+    'imported_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.bigInt,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isDeletedMeta = const VerificationMeta(
+    'isDeleted',
+  );
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+    'is_deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<BigInt> updatedAt = GeneratedColumn<BigInt>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.bigInt,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('synced'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    lmsEventId,
+    lmsCourseId,
+    title,
+    courseTitle,
+    eventType,
+    moduleName,
+    startsAt,
+    durationMin,
+    location,
+    url,
+    isDone,
+    importedAt,
+    isDeleted,
+    updatedAt,
+    syncStatus,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'lms_events';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LmsEvent> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('lms_event_id')) {
+      context.handle(
+        _lmsEventIdMeta,
+        lmsEventId.isAcceptableOrUnknown(
+          data['lms_event_id']!,
+          _lmsEventIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('lms_course_id')) {
+      context.handle(
+        _lmsCourseIdMeta,
+        lmsCourseId.isAcceptableOrUnknown(
+          data['lms_course_id']!,
+          _lmsCourseIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('course_title')) {
+      context.handle(
+        _courseTitleMeta,
+        courseTitle.isAcceptableOrUnknown(
+          data['course_title']!,
+          _courseTitleMeta,
+        ),
+      );
+    }
+    if (data.containsKey('event_type')) {
+      context.handle(
+        _eventTypeMeta,
+        eventType.isAcceptableOrUnknown(data['event_type']!, _eventTypeMeta),
+      );
+    }
+    if (data.containsKey('module_name')) {
+      context.handle(
+        _moduleNameMeta,
+        moduleName.isAcceptableOrUnknown(data['module_name']!, _moduleNameMeta),
+      );
+    }
+    if (data.containsKey('starts_at')) {
+      context.handle(
+        _startsAtMeta,
+        startsAt.isAcceptableOrUnknown(data['starts_at']!, _startsAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startsAtMeta);
+    }
+    if (data.containsKey('duration_min')) {
+      context.handle(
+        _durationMinMeta,
+        durationMin.isAcceptableOrUnknown(
+          data['duration_min']!,
+          _durationMinMeta,
+        ),
+      );
+    }
+    if (data.containsKey('location')) {
+      context.handle(
+        _locationMeta,
+        location.isAcceptableOrUnknown(data['location']!, _locationMeta),
+      );
+    }
+    if (data.containsKey('url')) {
+      context.handle(
+        _urlMeta,
+        url.isAcceptableOrUnknown(data['url']!, _urlMeta),
+      );
+    }
+    if (data.containsKey('is_done')) {
+      context.handle(
+        _isDoneMeta,
+        isDone.isAcceptableOrUnknown(data['is_done']!, _isDoneMeta),
+      );
+    }
+    if (data.containsKey('imported_at')) {
+      context.handle(
+        _importedAtMeta,
+        importedAt.isAcceptableOrUnknown(data['imported_at']!, _importedAtMeta),
+      );
+    }
+    if (data.containsKey('is_deleted')) {
+      context.handle(
+        _isDeletedMeta,
+        isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LmsEvent map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LmsEvent(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      lmsEventId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}lms_event_id'],
+      ),
+      lmsCourseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}lms_course_id'],
+      ),
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      courseTitle: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}course_title'],
+      ),
+      eventType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}event_type'],
+      )!,
+      moduleName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}module_name'],
+      ),
+      startsAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.bigInt,
+        data['${effectivePrefix}starts_at'],
+      )!,
+      durationMin: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}duration_min'],
+      ),
+      location: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}location'],
+      ),
+      url: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}url'],
+      ),
+      isDone: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_done'],
+      )!,
+      importedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.bigInt,
+        data['${effectivePrefix}imported_at'],
+      ),
+      isDeleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_deleted'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.bigInt,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+    );
+  }
+
+  @override
+  $LmsEventsTable createAlias(String alias) {
+    return $LmsEventsTable(attachedDatabase, alias);
+  }
+}
+
+class LmsEvent extends DataClass implements Insertable<LmsEvent> {
+  final String id;
+  final String userId;
+  final int? lmsEventId;
+  final int? lmsCourseId;
+  final String title;
+  final String? courseTitle;
+  final String eventType;
+  final String? moduleName;
+  final BigInt startsAt;
+  final int? durationMin;
+  final String? location;
+  final String? url;
+  final bool isDone;
+  final BigInt? importedAt;
+  final bool isDeleted;
+  final BigInt updatedAt;
+  final String syncStatus;
+  const LmsEvent({
+    required this.id,
+    required this.userId,
+    this.lmsEventId,
+    this.lmsCourseId,
+    required this.title,
+    this.courseTitle,
+    required this.eventType,
+    this.moduleName,
+    required this.startsAt,
+    this.durationMin,
+    this.location,
+    this.url,
+    required this.isDone,
+    this.importedAt,
+    required this.isDeleted,
+    required this.updatedAt,
+    required this.syncStatus,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    if (!nullToAbsent || lmsEventId != null) {
+      map['lms_event_id'] = Variable<int>(lmsEventId);
+    }
+    if (!nullToAbsent || lmsCourseId != null) {
+      map['lms_course_id'] = Variable<int>(lmsCourseId);
+    }
+    map['title'] = Variable<String>(title);
+    if (!nullToAbsent || courseTitle != null) {
+      map['course_title'] = Variable<String>(courseTitle);
+    }
+    map['event_type'] = Variable<String>(eventType);
+    if (!nullToAbsent || moduleName != null) {
+      map['module_name'] = Variable<String>(moduleName);
+    }
+    map['starts_at'] = Variable<BigInt>(startsAt);
+    if (!nullToAbsent || durationMin != null) {
+      map['duration_min'] = Variable<int>(durationMin);
+    }
+    if (!nullToAbsent || location != null) {
+      map['location'] = Variable<String>(location);
+    }
+    if (!nullToAbsent || url != null) {
+      map['url'] = Variable<String>(url);
+    }
+    map['is_done'] = Variable<bool>(isDone);
+    if (!nullToAbsent || importedAt != null) {
+      map['imported_at'] = Variable<BigInt>(importedAt);
+    }
+    map['is_deleted'] = Variable<bool>(isDeleted);
+    map['updated_at'] = Variable<BigInt>(updatedAt);
+    map['sync_status'] = Variable<String>(syncStatus);
+    return map;
+  }
+
+  LmsEventsCompanion toCompanion(bool nullToAbsent) {
+    return LmsEventsCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      lmsEventId: lmsEventId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lmsEventId),
+      lmsCourseId: lmsCourseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lmsCourseId),
+      title: Value(title),
+      courseTitle: courseTitle == null && nullToAbsent
+          ? const Value.absent()
+          : Value(courseTitle),
+      eventType: Value(eventType),
+      moduleName: moduleName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(moduleName),
+      startsAt: Value(startsAt),
+      durationMin: durationMin == null && nullToAbsent
+          ? const Value.absent()
+          : Value(durationMin),
+      location: location == null && nullToAbsent
+          ? const Value.absent()
+          : Value(location),
+      url: url == null && nullToAbsent ? const Value.absent() : Value(url),
+      isDone: Value(isDone),
+      importedAt: importedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(importedAt),
+      isDeleted: Value(isDeleted),
+      updatedAt: Value(updatedAt),
+      syncStatus: Value(syncStatus),
+    );
+  }
+
+  factory LmsEvent.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LmsEvent(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      lmsEventId: serializer.fromJson<int?>(json['lmsEventId']),
+      lmsCourseId: serializer.fromJson<int?>(json['lmsCourseId']),
+      title: serializer.fromJson<String>(json['title']),
+      courseTitle: serializer.fromJson<String?>(json['courseTitle']),
+      eventType: serializer.fromJson<String>(json['eventType']),
+      moduleName: serializer.fromJson<String?>(json['moduleName']),
+      startsAt: serializer.fromJson<BigInt>(json['startsAt']),
+      durationMin: serializer.fromJson<int?>(json['durationMin']),
+      location: serializer.fromJson<String?>(json['location']),
+      url: serializer.fromJson<String?>(json['url']),
+      isDone: serializer.fromJson<bool>(json['isDone']),
+      importedAt: serializer.fromJson<BigInt?>(json['importedAt']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+      updatedAt: serializer.fromJson<BigInt>(json['updatedAt']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'lmsEventId': serializer.toJson<int?>(lmsEventId),
+      'lmsCourseId': serializer.toJson<int?>(lmsCourseId),
+      'title': serializer.toJson<String>(title),
+      'courseTitle': serializer.toJson<String?>(courseTitle),
+      'eventType': serializer.toJson<String>(eventType),
+      'moduleName': serializer.toJson<String?>(moduleName),
+      'startsAt': serializer.toJson<BigInt>(startsAt),
+      'durationMin': serializer.toJson<int?>(durationMin),
+      'location': serializer.toJson<String?>(location),
+      'url': serializer.toJson<String?>(url),
+      'isDone': serializer.toJson<bool>(isDone),
+      'importedAt': serializer.toJson<BigInt?>(importedAt),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
+      'updatedAt': serializer.toJson<BigInt>(updatedAt),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+    };
+  }
+
+  LmsEvent copyWith({
+    String? id,
+    String? userId,
+    Value<int?> lmsEventId = const Value.absent(),
+    Value<int?> lmsCourseId = const Value.absent(),
+    String? title,
+    Value<String?> courseTitle = const Value.absent(),
+    String? eventType,
+    Value<String?> moduleName = const Value.absent(),
+    BigInt? startsAt,
+    Value<int?> durationMin = const Value.absent(),
+    Value<String?> location = const Value.absent(),
+    Value<String?> url = const Value.absent(),
+    bool? isDone,
+    Value<BigInt?> importedAt = const Value.absent(),
+    bool? isDeleted,
+    BigInt? updatedAt,
+    String? syncStatus,
+  }) => LmsEvent(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    lmsEventId: lmsEventId.present ? lmsEventId.value : this.lmsEventId,
+    lmsCourseId: lmsCourseId.present ? lmsCourseId.value : this.lmsCourseId,
+    title: title ?? this.title,
+    courseTitle: courseTitle.present ? courseTitle.value : this.courseTitle,
+    eventType: eventType ?? this.eventType,
+    moduleName: moduleName.present ? moduleName.value : this.moduleName,
+    startsAt: startsAt ?? this.startsAt,
+    durationMin: durationMin.present ? durationMin.value : this.durationMin,
+    location: location.present ? location.value : this.location,
+    url: url.present ? url.value : this.url,
+    isDone: isDone ?? this.isDone,
+    importedAt: importedAt.present ? importedAt.value : this.importedAt,
+    isDeleted: isDeleted ?? this.isDeleted,
+    updatedAt: updatedAt ?? this.updatedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+  );
+  LmsEvent copyWithCompanion(LmsEventsCompanion data) {
+    return LmsEvent(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      lmsEventId: data.lmsEventId.present
+          ? data.lmsEventId.value
+          : this.lmsEventId,
+      lmsCourseId: data.lmsCourseId.present
+          ? data.lmsCourseId.value
+          : this.lmsCourseId,
+      title: data.title.present ? data.title.value : this.title,
+      courseTitle: data.courseTitle.present
+          ? data.courseTitle.value
+          : this.courseTitle,
+      eventType: data.eventType.present ? data.eventType.value : this.eventType,
+      moduleName: data.moduleName.present
+          ? data.moduleName.value
+          : this.moduleName,
+      startsAt: data.startsAt.present ? data.startsAt.value : this.startsAt,
+      durationMin: data.durationMin.present
+          ? data.durationMin.value
+          : this.durationMin,
+      location: data.location.present ? data.location.value : this.location,
+      url: data.url.present ? data.url.value : this.url,
+      isDone: data.isDone.present ? data.isDone.value : this.isDone,
+      importedAt: data.importedAt.present
+          ? data.importedAt.value
+          : this.importedAt,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LmsEvent(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('lmsEventId: $lmsEventId, ')
+          ..write('lmsCourseId: $lmsCourseId, ')
+          ..write('title: $title, ')
+          ..write('courseTitle: $courseTitle, ')
+          ..write('eventType: $eventType, ')
+          ..write('moduleName: $moduleName, ')
+          ..write('startsAt: $startsAt, ')
+          ..write('durationMin: $durationMin, ')
+          ..write('location: $location, ')
+          ..write('url: $url, ')
+          ..write('isDone: $isDone, ')
+          ..write('importedAt: $importedAt, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncStatus: $syncStatus')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    lmsEventId,
+    lmsCourseId,
+    title,
+    courseTitle,
+    eventType,
+    moduleName,
+    startsAt,
+    durationMin,
+    location,
+    url,
+    isDone,
+    importedAt,
+    isDeleted,
+    updatedAt,
+    syncStatus,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LmsEvent &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.lmsEventId == this.lmsEventId &&
+          other.lmsCourseId == this.lmsCourseId &&
+          other.title == this.title &&
+          other.courseTitle == this.courseTitle &&
+          other.eventType == this.eventType &&
+          other.moduleName == this.moduleName &&
+          other.startsAt == this.startsAt &&
+          other.durationMin == this.durationMin &&
+          other.location == this.location &&
+          other.url == this.url &&
+          other.isDone == this.isDone &&
+          other.importedAt == this.importedAt &&
+          other.isDeleted == this.isDeleted &&
+          other.updatedAt == this.updatedAt &&
+          other.syncStatus == this.syncStatus);
+}
+
+class LmsEventsCompanion extends UpdateCompanion<LmsEvent> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<int?> lmsEventId;
+  final Value<int?> lmsCourseId;
+  final Value<String> title;
+  final Value<String?> courseTitle;
+  final Value<String> eventType;
+  final Value<String?> moduleName;
+  final Value<BigInt> startsAt;
+  final Value<int?> durationMin;
+  final Value<String?> location;
+  final Value<String?> url;
+  final Value<bool> isDone;
+  final Value<BigInt?> importedAt;
+  final Value<bool> isDeleted;
+  final Value<BigInt> updatedAt;
+  final Value<String> syncStatus;
+  final Value<int> rowid;
+  const LmsEventsCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.lmsEventId = const Value.absent(),
+    this.lmsCourseId = const Value.absent(),
+    this.title = const Value.absent(),
+    this.courseTitle = const Value.absent(),
+    this.eventType = const Value.absent(),
+    this.moduleName = const Value.absent(),
+    this.startsAt = const Value.absent(),
+    this.durationMin = const Value.absent(),
+    this.location = const Value.absent(),
+    this.url = const Value.absent(),
+    this.isDone = const Value.absent(),
+    this.importedAt = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LmsEventsCompanion.insert({
+    required String id,
+    required String userId,
+    this.lmsEventId = const Value.absent(),
+    this.lmsCourseId = const Value.absent(),
+    required String title,
+    this.courseTitle = const Value.absent(),
+    this.eventType = const Value.absent(),
+    this.moduleName = const Value.absent(),
+    required BigInt startsAt,
+    this.durationMin = const Value.absent(),
+    this.location = const Value.absent(),
+    this.url = const Value.absent(),
+    this.isDone = const Value.absent(),
+    this.importedAt = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    required BigInt updatedAt,
+    this.syncStatus = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       title = Value(title),
+       startsAt = Value(startsAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<LmsEvent> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<int>? lmsEventId,
+    Expression<int>? lmsCourseId,
+    Expression<String>? title,
+    Expression<String>? courseTitle,
+    Expression<String>? eventType,
+    Expression<String>? moduleName,
+    Expression<BigInt>? startsAt,
+    Expression<int>? durationMin,
+    Expression<String>? location,
+    Expression<String>? url,
+    Expression<bool>? isDone,
+    Expression<BigInt>? importedAt,
+    Expression<bool>? isDeleted,
+    Expression<BigInt>? updatedAt,
+    Expression<String>? syncStatus,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (lmsEventId != null) 'lms_event_id': lmsEventId,
+      if (lmsCourseId != null) 'lms_course_id': lmsCourseId,
+      if (title != null) 'title': title,
+      if (courseTitle != null) 'course_title': courseTitle,
+      if (eventType != null) 'event_type': eventType,
+      if (moduleName != null) 'module_name': moduleName,
+      if (startsAt != null) 'starts_at': startsAt,
+      if (durationMin != null) 'duration_min': durationMin,
+      if (location != null) 'location': location,
+      if (url != null) 'url': url,
+      if (isDone != null) 'is_done': isDone,
+      if (importedAt != null) 'imported_at': importedAt,
+      if (isDeleted != null) 'is_deleted': isDeleted,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LmsEventsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<int?>? lmsEventId,
+    Value<int?>? lmsCourseId,
+    Value<String>? title,
+    Value<String?>? courseTitle,
+    Value<String>? eventType,
+    Value<String?>? moduleName,
+    Value<BigInt>? startsAt,
+    Value<int?>? durationMin,
+    Value<String?>? location,
+    Value<String?>? url,
+    Value<bool>? isDone,
+    Value<BigInt?>? importedAt,
+    Value<bool>? isDeleted,
+    Value<BigInt>? updatedAt,
+    Value<String>? syncStatus,
+    Value<int>? rowid,
+  }) {
+    return LmsEventsCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      lmsEventId: lmsEventId ?? this.lmsEventId,
+      lmsCourseId: lmsCourseId ?? this.lmsCourseId,
+      title: title ?? this.title,
+      courseTitle: courseTitle ?? this.courseTitle,
+      eventType: eventType ?? this.eventType,
+      moduleName: moduleName ?? this.moduleName,
+      startsAt: startsAt ?? this.startsAt,
+      durationMin: durationMin ?? this.durationMin,
+      location: location ?? this.location,
+      url: url ?? this.url,
+      isDone: isDone ?? this.isDone,
+      importedAt: importedAt ?? this.importedAt,
+      isDeleted: isDeleted ?? this.isDeleted,
+      updatedAt: updatedAt ?? this.updatedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (lmsEventId.present) {
+      map['lms_event_id'] = Variable<int>(lmsEventId.value);
+    }
+    if (lmsCourseId.present) {
+      map['lms_course_id'] = Variable<int>(lmsCourseId.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (courseTitle.present) {
+      map['course_title'] = Variable<String>(courseTitle.value);
+    }
+    if (eventType.present) {
+      map['event_type'] = Variable<String>(eventType.value);
+    }
+    if (moduleName.present) {
+      map['module_name'] = Variable<String>(moduleName.value);
+    }
+    if (startsAt.present) {
+      map['starts_at'] = Variable<BigInt>(startsAt.value);
+    }
+    if (durationMin.present) {
+      map['duration_min'] = Variable<int>(durationMin.value);
+    }
+    if (location.present) {
+      map['location'] = Variable<String>(location.value);
+    }
+    if (url.present) {
+      map['url'] = Variable<String>(url.value);
+    }
+    if (isDone.present) {
+      map['is_done'] = Variable<bool>(isDone.value);
+    }
+    if (importedAt.present) {
+      map['imported_at'] = Variable<BigInt>(importedAt.value);
+    }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<BigInt>(updatedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LmsEventsCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('lmsEventId: $lmsEventId, ')
+          ..write('lmsCourseId: $lmsCourseId, ')
+          ..write('title: $title, ')
+          ..write('courseTitle: $courseTitle, ')
+          ..write('eventType: $eventType, ')
+          ..write('moduleName: $moduleName, ')
+          ..write('startsAt: $startsAt, ')
+          ..write('durationMin: $durationMin, ')
+          ..write('location: $location, ')
+          ..write('url: $url, ')
+          ..write('isDone: $isDone, ')
+          ..write('importedAt: $importedAt, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $LmsMaterialsTable extends LmsMaterials
+    with TableInfo<$LmsMaterialsTable, LmsMaterial> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LmsMaterialsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lmsModuleIdMeta = const VerificationMeta(
+    'lmsModuleId',
+  );
+  @override
+  late final GeneratedColumn<int> lmsModuleId = GeneratedColumn<int>(
+    'lms_module_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lmsCourseIdMeta = const VerificationMeta(
+    'lmsCourseId',
+  );
+  @override
+  late final GeneratedColumn<int> lmsCourseId = GeneratedColumn<int>(
+    'lms_course_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _courseTitleMeta = const VerificationMeta(
+    'courseTitle',
+  );
+  @override
+  late final GeneratedColumn<String> courseTitle = GeneratedColumn<String>(
+    'course_title',
+    aliasedName,
+    true,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sectionTitleMeta = const VerificationMeta(
+    'sectionTitle',
+  );
+  @override
+  late final GeneratedColumn<String> sectionTitle = GeneratedColumn<String>(
+    'section_title',
+    aliasedName,
+    true,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 255),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 255,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _materialTypeMeta = const VerificationMeta(
+    'materialType',
+  );
+  @override
+  late final GeneratedColumn<String> materialType = GeneratedColumn<String>(
+    'material_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('other'),
+  );
+  static const VerificationMeta _urlMeta = const VerificationMeta('url');
+  @override
+  late final GeneratedColumn<String> url = GeneratedColumn<String>(
+    'url',
+    aliasedName,
+    true,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 1024),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _importedAtMeta = const VerificationMeta(
+    'importedAt',
+  );
+  @override
+  late final GeneratedColumn<BigInt> importedAt = GeneratedColumn<BigInt>(
+    'imported_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.bigInt,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isDeletedMeta = const VerificationMeta(
+    'isDeleted',
+  );
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+    'is_deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<BigInt> updatedAt = GeneratedColumn<BigInt>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.bigInt,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('synced'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    lmsModuleId,
+    lmsCourseId,
+    courseTitle,
+    sectionTitle,
+    title,
+    materialType,
+    url,
+    importedAt,
+    isDeleted,
+    updatedAt,
+    syncStatus,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'lms_materials';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LmsMaterial> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('lms_module_id')) {
+      context.handle(
+        _lmsModuleIdMeta,
+        lmsModuleId.isAcceptableOrUnknown(
+          data['lms_module_id']!,
+          _lmsModuleIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('lms_course_id')) {
+      context.handle(
+        _lmsCourseIdMeta,
+        lmsCourseId.isAcceptableOrUnknown(
+          data['lms_course_id']!,
+          _lmsCourseIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('course_title')) {
+      context.handle(
+        _courseTitleMeta,
+        courseTitle.isAcceptableOrUnknown(
+          data['course_title']!,
+          _courseTitleMeta,
+        ),
+      );
+    }
+    if (data.containsKey('section_title')) {
+      context.handle(
+        _sectionTitleMeta,
+        sectionTitle.isAcceptableOrUnknown(
+          data['section_title']!,
+          _sectionTitleMeta,
+        ),
+      );
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('material_type')) {
+      context.handle(
+        _materialTypeMeta,
+        materialType.isAcceptableOrUnknown(
+          data['material_type']!,
+          _materialTypeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('url')) {
+      context.handle(
+        _urlMeta,
+        url.isAcceptableOrUnknown(data['url']!, _urlMeta),
+      );
+    }
+    if (data.containsKey('imported_at')) {
+      context.handle(
+        _importedAtMeta,
+        importedAt.isAcceptableOrUnknown(data['imported_at']!, _importedAtMeta),
+      );
+    }
+    if (data.containsKey('is_deleted')) {
+      context.handle(
+        _isDeletedMeta,
+        isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  LmsMaterial map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LmsMaterial(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      lmsModuleId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}lms_module_id'],
+      ),
+      lmsCourseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}lms_course_id'],
+      ),
+      courseTitle: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}course_title'],
+      ),
+      sectionTitle: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}section_title'],
+      ),
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      materialType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}material_type'],
+      )!,
+      url: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}url'],
+      ),
+      importedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.bigInt,
+        data['${effectivePrefix}imported_at'],
+      ),
+      isDeleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_deleted'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.bigInt,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+    );
+  }
+
+  @override
+  $LmsMaterialsTable createAlias(String alias) {
+    return $LmsMaterialsTable(attachedDatabase, alias);
+  }
+}
+
+class LmsMaterial extends DataClass implements Insertable<LmsMaterial> {
+  final String id;
+  final String userId;
+  final int? lmsModuleId;
+  final int? lmsCourseId;
+  final String? courseTitle;
+  final String? sectionTitle;
+  final String title;
+  final String materialType;
+  final String? url;
+  final BigInt? importedAt;
+  final bool isDeleted;
+  final BigInt updatedAt;
+  final String syncStatus;
+  const LmsMaterial({
+    required this.id,
+    required this.userId,
+    this.lmsModuleId,
+    this.lmsCourseId,
+    this.courseTitle,
+    this.sectionTitle,
+    required this.title,
+    required this.materialType,
+    this.url,
+    this.importedAt,
+    required this.isDeleted,
+    required this.updatedAt,
+    required this.syncStatus,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    if (!nullToAbsent || lmsModuleId != null) {
+      map['lms_module_id'] = Variable<int>(lmsModuleId);
+    }
+    if (!nullToAbsent || lmsCourseId != null) {
+      map['lms_course_id'] = Variable<int>(lmsCourseId);
+    }
+    if (!nullToAbsent || courseTitle != null) {
+      map['course_title'] = Variable<String>(courseTitle);
+    }
+    if (!nullToAbsent || sectionTitle != null) {
+      map['section_title'] = Variable<String>(sectionTitle);
+    }
+    map['title'] = Variable<String>(title);
+    map['material_type'] = Variable<String>(materialType);
+    if (!nullToAbsent || url != null) {
+      map['url'] = Variable<String>(url);
+    }
+    if (!nullToAbsent || importedAt != null) {
+      map['imported_at'] = Variable<BigInt>(importedAt);
+    }
+    map['is_deleted'] = Variable<bool>(isDeleted);
+    map['updated_at'] = Variable<BigInt>(updatedAt);
+    map['sync_status'] = Variable<String>(syncStatus);
+    return map;
+  }
+
+  LmsMaterialsCompanion toCompanion(bool nullToAbsent) {
+    return LmsMaterialsCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      lmsModuleId: lmsModuleId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lmsModuleId),
+      lmsCourseId: lmsCourseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lmsCourseId),
+      courseTitle: courseTitle == null && nullToAbsent
+          ? const Value.absent()
+          : Value(courseTitle),
+      sectionTitle: sectionTitle == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sectionTitle),
+      title: Value(title),
+      materialType: Value(materialType),
+      url: url == null && nullToAbsent ? const Value.absent() : Value(url),
+      importedAt: importedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(importedAt),
+      isDeleted: Value(isDeleted),
+      updatedAt: Value(updatedAt),
+      syncStatus: Value(syncStatus),
+    );
+  }
+
+  factory LmsMaterial.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LmsMaterial(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      lmsModuleId: serializer.fromJson<int?>(json['lmsModuleId']),
+      lmsCourseId: serializer.fromJson<int?>(json['lmsCourseId']),
+      courseTitle: serializer.fromJson<String?>(json['courseTitle']),
+      sectionTitle: serializer.fromJson<String?>(json['sectionTitle']),
+      title: serializer.fromJson<String>(json['title']),
+      materialType: serializer.fromJson<String>(json['materialType']),
+      url: serializer.fromJson<String?>(json['url']),
+      importedAt: serializer.fromJson<BigInt?>(json['importedAt']),
+      isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+      updatedAt: serializer.fromJson<BigInt>(json['updatedAt']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'lmsModuleId': serializer.toJson<int?>(lmsModuleId),
+      'lmsCourseId': serializer.toJson<int?>(lmsCourseId),
+      'courseTitle': serializer.toJson<String?>(courseTitle),
+      'sectionTitle': serializer.toJson<String?>(sectionTitle),
+      'title': serializer.toJson<String>(title),
+      'materialType': serializer.toJson<String>(materialType),
+      'url': serializer.toJson<String?>(url),
+      'importedAt': serializer.toJson<BigInt?>(importedAt),
+      'isDeleted': serializer.toJson<bool>(isDeleted),
+      'updatedAt': serializer.toJson<BigInt>(updatedAt),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+    };
+  }
+
+  LmsMaterial copyWith({
+    String? id,
+    String? userId,
+    Value<int?> lmsModuleId = const Value.absent(),
+    Value<int?> lmsCourseId = const Value.absent(),
+    Value<String?> courseTitle = const Value.absent(),
+    Value<String?> sectionTitle = const Value.absent(),
+    String? title,
+    String? materialType,
+    Value<String?> url = const Value.absent(),
+    Value<BigInt?> importedAt = const Value.absent(),
+    bool? isDeleted,
+    BigInt? updatedAt,
+    String? syncStatus,
+  }) => LmsMaterial(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    lmsModuleId: lmsModuleId.present ? lmsModuleId.value : this.lmsModuleId,
+    lmsCourseId: lmsCourseId.present ? lmsCourseId.value : this.lmsCourseId,
+    courseTitle: courseTitle.present ? courseTitle.value : this.courseTitle,
+    sectionTitle: sectionTitle.present ? sectionTitle.value : this.sectionTitle,
+    title: title ?? this.title,
+    materialType: materialType ?? this.materialType,
+    url: url.present ? url.value : this.url,
+    importedAt: importedAt.present ? importedAt.value : this.importedAt,
+    isDeleted: isDeleted ?? this.isDeleted,
+    updatedAt: updatedAt ?? this.updatedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+  );
+  LmsMaterial copyWithCompanion(LmsMaterialsCompanion data) {
+    return LmsMaterial(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      lmsModuleId: data.lmsModuleId.present
+          ? data.lmsModuleId.value
+          : this.lmsModuleId,
+      lmsCourseId: data.lmsCourseId.present
+          ? data.lmsCourseId.value
+          : this.lmsCourseId,
+      courseTitle: data.courseTitle.present
+          ? data.courseTitle.value
+          : this.courseTitle,
+      sectionTitle: data.sectionTitle.present
+          ? data.sectionTitle.value
+          : this.sectionTitle,
+      title: data.title.present ? data.title.value : this.title,
+      materialType: data.materialType.present
+          ? data.materialType.value
+          : this.materialType,
+      url: data.url.present ? data.url.value : this.url,
+      importedAt: data.importedAt.present
+          ? data.importedAt.value
+          : this.importedAt,
+      isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LmsMaterial(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('lmsModuleId: $lmsModuleId, ')
+          ..write('lmsCourseId: $lmsCourseId, ')
+          ..write('courseTitle: $courseTitle, ')
+          ..write('sectionTitle: $sectionTitle, ')
+          ..write('title: $title, ')
+          ..write('materialType: $materialType, ')
+          ..write('url: $url, ')
+          ..write('importedAt: $importedAt, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncStatus: $syncStatus')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    userId,
+    lmsModuleId,
+    lmsCourseId,
+    courseTitle,
+    sectionTitle,
+    title,
+    materialType,
+    url,
+    importedAt,
+    isDeleted,
+    updatedAt,
+    syncStatus,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LmsMaterial &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.lmsModuleId == this.lmsModuleId &&
+          other.lmsCourseId == this.lmsCourseId &&
+          other.courseTitle == this.courseTitle &&
+          other.sectionTitle == this.sectionTitle &&
+          other.title == this.title &&
+          other.materialType == this.materialType &&
+          other.url == this.url &&
+          other.importedAt == this.importedAt &&
+          other.isDeleted == this.isDeleted &&
+          other.updatedAt == this.updatedAt &&
+          other.syncStatus == this.syncStatus);
+}
+
+class LmsMaterialsCompanion extends UpdateCompanion<LmsMaterial> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<int?> lmsModuleId;
+  final Value<int?> lmsCourseId;
+  final Value<String?> courseTitle;
+  final Value<String?> sectionTitle;
+  final Value<String> title;
+  final Value<String> materialType;
+  final Value<String?> url;
+  final Value<BigInt?> importedAt;
+  final Value<bool> isDeleted;
+  final Value<BigInt> updatedAt;
+  final Value<String> syncStatus;
+  final Value<int> rowid;
+  const LmsMaterialsCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.lmsModuleId = const Value.absent(),
+    this.lmsCourseId = const Value.absent(),
+    this.courseTitle = const Value.absent(),
+    this.sectionTitle = const Value.absent(),
+    this.title = const Value.absent(),
+    this.materialType = const Value.absent(),
+    this.url = const Value.absent(),
+    this.importedAt = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LmsMaterialsCompanion.insert({
+    required String id,
+    required String userId,
+    this.lmsModuleId = const Value.absent(),
+    this.lmsCourseId = const Value.absent(),
+    this.courseTitle = const Value.absent(),
+    this.sectionTitle = const Value.absent(),
+    required String title,
+    this.materialType = const Value.absent(),
+    this.url = const Value.absent(),
+    this.importedAt = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    required BigInt updatedAt,
+    this.syncStatus = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       title = Value(title),
+       updatedAt = Value(updatedAt);
+  static Insertable<LmsMaterial> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<int>? lmsModuleId,
+    Expression<int>? lmsCourseId,
+    Expression<String>? courseTitle,
+    Expression<String>? sectionTitle,
+    Expression<String>? title,
+    Expression<String>? materialType,
+    Expression<String>? url,
+    Expression<BigInt>? importedAt,
+    Expression<bool>? isDeleted,
+    Expression<BigInt>? updatedAt,
+    Expression<String>? syncStatus,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (lmsModuleId != null) 'lms_module_id': lmsModuleId,
+      if (lmsCourseId != null) 'lms_course_id': lmsCourseId,
+      if (courseTitle != null) 'course_title': courseTitle,
+      if (sectionTitle != null) 'section_title': sectionTitle,
+      if (title != null) 'title': title,
+      if (materialType != null) 'material_type': materialType,
+      if (url != null) 'url': url,
+      if (importedAt != null) 'imported_at': importedAt,
+      if (isDeleted != null) 'is_deleted': isDeleted,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LmsMaterialsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<int?>? lmsModuleId,
+    Value<int?>? lmsCourseId,
+    Value<String?>? courseTitle,
+    Value<String?>? sectionTitle,
+    Value<String>? title,
+    Value<String>? materialType,
+    Value<String?>? url,
+    Value<BigInt?>? importedAt,
+    Value<bool>? isDeleted,
+    Value<BigInt>? updatedAt,
+    Value<String>? syncStatus,
+    Value<int>? rowid,
+  }) {
+    return LmsMaterialsCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      lmsModuleId: lmsModuleId ?? this.lmsModuleId,
+      lmsCourseId: lmsCourseId ?? this.lmsCourseId,
+      courseTitle: courseTitle ?? this.courseTitle,
+      sectionTitle: sectionTitle ?? this.sectionTitle,
+      title: title ?? this.title,
+      materialType: materialType ?? this.materialType,
+      url: url ?? this.url,
+      importedAt: importedAt ?? this.importedAt,
+      isDeleted: isDeleted ?? this.isDeleted,
+      updatedAt: updatedAt ?? this.updatedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (lmsModuleId.present) {
+      map['lms_module_id'] = Variable<int>(lmsModuleId.value);
+    }
+    if (lmsCourseId.present) {
+      map['lms_course_id'] = Variable<int>(lmsCourseId.value);
+    }
+    if (courseTitle.present) {
+      map['course_title'] = Variable<String>(courseTitle.value);
+    }
+    if (sectionTitle.present) {
+      map['section_title'] = Variable<String>(sectionTitle.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (materialType.present) {
+      map['material_type'] = Variable<String>(materialType.value);
+    }
+    if (url.present) {
+      map['url'] = Variable<String>(url.value);
+    }
+    if (importedAt.present) {
+      map['imported_at'] = Variable<BigInt>(importedAt.value);
+    }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<BigInt>(updatedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LmsMaterialsCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('lmsModuleId: $lmsModuleId, ')
+          ..write('lmsCourseId: $lmsCourseId, ')
+          ..write('courseTitle: $courseTitle, ')
+          ..write('sectionTitle: $sectionTitle, ')
+          ..write('title: $title, ')
+          ..write('materialType: $materialType, ')
+          ..write('url: $url, ')
+          ..write('importedAt: $importedAt, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -4123,8 +6295,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $LessonsTable lessons = $LessonsTable(this);
   late final $TasksTable tasks = $TasksTable(this);
   late final $SubtasksTable subtasks = $SubtasksTable(this);
-  late final $ChatMessagesTable chatMessages = $ChatMessagesTable(this);
   late final $AttachmentsTable attachments = $AttachmentsTable(this);
+  late final $LmsCoursesTable lmsCourses = $LmsCoursesTable(this);
+  late final $LmsEventsTable lmsEvents = $LmsEventsTable(this);
+  late final $LmsMaterialsTable lmsMaterials = $LmsMaterialsTable(this);
+  late final LmsDao lmsDao = LmsDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4134,8 +6309,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     lessons,
     tasks,
     subtasks,
-    chatMessages,
     attachments,
+    lmsCourses,
+    lmsEvents,
+    lmsMaterials,
   ];
 }
 
@@ -5538,318 +7715,6 @@ typedef $$SubtasksTableProcessedTableManager =
       Subtask,
       PrefetchHooks Function()
     >;
-typedef $$ChatMessagesTableCreateCompanionBuilder =
-    ChatMessagesCompanion Function({
-      required String id,
-      required String groupId,
-      required String senderId,
-      required String senderName,
-      Value<String> messageType,
-      required String content,
-      Value<String?> payloadJson,
-      Value<bool> isPinned,
-      required BigInt createdAt,
-      Value<String> syncStatus,
-      Value<int> rowid,
-    });
-typedef $$ChatMessagesTableUpdateCompanionBuilder =
-    ChatMessagesCompanion Function({
-      Value<String> id,
-      Value<String> groupId,
-      Value<String> senderId,
-      Value<String> senderName,
-      Value<String> messageType,
-      Value<String> content,
-      Value<String?> payloadJson,
-      Value<bool> isPinned,
-      Value<BigInt> createdAt,
-      Value<String> syncStatus,
-      Value<int> rowid,
-    });
-
-class $$ChatMessagesTableFilterComposer
-    extends Composer<_$AppDatabase, $ChatMessagesTable> {
-  $$ChatMessagesTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get groupId => $composableBuilder(
-    column: $table.groupId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get senderId => $composableBuilder(
-    column: $table.senderId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get senderName => $composableBuilder(
-    column: $table.senderName,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get messageType => $composableBuilder(
-    column: $table.messageType,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get content => $composableBuilder(
-    column: $table.content,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get payloadJson => $composableBuilder(
-    column: $table.payloadJson,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get isPinned => $composableBuilder(
-    column: $table.isPinned,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<BigInt> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get syncStatus => $composableBuilder(
-    column: $table.syncStatus,
-    builder: (column) => ColumnFilters(column),
-  );
-}
-
-class $$ChatMessagesTableOrderingComposer
-    extends Composer<_$AppDatabase, $ChatMessagesTable> {
-  $$ChatMessagesTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get groupId => $composableBuilder(
-    column: $table.groupId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get senderId => $composableBuilder(
-    column: $table.senderId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get senderName => $composableBuilder(
-    column: $table.senderName,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get messageType => $composableBuilder(
-    column: $table.messageType,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get content => $composableBuilder(
-    column: $table.content,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get payloadJson => $composableBuilder(
-    column: $table.payloadJson,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get isPinned => $composableBuilder(
-    column: $table.isPinned,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<BigInt> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get syncStatus => $composableBuilder(
-    column: $table.syncStatus,
-    builder: (column) => ColumnOrderings(column),
-  );
-}
-
-class $$ChatMessagesTableAnnotationComposer
-    extends Composer<_$AppDatabase, $ChatMessagesTable> {
-  $$ChatMessagesTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<String> get groupId =>
-      $composableBuilder(column: $table.groupId, builder: (column) => column);
-
-  GeneratedColumn<String> get senderId =>
-      $composableBuilder(column: $table.senderId, builder: (column) => column);
-
-  GeneratedColumn<String> get senderName => $composableBuilder(
-    column: $table.senderName,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get messageType => $composableBuilder(
-    column: $table.messageType,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get content =>
-      $composableBuilder(column: $table.content, builder: (column) => column);
-
-  GeneratedColumn<String> get payloadJson => $composableBuilder(
-    column: $table.payloadJson,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<bool> get isPinned =>
-      $composableBuilder(column: $table.isPinned, builder: (column) => column);
-
-  GeneratedColumn<BigInt> get createdAt =>
-      $composableBuilder(column: $table.createdAt, builder: (column) => column);
-
-  GeneratedColumn<String> get syncStatus => $composableBuilder(
-    column: $table.syncStatus,
-    builder: (column) => column,
-  );
-}
-
-class $$ChatMessagesTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $ChatMessagesTable,
-          ChatMessage,
-          $$ChatMessagesTableFilterComposer,
-          $$ChatMessagesTableOrderingComposer,
-          $$ChatMessagesTableAnnotationComposer,
-          $$ChatMessagesTableCreateCompanionBuilder,
-          $$ChatMessagesTableUpdateCompanionBuilder,
-          (
-            ChatMessage,
-            BaseReferences<_$AppDatabase, $ChatMessagesTable, ChatMessage>,
-          ),
-          ChatMessage,
-          PrefetchHooks Function()
-        > {
-  $$ChatMessagesTableTableManager(_$AppDatabase db, $ChatMessagesTable table)
-    : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$ChatMessagesTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$ChatMessagesTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$ChatMessagesTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<String> groupId = const Value.absent(),
-                Value<String> senderId = const Value.absent(),
-                Value<String> senderName = const Value.absent(),
-                Value<String> messageType = const Value.absent(),
-                Value<String> content = const Value.absent(),
-                Value<String?> payloadJson = const Value.absent(),
-                Value<bool> isPinned = const Value.absent(),
-                Value<BigInt> createdAt = const Value.absent(),
-                Value<String> syncStatus = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => ChatMessagesCompanion(
-                id: id,
-                groupId: groupId,
-                senderId: senderId,
-                senderName: senderName,
-                messageType: messageType,
-                content: content,
-                payloadJson: payloadJson,
-                isPinned: isPinned,
-                createdAt: createdAt,
-                syncStatus: syncStatus,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String id,
-                required String groupId,
-                required String senderId,
-                required String senderName,
-                Value<String> messageType = const Value.absent(),
-                required String content,
-                Value<String?> payloadJson = const Value.absent(),
-                Value<bool> isPinned = const Value.absent(),
-                required BigInt createdAt,
-                Value<String> syncStatus = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => ChatMessagesCompanion.insert(
-                id: id,
-                groupId: groupId,
-                senderId: senderId,
-                senderName: senderName,
-                messageType: messageType,
-                content: content,
-                payloadJson: payloadJson,
-                isPinned: isPinned,
-                createdAt: createdAt,
-                syncStatus: syncStatus,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable<$ChatMessagesTable, ChatMessage>(table),
-                  BaseReferences<
-                    _$AppDatabase,
-                    $ChatMessagesTable,
-                    ChatMessage
-                  >(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback: null,
-        ),
-      );
-}
-
-typedef $$ChatMessagesTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $ChatMessagesTable,
-      ChatMessage,
-      $$ChatMessagesTableFilterComposer,
-      $$ChatMessagesTableOrderingComposer,
-      $$ChatMessagesTableAnnotationComposer,
-      $$ChatMessagesTableCreateCompanionBuilder,
-      $$ChatMessagesTableUpdateCompanionBuilder,
-      (
-        ChatMessage,
-        BaseReferences<_$AppDatabase, $ChatMessagesTable, ChatMessage>,
-      ),
-      ChatMessage,
-      PrefetchHooks Function()
-    >;
 typedef $$AttachmentsTableCreateCompanionBuilder =
     AttachmentsCompanion Function({
       required String id,
@@ -6118,6 +7983,1291 @@ typedef $$AttachmentsTableProcessedTableManager =
       Attachment,
       PrefetchHooks Function()
     >;
+typedef $$LmsCoursesTableCreateCompanionBuilder = LmsCoursesCompanion Function({
+  required String id,
+  required String userId,
+  Value<String> source,
+  Value<int?> lmsCourseId,
+  Value<String?> subjectId,
+  Value<String?> classification,
+  required String title,
+  Value<String?> teacherName,
+  Value<int> credits,
+  Value<double?> registerMidterm,
+  Value<double?> registerEndterm,
+  Value<double?> finalExam,
+  Value<double?> total,
+  Value<String?> gradeItemsJson,
+  Value<BigInt?> importedAt,
+  Value<bool> isDeleted,
+  required BigInt updatedAt,
+  Value<String> syncStatus,
+  Value<int> rowid,
+});
+typedef $$LmsCoursesTableUpdateCompanionBuilder = LmsCoursesCompanion Function({
+  Value<String> id,
+  Value<String> userId,
+  Value<String> source,
+  Value<int?> lmsCourseId,
+  Value<String?> subjectId,
+  Value<String?> classification,
+  Value<String> title,
+  Value<String?> teacherName,
+  Value<int> credits,
+  Value<double?> registerMidterm,
+  Value<double?> registerEndterm,
+  Value<double?> finalExam,
+  Value<double?> total,
+  Value<String?> gradeItemsJson,
+  Value<BigInt?> importedAt,
+  Value<bool> isDeleted,
+  Value<BigInt> updatedAt,
+  Value<String> syncStatus,
+  Value<int> rowid,
+});
+
+class $$LmsCoursesTableFilterComposer
+    extends Composer<_$AppDatabase, $LmsCoursesTable> {
+  $$LmsCoursesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lmsCourseId => $composableBuilder(
+    column: $table.lmsCourseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get subjectId => $composableBuilder(
+    column: $table.subjectId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get classification => $composableBuilder(
+    column: $table.classification,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get teacherName => $composableBuilder(
+    column: $table.teacherName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get credits => $composableBuilder(
+    column: $table.credits,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get registerMidterm => $composableBuilder(
+    column: $table.registerMidterm,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get registerEndterm => $composableBuilder(
+    column: $table.registerEndterm,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get finalExam => $composableBuilder(
+    column: $table.finalExam,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get total => $composableBuilder(
+    column: $table.total,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gradeItemsJson => $composableBuilder(
+    column: $table.gradeItemsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<BigInt> get importedAt => $composableBuilder(
+    column: $table.importedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<BigInt> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LmsCoursesTableOrderingComposer
+    extends Composer<_$AppDatabase, $LmsCoursesTable> {
+  $$LmsCoursesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lmsCourseId => $composableBuilder(
+    column: $table.lmsCourseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get subjectId => $composableBuilder(
+    column: $table.subjectId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get classification => $composableBuilder(
+    column: $table.classification,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get teacherName => $composableBuilder(
+    column: $table.teacherName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get credits => $composableBuilder(
+    column: $table.credits,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get registerMidterm => $composableBuilder(
+    column: $table.registerMidterm,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get registerEndterm => $composableBuilder(
+    column: $table.registerEndterm,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get finalExam => $composableBuilder(
+    column: $table.finalExam,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get total => $composableBuilder(
+    column: $table.total,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gradeItemsJson => $composableBuilder(
+    column: $table.gradeItemsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<BigInt> get importedAt => $composableBuilder(
+    column: $table.importedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<BigInt> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LmsCoursesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LmsCoursesTable> {
+  $$LmsCoursesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<int> get lmsCourseId => $composableBuilder(
+    column: $table.lmsCourseId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get subjectId =>
+      $composableBuilder(column: $table.subjectId, builder: (column) => column);
+
+  GeneratedColumn<String> get classification => $composableBuilder(
+    column: $table.classification,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get teacherName => $composableBuilder(
+    column: $table.teacherName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get credits =>
+      $composableBuilder(column: $table.credits, builder: (column) => column);
+
+  GeneratedColumn<double> get registerMidterm => $composableBuilder(
+    column: $table.registerMidterm,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get registerEndterm => $composableBuilder(
+    column: $table.registerEndterm,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get finalExam =>
+      $composableBuilder(column: $table.finalExam, builder: (column) => column);
+
+  GeneratedColumn<double> get total =>
+      $composableBuilder(column: $table.total, builder: (column) => column);
+
+  GeneratedColumn<String> get gradeItemsJson => $composableBuilder(
+    column: $table.gradeItemsJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<BigInt> get importedAt => $composableBuilder(
+    column: $table.importedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isDeleted =>
+      $composableBuilder(column: $table.isDeleted, builder: (column) => column);
+
+  GeneratedColumn<BigInt> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+}
+
+class $$LmsCoursesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LmsCoursesTable,
+          LmsCourse,
+          $$LmsCoursesTableFilterComposer,
+          $$LmsCoursesTableOrderingComposer,
+          $$LmsCoursesTableAnnotationComposer,
+          $$LmsCoursesTableCreateCompanionBuilder,
+          $$LmsCoursesTableUpdateCompanionBuilder,
+          (
+            LmsCourse,
+            BaseReferences<_$AppDatabase, $LmsCoursesTable, LmsCourse>,
+          ),
+          LmsCourse,
+          PrefetchHooks Function()
+        > {
+  $$LmsCoursesTableTableManager(_$AppDatabase db, $LmsCoursesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LmsCoursesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LmsCoursesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LmsCoursesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> source = const Value.absent(),
+                Value<int?> lmsCourseId = const Value.absent(),
+                Value<String?> subjectId = const Value.absent(),
+                Value<String?> classification = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String?> teacherName = const Value.absent(),
+                Value<int> credits = const Value.absent(),
+                Value<double?> registerMidterm = const Value.absent(),
+                Value<double?> registerEndterm = const Value.absent(),
+                Value<double?> finalExam = const Value.absent(),
+                Value<double?> total = const Value.absent(),
+                Value<String?> gradeItemsJson = const Value.absent(),
+                Value<BigInt?> importedAt = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
+                Value<BigInt> updatedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LmsCoursesCompanion(
+                id: id,
+                userId: userId,
+                source: source,
+                lmsCourseId: lmsCourseId,
+                subjectId: subjectId,
+                classification: classification,
+                title: title,
+                teacherName: teacherName,
+                credits: credits,
+                registerMidterm: registerMidterm,
+                registerEndterm: registerEndterm,
+                finalExam: finalExam,
+                total: total,
+                gradeItemsJson: gradeItemsJson,
+                importedAt: importedAt,
+                isDeleted: isDeleted,
+                updatedAt: updatedAt,
+                syncStatus: syncStatus,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                Value<String> source = const Value.absent(),
+                Value<int?> lmsCourseId = const Value.absent(),
+                Value<String?> subjectId = const Value.absent(),
+                Value<String?> classification = const Value.absent(),
+                required String title,
+                Value<String?> teacherName = const Value.absent(),
+                Value<int> credits = const Value.absent(),
+                Value<double?> registerMidterm = const Value.absent(),
+                Value<double?> registerEndterm = const Value.absent(),
+                Value<double?> finalExam = const Value.absent(),
+                Value<double?> total = const Value.absent(),
+                Value<String?> gradeItemsJson = const Value.absent(),
+                Value<BigInt?> importedAt = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
+                required BigInt updatedAt,
+                Value<String> syncStatus = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LmsCoursesCompanion.insert(
+                id: id,
+                userId: userId,
+                source: source,
+                lmsCourseId: lmsCourseId,
+                subjectId: subjectId,
+                classification: classification,
+                title: title,
+                teacherName: teacherName,
+                credits: credits,
+                registerMidterm: registerMidterm,
+                registerEndterm: registerEndterm,
+                finalExam: finalExam,
+                total: total,
+                gradeItemsJson: gradeItemsJson,
+                importedAt: importedAt,
+                isDeleted: isDeleted,
+                updatedAt: updatedAt,
+                syncStatus: syncStatus,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$LmsCoursesTable, LmsCourse>(table),
+                  BaseReferences<_$AppDatabase, $LmsCoursesTable, LmsCourse>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LmsCoursesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LmsCoursesTable,
+      LmsCourse,
+      $$LmsCoursesTableFilterComposer,
+      $$LmsCoursesTableOrderingComposer,
+      $$LmsCoursesTableAnnotationComposer,
+      $$LmsCoursesTableCreateCompanionBuilder,
+      $$LmsCoursesTableUpdateCompanionBuilder,
+      (LmsCourse, BaseReferences<_$AppDatabase, $LmsCoursesTable, LmsCourse>),
+      LmsCourse,
+      PrefetchHooks Function()
+    >;
+typedef $$LmsEventsTableCreateCompanionBuilder = LmsEventsCompanion Function({
+  required String id,
+  required String userId,
+  Value<int?> lmsEventId,
+  Value<int?> lmsCourseId,
+  required String title,
+  Value<String?> courseTitle,
+  Value<String> eventType,
+  Value<String?> moduleName,
+  required BigInt startsAt,
+  Value<int?> durationMin,
+  Value<String?> location,
+  Value<String?> url,
+  Value<bool> isDone,
+  Value<BigInt?> importedAt,
+  Value<bool> isDeleted,
+  required BigInt updatedAt,
+  Value<String> syncStatus,
+  Value<int> rowid,
+});
+typedef $$LmsEventsTableUpdateCompanionBuilder = LmsEventsCompanion Function({
+  Value<String> id,
+  Value<String> userId,
+  Value<int?> lmsEventId,
+  Value<int?> lmsCourseId,
+  Value<String> title,
+  Value<String?> courseTitle,
+  Value<String> eventType,
+  Value<String?> moduleName,
+  Value<BigInt> startsAt,
+  Value<int?> durationMin,
+  Value<String?> location,
+  Value<String?> url,
+  Value<bool> isDone,
+  Value<BigInt?> importedAt,
+  Value<bool> isDeleted,
+  Value<BigInt> updatedAt,
+  Value<String> syncStatus,
+  Value<int> rowid,
+});
+
+class $$LmsEventsTableFilterComposer
+    extends Composer<_$AppDatabase, $LmsEventsTable> {
+  $$LmsEventsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lmsEventId => $composableBuilder(
+    column: $table.lmsEventId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lmsCourseId => $composableBuilder(
+    column: $table.lmsCourseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get courseTitle => $composableBuilder(
+    column: $table.courseTitle,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get eventType => $composableBuilder(
+    column: $table.eventType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get moduleName => $composableBuilder(
+    column: $table.moduleName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<BigInt> get startsAt => $composableBuilder(
+    column: $table.startsAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get durationMin => $composableBuilder(
+    column: $table.durationMin,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get location => $composableBuilder(
+    column: $table.location,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDone => $composableBuilder(
+    column: $table.isDone,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<BigInt> get importedAt => $composableBuilder(
+    column: $table.importedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<BigInt> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LmsEventsTableOrderingComposer
+    extends Composer<_$AppDatabase, $LmsEventsTable> {
+  $$LmsEventsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lmsEventId => $composableBuilder(
+    column: $table.lmsEventId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lmsCourseId => $composableBuilder(
+    column: $table.lmsCourseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get courseTitle => $composableBuilder(
+    column: $table.courseTitle,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get eventType => $composableBuilder(
+    column: $table.eventType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get moduleName => $composableBuilder(
+    column: $table.moduleName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<BigInt> get startsAt => $composableBuilder(
+    column: $table.startsAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get durationMin => $composableBuilder(
+    column: $table.durationMin,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get location => $composableBuilder(
+    column: $table.location,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isDone => $composableBuilder(
+    column: $table.isDone,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<BigInt> get importedAt => $composableBuilder(
+    column: $table.importedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<BigInt> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LmsEventsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LmsEventsTable> {
+  $$LmsEventsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<int> get lmsEventId => $composableBuilder(
+    column: $table.lmsEventId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get lmsCourseId => $composableBuilder(
+    column: $table.lmsCourseId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get courseTitle => $composableBuilder(
+    column: $table.courseTitle,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get eventType =>
+      $composableBuilder(column: $table.eventType, builder: (column) => column);
+
+  GeneratedColumn<String> get moduleName => $composableBuilder(
+    column: $table.moduleName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<BigInt> get startsAt =>
+      $composableBuilder(column: $table.startsAt, builder: (column) => column);
+
+  GeneratedColumn<int> get durationMin => $composableBuilder(
+    column: $table.durationMin,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get location =>
+      $composableBuilder(column: $table.location, builder: (column) => column);
+
+  GeneratedColumn<String> get url =>
+      $composableBuilder(column: $table.url, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDone =>
+      $composableBuilder(column: $table.isDone, builder: (column) => column);
+
+  GeneratedColumn<BigInt> get importedAt => $composableBuilder(
+    column: $table.importedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isDeleted =>
+      $composableBuilder(column: $table.isDeleted, builder: (column) => column);
+
+  GeneratedColumn<BigInt> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+}
+
+class $$LmsEventsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LmsEventsTable,
+          LmsEvent,
+          $$LmsEventsTableFilterComposer,
+          $$LmsEventsTableOrderingComposer,
+          $$LmsEventsTableAnnotationComposer,
+          $$LmsEventsTableCreateCompanionBuilder,
+          $$LmsEventsTableUpdateCompanionBuilder,
+          (LmsEvent, BaseReferences<_$AppDatabase, $LmsEventsTable, LmsEvent>),
+          LmsEvent,
+          PrefetchHooks Function()
+        > {
+  $$LmsEventsTableTableManager(_$AppDatabase db, $LmsEventsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LmsEventsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LmsEventsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LmsEventsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<int?> lmsEventId = const Value.absent(),
+                Value<int?> lmsCourseId = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String?> courseTitle = const Value.absent(),
+                Value<String> eventType = const Value.absent(),
+                Value<String?> moduleName = const Value.absent(),
+                Value<BigInt> startsAt = const Value.absent(),
+                Value<int?> durationMin = const Value.absent(),
+                Value<String?> location = const Value.absent(),
+                Value<String?> url = const Value.absent(),
+                Value<bool> isDone = const Value.absent(),
+                Value<BigInt?> importedAt = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
+                Value<BigInt> updatedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LmsEventsCompanion(
+                id: id,
+                userId: userId,
+                lmsEventId: lmsEventId,
+                lmsCourseId: lmsCourseId,
+                title: title,
+                courseTitle: courseTitle,
+                eventType: eventType,
+                moduleName: moduleName,
+                startsAt: startsAt,
+                durationMin: durationMin,
+                location: location,
+                url: url,
+                isDone: isDone,
+                importedAt: importedAt,
+                isDeleted: isDeleted,
+                updatedAt: updatedAt,
+                syncStatus: syncStatus,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                Value<int?> lmsEventId = const Value.absent(),
+                Value<int?> lmsCourseId = const Value.absent(),
+                required String title,
+                Value<String?> courseTitle = const Value.absent(),
+                Value<String> eventType = const Value.absent(),
+                Value<String?> moduleName = const Value.absent(),
+                required BigInt startsAt,
+                Value<int?> durationMin = const Value.absent(),
+                Value<String?> location = const Value.absent(),
+                Value<String?> url = const Value.absent(),
+                Value<bool> isDone = const Value.absent(),
+                Value<BigInt?> importedAt = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
+                required BigInt updatedAt,
+                Value<String> syncStatus = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LmsEventsCompanion.insert(
+                id: id,
+                userId: userId,
+                lmsEventId: lmsEventId,
+                lmsCourseId: lmsCourseId,
+                title: title,
+                courseTitle: courseTitle,
+                eventType: eventType,
+                moduleName: moduleName,
+                startsAt: startsAt,
+                durationMin: durationMin,
+                location: location,
+                url: url,
+                isDone: isDone,
+                importedAt: importedAt,
+                isDeleted: isDeleted,
+                updatedAt: updatedAt,
+                syncStatus: syncStatus,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$LmsEventsTable, LmsEvent>(table),
+                  BaseReferences<_$AppDatabase, $LmsEventsTable, LmsEvent>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LmsEventsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LmsEventsTable,
+      LmsEvent,
+      $$LmsEventsTableFilterComposer,
+      $$LmsEventsTableOrderingComposer,
+      $$LmsEventsTableAnnotationComposer,
+      $$LmsEventsTableCreateCompanionBuilder,
+      $$LmsEventsTableUpdateCompanionBuilder,
+      (LmsEvent, BaseReferences<_$AppDatabase, $LmsEventsTable, LmsEvent>),
+      LmsEvent,
+      PrefetchHooks Function()
+    >;
+typedef $$LmsMaterialsTableCreateCompanionBuilder =
+    LmsMaterialsCompanion Function({
+      required String id,
+      required String userId,
+      Value<int?> lmsModuleId,
+      Value<int?> lmsCourseId,
+      Value<String?> courseTitle,
+      Value<String?> sectionTitle,
+      required String title,
+      Value<String> materialType,
+      Value<String?> url,
+      Value<BigInt?> importedAt,
+      Value<bool> isDeleted,
+      required BigInt updatedAt,
+      Value<String> syncStatus,
+      Value<int> rowid,
+    });
+typedef $$LmsMaterialsTableUpdateCompanionBuilder =
+    LmsMaterialsCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<int?> lmsModuleId,
+      Value<int?> lmsCourseId,
+      Value<String?> courseTitle,
+      Value<String?> sectionTitle,
+      Value<String> title,
+      Value<String> materialType,
+      Value<String?> url,
+      Value<BigInt?> importedAt,
+      Value<bool> isDeleted,
+      Value<BigInt> updatedAt,
+      Value<String> syncStatus,
+      Value<int> rowid,
+    });
+
+class $$LmsMaterialsTableFilterComposer
+    extends Composer<_$AppDatabase, $LmsMaterialsTable> {
+  $$LmsMaterialsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lmsModuleId => $composableBuilder(
+    column: $table.lmsModuleId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lmsCourseId => $composableBuilder(
+    column: $table.lmsCourseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get courseTitle => $composableBuilder(
+    column: $table.courseTitle,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sectionTitle => $composableBuilder(
+    column: $table.sectionTitle,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get materialType => $composableBuilder(
+    column: $table.materialType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<BigInt> get importedAt => $composableBuilder(
+    column: $table.importedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<BigInt> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LmsMaterialsTableOrderingComposer
+    extends Composer<_$AppDatabase, $LmsMaterialsTable> {
+  $$LmsMaterialsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lmsModuleId => $composableBuilder(
+    column: $table.lmsModuleId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lmsCourseId => $composableBuilder(
+    column: $table.lmsCourseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get courseTitle => $composableBuilder(
+    column: $table.courseTitle,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sectionTitle => $composableBuilder(
+    column: $table.sectionTitle,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get materialType => $composableBuilder(
+    column: $table.materialType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get url => $composableBuilder(
+    column: $table.url,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<BigInt> get importedAt => $composableBuilder(
+    column: $table.importedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isDeleted => $composableBuilder(
+    column: $table.isDeleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<BigInt> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LmsMaterialsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LmsMaterialsTable> {
+  $$LmsMaterialsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<int> get lmsModuleId => $composableBuilder(
+    column: $table.lmsModuleId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get lmsCourseId => $composableBuilder(
+    column: $table.lmsCourseId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get courseTitle => $composableBuilder(
+    column: $table.courseTitle,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sectionTitle => $composableBuilder(
+    column: $table.sectionTitle,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get materialType => $composableBuilder(
+    column: $table.materialType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get url =>
+      $composableBuilder(column: $table.url, builder: (column) => column);
+
+  GeneratedColumn<BigInt> get importedAt => $composableBuilder(
+    column: $table.importedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isDeleted =>
+      $composableBuilder(column: $table.isDeleted, builder: (column) => column);
+
+  GeneratedColumn<BigInt> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+}
+
+class $$LmsMaterialsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LmsMaterialsTable,
+          LmsMaterial,
+          $$LmsMaterialsTableFilterComposer,
+          $$LmsMaterialsTableOrderingComposer,
+          $$LmsMaterialsTableAnnotationComposer,
+          $$LmsMaterialsTableCreateCompanionBuilder,
+          $$LmsMaterialsTableUpdateCompanionBuilder,
+          (
+            LmsMaterial,
+            BaseReferences<_$AppDatabase, $LmsMaterialsTable, LmsMaterial>,
+          ),
+          LmsMaterial,
+          PrefetchHooks Function()
+        > {
+  $$LmsMaterialsTableTableManager(_$AppDatabase db, $LmsMaterialsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LmsMaterialsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LmsMaterialsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LmsMaterialsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<int?> lmsModuleId = const Value.absent(),
+                Value<int?> lmsCourseId = const Value.absent(),
+                Value<String?> courseTitle = const Value.absent(),
+                Value<String?> sectionTitle = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> materialType = const Value.absent(),
+                Value<String?> url = const Value.absent(),
+                Value<BigInt?> importedAt = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
+                Value<BigInt> updatedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LmsMaterialsCompanion(
+                id: id,
+                userId: userId,
+                lmsModuleId: lmsModuleId,
+                lmsCourseId: lmsCourseId,
+                courseTitle: courseTitle,
+                sectionTitle: sectionTitle,
+                title: title,
+                materialType: materialType,
+                url: url,
+                importedAt: importedAt,
+                isDeleted: isDeleted,
+                updatedAt: updatedAt,
+                syncStatus: syncStatus,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                Value<int?> lmsModuleId = const Value.absent(),
+                Value<int?> lmsCourseId = const Value.absent(),
+                Value<String?> courseTitle = const Value.absent(),
+                Value<String?> sectionTitle = const Value.absent(),
+                required String title,
+                Value<String> materialType = const Value.absent(),
+                Value<String?> url = const Value.absent(),
+                Value<BigInt?> importedAt = const Value.absent(),
+                Value<bool> isDeleted = const Value.absent(),
+                required BigInt updatedAt,
+                Value<String> syncStatus = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LmsMaterialsCompanion.insert(
+                id: id,
+                userId: userId,
+                lmsModuleId: lmsModuleId,
+                lmsCourseId: lmsCourseId,
+                courseTitle: courseTitle,
+                sectionTitle: sectionTitle,
+                title: title,
+                materialType: materialType,
+                url: url,
+                importedAt: importedAt,
+                isDeleted: isDeleted,
+                updatedAt: updatedAt,
+                syncStatus: syncStatus,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$LmsMaterialsTable, LmsMaterial>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $LmsMaterialsTable,
+                    LmsMaterial
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LmsMaterialsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LmsMaterialsTable,
+      LmsMaterial,
+      $$LmsMaterialsTableFilterComposer,
+      $$LmsMaterialsTableOrderingComposer,
+      $$LmsMaterialsTableAnnotationComposer,
+      $$LmsMaterialsTableCreateCompanionBuilder,
+      $$LmsMaterialsTableUpdateCompanionBuilder,
+      (
+        LmsMaterial,
+        BaseReferences<_$AppDatabase, $LmsMaterialsTable, LmsMaterial>,
+      ),
+      LmsMaterial,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -6130,8 +9280,12 @@ class $AppDatabaseManager {
       $$TasksTableTableManager(_db, _db.tasks);
   $$SubtasksTableTableManager get subtasks =>
       $$SubtasksTableTableManager(_db, _db.subtasks);
-  $$ChatMessagesTableTableManager get chatMessages =>
-      $$ChatMessagesTableTableManager(_db, _db.chatMessages);
   $$AttachmentsTableTableManager get attachments =>
       $$AttachmentsTableTableManager(_db, _db.attachments);
+  $$LmsCoursesTableTableManager get lmsCourses =>
+      $$LmsCoursesTableTableManager(_db, _db.lmsCourses);
+  $$LmsEventsTableTableManager get lmsEvents =>
+      $$LmsEventsTableTableManager(_db, _db.lmsEvents);
+  $$LmsMaterialsTableTableManager get lmsMaterials =>
+      $$LmsMaterialsTableTableManager(_db, _db.lmsMaterials);
 }
