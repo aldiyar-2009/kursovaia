@@ -12,7 +12,8 @@ const kSyncCursorPrefsKey = 'studyplan_last_synced_at';
 /// Resets the sync cursor to 0 so the next sync pulls every row the server
 /// has for the user (e.g. group tasks published before joining a group).
 ///
-/// Temporary local equivalent of `SyncRepository.resetCursor()`.
+/// Same as `SyncRepository.resetCursor()`, for callers without a repository
+/// (the auth screen, before the shell exists).
 Future<void> resetSyncCursor() async {
   final prefs = await SharedPreferences.getInstance();
   await prefs.setInt(kSyncCursorPrefsKey, 0);
@@ -145,7 +146,7 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
     try {
       if (_cursorResetPending) {
         _cursorResetPending = false;
-        await resetSyncCursor();
+        await repository.resetCursor();
       }
       final result = await repository.syncWithServer(userId);
       final count = await _pendingCountOrZero();

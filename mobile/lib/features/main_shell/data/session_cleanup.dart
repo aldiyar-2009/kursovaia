@@ -72,11 +72,9 @@ Future<void> clearLocalSession(
 /// the next sync also pulls group tasks published before the change, and
 /// that sync starts. The bloc resets the cursor again right before syncing,
 /// so a sync already in flight cannot overwrite the reset.
-///
-/// The cursor reset is a local equivalent of `SyncRepository.resetCursor()`.
 Future<void> resyncAfterGroupChange(SyncBloc bloc) async {
   try {
-    await resetSyncCursor();
+    await bloc.repository.resetCursor();
   } catch (_) {}
   if (!bloc.isClosed) bloc.add(SyncFullResyncRequested());
 }

@@ -6,6 +6,7 @@ import 'package:studyplan/core/network/api_client.dart';
 import 'package:studyplan/core/settings/app_settings.dart';
 import 'package:studyplan/core/sync/sync_bloc.dart';
 import 'package:studyplan/core/sync/sync_repository.dart';
+import 'package:studyplan/core/sync/sync_state.dart';
 import 'package:studyplan/core/theme/app_theme.dart';
 import 'package:studyplan/core/theme/theme_ext.dart';
 import 'package:studyplan/features/auth/presentation/screens/auth_screen.dart';
@@ -112,9 +113,20 @@ class _MainShellScreenState extends State<MainShellScreen>
         context,
         db: widget.db,
         userId: userId,
+        beforeApply: _syncAndWait,
       );
       if (summary != null) _syncBloc.add(SyncTriggered());
     };
+  }
+
+  /// Pushes local edits (e.g. credits changed on another device) before an
+  /// LMS import overwrites rows; the import caps the wait itself.
+  Future<void> _syncAndWait() async {
+    if (_syncBloc.isClosed) return;
+    final done = _syncBloc.stream
+        .firstWhere((s) => s.status != SyncStatusState.syncing);
+    _syncBloc.add(SyncTriggered());
+    await done;
   }
 
   void _select(AppTab tab) {
@@ -124,8 +136,8 @@ class _MainShellScreenState extends State<MainShellScreen>
   Future<void> _logout() async {
     widget.apiClient.updateToken(null);
     // Token, sync cursor, caches and the local database of this user.
-    // TODO(coordinator): pass `clearWebSession: clearLmsWebSession`.
-    await clearLocalSession(widget.db);
+    // LMS/Microsoft cookies too, so the next user cannot import this account.
+    await clearLocalSession(widget.db, clearWebSession: clearLmsWebSession);
     if (widget.onLogout != null) {
       widget.onLogout!();
       return;
