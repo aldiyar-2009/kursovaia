@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
@@ -5,16 +6,20 @@ import 'package:studyplan/core/database/app_database.dart';
 import 'package:studyplan/core/network/api_client.dart';
 import 'package:studyplan/core/theme/app_theme.dart';
 import 'package:studyplan/core/theme/theme_ext.dart';
+import 'package:studyplan/core/widgets/ui/content_column.dart';
 import 'package:studyplan/core/widgets/ui/list_row.dart';
 import 'package:studyplan/core/widgets/ui/section_header.dart';
 import 'package:studyplan/features/group/data/group_repository.dart';
 import 'package:studyplan/features/group/presentation/widgets/group_forms.dart';
 import 'package:studyplan/features/materials/presentation/screens/materials_screen.dart';
 
-/// Shares [text] through the system share sheet.
+/// Shares [text] through the system share sheet. Throws when sharing is not
+/// possible; the caller then copies the text to the clipboard instead.
 typedef ShareTextFn = Future<void> Function(String text, String subject);
 
 Future<void> _systemShare(String text, String subject) async {
+  // `ShareResultStatus.unavailable` only means the outcome is unknown (the
+  // Windows share UI reports it after opening), so it is not a failure.
   await SharePlus.instance.share(ShareParams(text: text, subject: subject));
 }
 
@@ -35,7 +40,8 @@ class GroupScreen extends StatefulWidget {
   /// Called with the new group (null after leaving) whenever it changes.
   final ValueChanged<Map<String, dynamic>?>? onGroupChanged;
 
-  /// Share implementation; the system share sheet by default.
+  /// Share implementation; the system share sheet by default (none on the
+  /// web, where the invite text is copied to the clipboard instead).
   final ShareTextFn? onShare;
 
   const GroupScreen({
@@ -69,7 +75,8 @@ class _GroupScreenState extends State<GroupScreen> {
     final cached = await _repo.loadCached();
     if (!mounted) return;
     final known = widget.group?['id'];
-    if (cached.group != null && (known == null || cached.group!['id'] == known)) {
+    if (cached.group != null &&
+        (known == null || cached.group!['id'] == known)) {
       setState(() => _snapshot = cached);
     }
     await _refresh();
@@ -83,7 +90,8 @@ class _GroupScreenState extends State<GroupScreen> {
     try {
       final fresh = await _repo.refresh();
       if (!mounted) return;
-      final changed = fresh.group?['id'] != _snapshot.group?['id'] ||
+      final changed =
+          fresh.group?['id'] != _snapshot.group?['id'] ||
           fresh.title != _snapshot.title;
       setState(() {
         _snapshot = fresh;
@@ -124,8 +132,11 @@ class _GroupScreenState extends State<GroupScreen> {
 
   Future<void> _join({String? initialCode}) async {
     final l10n = context.l10n;
-    final result =
-        await showJoinGroupSheet(context, _repo, initialCode: initialCode);
+    final result = await showJoinGroupSheet(
+      context,
+      _repo,
+      initialCode: initialCode,
+    );
     if (result == null || !mounted) return;
     _apply(result);
     _snack(l10n.group_joinDone(result.title ?? ''));
@@ -144,7 +155,20 @@ class _GroupScreenState extends State<GroupScreen> {
       code,
       _repo.inviteLinkFor(code),
     );
-    await (widget.onShare ?? _systemShare)(text, l10n.group_title);
+    // On the web the share sheet is missing or silently does nothing, so the
+    // invite goes to the clipboard; elsewhere the clipboard is the fallback
+    // when sharing throws or is unsupported.
+    final share = widget.onShare ?? (kIsWeb ? null : _systemShare);
+    if (share != null) {
+      try {
+        await share(text, l10n.group_title);
+        return;
+      } catch (_) {
+        // Fall through to the clipboard.
+      }
+    }
+    await Clipboard.setData(ClipboardData(text: text));
+    if (mounted) _snack(l10n.group_inviteCopied);
   }
 
   Future<void> _leave() async {
@@ -184,15 +208,17 @@ class _GroupScreenState extends State<GroupScreen> {
   }
 
   void _openMaterials() {
-    Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (_) => MaterialsScreen(
-        db: widget.db,
-        apiClient: widget.apiClient,
-        userId: widget.userId,
-        groupId: _snapshot.group?['id'] as String?,
-        onGroupChanged: (group) => _refresh(),
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => MaterialsScreen(
+          db: widget.db,
+          apiClient: widget.apiClient,
+          userId: widget.userId,
+          groupId: _snapshot.group?['id'] as String?,
+          onGroupChanged: (group) => _refresh(),
+        ),
       ),
-    ));
+    );
   }
 
   @override
@@ -205,7 +231,8 @@ class _GroupScreenState extends State<GroupScreen> {
           ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
           : Column(
               children: [
-                if (_offline) _OfflineNotice(onRetry: _refresh),
+                if (_offline)
+                  ContentColumn(child: _OfflineNotice(onRetry: _refresh)),
                 Expanded(
                   child: GroupJoinEmptyState(
                     onJoin: () => _join(),
@@ -228,7 +255,7 @@ class _GroupScreenState extends State<GroupScreen> {
       );
     }
     return Scaffold(
-      appBar: AppBar(
+      appBar: ContentAppBar(
         title: Text(l10n.group_title),
         bottom: _loading && group != null
             ? const PreferredSize(
@@ -273,86 +300,86 @@ class _GroupDetails extends StatelessWidget {
     final code = snapshot.inviteCode ?? '';
     final members = snapshot.members;
 
-    return Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 640),
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
-          children: [
-            if (offline) ...[
-              _OfflineNotice(onRetry: onRetry, inset: false),
-              const SizedBox(height: 8),
-            ],
-            Text(title, style: context.text.titleLarge),
-            if (members.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Text(
-                l10n.group_membersCount(members.length),
-                style: context.text.bodySmall,
-              ),
-            ],
-            SectionHeader(l10n.group_inviteSection),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: palette.surface,
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(color: palette.border),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  SelectableText(
-                    code,
-                    style: context.text.titleLarge!
-                        .copyWith(letterSpacing: 3)
-                        .tabular,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(l10n.group_inviteHint, style: context.text.bodySmall),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: code.isEmpty ? null : () => onCopy(code),
-                          child: Text(
-                            l10n.group_copy,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: FilledButton(
-                          onPressed: code.isEmpty
-                              ? null
-                              : () => onInvite(title, code),
-                          child: Text(
-                            l10n.group_invite,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+    return LayoutBuilder(
+      builder: (context, constraints) => ListView(
+        padding: contentPadding(constraints.maxWidth, top: 4, bottom: 32),
+        children: [
+          if (offline) ...[
+            _OfflineNotice(onRetry: onRetry),
+            const SizedBox(height: 8),
+          ],
+          Text(title, style: context.text.titleLarge),
+          if (members.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              l10n.group_membersCount(members.length),
+              style: context.text.bodySmall,
             ),
-            const SizedBox(height: 16),
-            ListGroup(children: [
+          ],
+          SectionHeader(l10n.group_inviteSection),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: palette.surface,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              border: Border.all(color: palette.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SelectableText(
+                  code,
+                  style: context.text.titleLarge!
+                      .copyWith(letterSpacing: 3)
+                      .tabular,
+                ),
+                const SizedBox(height: 4),
+                Text(l10n.group_inviteHint, style: context.text.bodySmall),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: code.isEmpty ? null : () => onCopy(code),
+                        child: Text(
+                          l10n.group_copy,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: code.isEmpty
+                            ? null
+                            : () => onInvite(title, code),
+                        child: Text(
+                          l10n.group_invite,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          ListGroup(
+            children: [
               ListRow(
                 title: l10n.group_materials,
                 trailing: const ListRowChevron(),
                 onTap: onOpenMaterials,
               ),
-            ]),
-            SectionHeader(l10n.group_membersSection),
-            if (members.isEmpty)
-              ListGroup(children: [
+            ],
+          ),
+          SectionHeader(l10n.group_membersSection),
+          if (members.isEmpty)
+            ListGroup(
+              children: [
                 ListRow(
                   title: l10n.group_membersUnavailable,
                   titleColor: palette.textSecondary,
@@ -361,25 +388,31 @@ class _GroupDetails extends StatelessWidget {
                     child: Text(l10n.common_retry),
                   ),
                 ),
-              ])
-            else
-              ListGroup(children: [
+              ],
+            )
+          else
+            ListGroup(
+              children: [
                 for (final m in members)
                   ListRow(
                     title: m.name,
-                    trailing: m.id == userId ? Text(l10n.group_memberYou) : null,
+                    trailing: m.id == userId
+                        ? Text(l10n.group_memberYou)
+                        : null,
                   ),
-              ]),
-            const SizedBox(height: 24),
-            ListGroup(children: [
+              ],
+            ),
+          const SizedBox(height: 24),
+          ListGroup(
+            children: [
               ListRow(
                 title: l10n.group_leave,
                 titleColor: palette.danger,
                 onTap: busy ? null : onLeave,
               ),
-            ]),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -388,26 +421,19 @@ class _GroupDetails extends StatelessWidget {
 /// Quiet one-line notice that the data could not be refreshed.
 class _OfflineNotice extends StatelessWidget {
   final VoidCallback onRetry;
-  final bool inset;
 
-  const _OfflineNotice({required this.onRetry, this.inset = true});
+  const _OfflineNotice({required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: inset ? 16 : 0),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              l10n.group_offlineNotice,
-              style: context.text.bodySmall,
-            ),
-          ),
-          TextButton(onPressed: onRetry, child: Text(l10n.common_retry)),
-        ],
-      ),
+    return Row(
+      children: [
+        Expanded(
+          child: Text(l10n.group_offlineNotice, style: context.text.bodySmall),
+        ),
+        TextButton(onPressed: onRetry, child: Text(l10n.common_retry)),
+      ],
     );
   }
 }

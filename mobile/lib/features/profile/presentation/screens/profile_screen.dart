@@ -12,6 +12,7 @@ import 'package:studyplan/core/theme/theme_ext.dart';
 import 'package:studyplan/core/utils/file_download_helper.dart';
 import 'package:studyplan/core/widgets/server_config_dialog.dart';
 import 'package:studyplan/core/widgets/ui/app_text_field.dart';
+import 'package:studyplan/core/widgets/ui/content_column.dart';
 import 'package:studyplan/core/widgets/ui/list_row.dart';
 import 'package:studyplan/core/widgets/ui/section_header.dart';
 import 'package:studyplan/features/profile/data/deadline_reminders.dart';
@@ -377,20 +378,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ];
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.profile_title)),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
-        children: [
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 640),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: sections,
-              ),
-            ),
-          ),
-        ],
+      appBar: ContentAppBar(title: Text(l10n.profile_title)),
+      body: LayoutBuilder(
+        builder: (context, constraints) => ListView(
+          padding: contentPadding(constraints.maxWidth, bottom: 32),
+          children: sections,
+        ),
       ),
     );
   }
