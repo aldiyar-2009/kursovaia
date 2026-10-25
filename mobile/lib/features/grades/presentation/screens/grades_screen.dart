@@ -1,526 +1,263 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:studyplan/core/theme/app_colors.dart';
-import 'package:studyplan/features/grades/data/models/grade_models.dart';
-import 'package:studyplan/features/grades/data/services/aitu_data_service.dart';
+import 'package:studyplan/core/database/app_database.dart';
+import 'package:studyplan/core/theme/app_theme.dart';
+import 'package:studyplan/core/theme/theme_ext.dart';
+import 'package:studyplan/core/widgets/ui/empty_state.dart';
+import 'package:studyplan/core/widgets/ui/list_row.dart';
+import 'package:studyplan/core/widgets/ui/section_header.dart';
+import 'package:studyplan/features/grades/domain/grade_calculator.dart';
+import 'package:studyplan/features/grades/presentation/grades_presentation.dart';
+import 'package:studyplan/features/grades/presentation/screens/course_detail_screen.dart';
+import 'package:studyplan/features/grades/presentation/screens/course_form_screen.dart';
+import 'package:studyplan/features/grades/presentation/widgets/course_row.dart';
+import 'package:studyplan/features/grades/presentation/widgets/grades_summary.dart';
 
+/// Grades tab: semester summary, current courses, collapsed past semesters.
 class GradesScreen extends StatefulWidget {
-  final VoidCallback? onOpenSimulator;
+  final AppDatabase db;
+  final String userId;
 
-  const GradesScreen({super.key, this.onOpenSimulator});
+  /// Opens the LMS import flow; null while import is unavailable.
+  final VoidCallback? onImportLms;
+
+  const GradesScreen({
+    super.key,
+    required this.db,
+    required this.userId,
+    this.onImportLms,
+  });
 
   @override
   State<GradesScreen> createState() => _GradesScreenState();
 }
 
 class _GradesScreenState extends State<GradesScreen> {
-  final _dataService = AituDataService();
-  String _searchQuery = '';
-  String _activeFilter = 'Все'; // 'Все', 'Отработки', 'Отличные', 'Спорные'
-  bool _useFivePointScale = false;
+  late Stream<List<LmsCourse>> _courses;
+  bool _pastExpanded = false;
 
   @override
   void initState() {
     super.initState();
-    _dataService.addListener(_onDataChanged);
+    _courses = widget.db.lmsDao.watchCourses(widget.userId);
   }
 
   @override
-  void dispose() {
-    _dataService.removeListener(_onDataChanged);
-    super.dispose();
-  }
-
-  void _onDataChanged() {
-    if (mounted) setState(() {});
-  }
-
-  List<SubjectGrade> _getFilteredSubjects() {
-    var list = _dataService.subjects;
-    if (_searchQuery.isNotEmpty) {
-      list = list.where((s) => s.name.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
-    }
-
-    switch (_activeFilter) {
-      case 'Отработки':
-        return list.where((s) => s.average < 51 || s.retakesCount > 0).toList();
-      case 'Отличные':
-        return list.where((s) => s.average >= 90).toList();
-      case 'Спорные':
-        return list.where((s) => s.average >= 85 && s.average < 90).toList();
-      default:
-        return list;
+  void didUpdateWidget(GradesScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.db != widget.db || oldWidget.userId != widget.userId) {
+      _courses = widget.db.lmsDao.watchCourses(widget.userId);
     }
   }
 
-  void _showAddVirtualGradeDialog(SubjectGrade subject) {
-    int score = 85;
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setModalState) => AlertDialog(
-          backgroundColor: AppColors.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: AppColors.border),
-          ),
-          title: Text(
-            'Оценка для «${subject.name}»',
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                'Добавьте виртуальную оценку, чтобы проверить влияние на средний балл и повышенную стипендию:',
-                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 18),
-              Center(
-                child: Text(
-                  '$score',
-                  style: TextStyle(
-                    fontSize: 40,
-                    fontWeight: FontWeight.w800,
-                    color: score >= 90
-                        ? AppColors.success
-                        : score >= 75
-                            ? AppColors.accentCyan
-                            : score >= 51
-                                ? AppColors.warning
-                                : AppColors.danger,
-                  ),
-                ),
-              ),
-              Slider(
-                value: score.toDouble(),
-                min: 0,
-                max: 100,
-                divisions: 100,
-                activeColor: AppColors.accentCyan,
-                onChanged: (val) {
-                  setModalState(() {
-                    score = val.round();
-                  });
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Отмена', style: TextStyle(color: AppColors.textSecondary)),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                _dataService.addVirtualGrade(subject.id, score);
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    backgroundColor: AppColors.surface,
-                    content: Text('Виртуальная оценка $score добавлена к «${subject.name}»'),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.accentCyan),
-              child: const Text('Добавить в симуляцию', style: TextStyle(color: Colors.black, fontWeight: FontWeight.w700)),
-            ),
-          ],
-        ),
+  bool get _canImport => !kIsWeb && widget.onImportLms != null;
+
+  void _openCourse(LmsCourse course) {
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => CourseDetailScreen(
+        db: widget.db,
+        userId: widget.userId,
+        courseId: course.id,
       ),
-    );
+    ));
+  }
+
+  void _addManual() {
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => CourseFormScreen(db: widget.db, userId: widget.userId),
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
-    final filtered = _getFilteredSubjects();
-
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        children: [
-          _buildHeaderRow(),
-          const SizedBox(height: 16),
-          _buildSummaryCards(),
-          const SizedBox(height: 18),
-          _buildSearchAndFilters(),
-          const SizedBox(height: 16),
-          if (filtered.isEmpty)
-            Container(
-              padding: const EdgeInsets.all(32),
-              alignment: Alignment.center,
-              child: const Column(
-                children: [
-                  Icon(Icons.search_off_rounded, size: 40, color: AppColors.textMuted),
-                  SizedBox(height: 10),
-                  Text('Предметы не найдены', style: TextStyle(color: AppColors.textSecondary)),
-                ],
-              ),
-            )
-          else
-            ...filtered.map((s) => _buildSubjectCard(s)),
-        ],
-      ),
+    final l10n = context.l10n;
+    return StreamBuilder<List<LmsCourse>>(
+      stream: _courses,
+      builder: (context, snapshot) {
+        final courses = snapshot.data;
+        final hasCourses = courses != null && courses.isNotEmpty;
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(l10n.grades_title),
+            actions: [
+              if (hasCourses && _canImport)
+                IconButton(
+                  tooltip: l10n.grades_refreshLms,
+                  icon: const Icon(Icons.sync_outlined),
+                  onPressed: widget.onImportLms,
+                ),
+              if (hasCourses)
+                IconButton(
+                  tooltip: l10n.grades_addManual,
+                  icon: const Icon(Icons.add),
+                  onPressed: _addManual,
+                ),
+              const SizedBox(width: 8),
+            ],
+          ),
+          body: courses == null
+              ? const SizedBox.shrink()
+              : courses.isEmpty
+                  ? _buildEmpty(context)
+                  : _buildList(context, courses),
+        );
+      },
     );
   }
 
-  Widget _buildHeaderRow() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildEmpty(BuildContext context) {
+    final l10n = context.l10n;
+    if (_canImport) {
+      return EmptyState(
+        title: l10n.grades_emptyTitle,
+        message: l10n.grades_emptyMessage,
+        actionLabel: l10n.grades_importLms,
+        onAction: widget.onImportLms,
+        secondaryLabel: l10n.grades_addManual,
+        onSecondary: _addManual,
+      );
+    }
+    return EmptyState(
+      title: l10n.grades_emptyTitle,
+      message: kIsWeb
+          ? l10n.grades_emptyMessageWeb
+          : l10n.grades_emptyMessageNoImport,
+      actionLabel: l10n.grades_addManual,
+      onAction: _addManual,
+    );
+  }
+
+  Widget _buildList(BuildContext context, List<LmsCourse> courses) {
+    final l10n = context.l10n;
+    final palette = context.palette;
+    final current = courses.where(isCurrentCourse).toList();
+    final past = courses.where((c) => !isCurrentCourse(c)).toList();
+    final currentScores = current.map(scoresOf).toList();
+    final overallGpa = gpa(courses.map(scoresOf));
+
+    final imports = courses.map((c) => c.importedAt).whereType<BigInt>();
+    final lastImport = imports.isEmpty
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(
+            imports.reduce((a, b) => a > b ? a : b).toInt(),
+          );
+
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: kGradesMaxWidth),
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
           children: [
-            const Text(
-              'ЛИЧНЫЙ ЖУРНАЛ',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.1, color: AppColors.accentCyan),
+            GradesSummary(
+              average: weightedAverage(currentScores),
+              gpa: gpa(currentScores),
+              scholarship: scholarshipFor(currentScores),
+              lastImport: lastImport,
             ),
-            const SizedBox(height: 2),
-            const Text(
-              'Оценки и успеваемость',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
-            ),
-            Text(
-              'Группа ${_dataService.currentGroup} · LMS AITU',
-              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSummaryCards() {
-    final avg = _dataService.overallAverage;
-    final excellent = _dataService.excellentCount;
-    final retakes = _dataService.retakesSubjectsCount;
-
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Общий средний', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                const SizedBox(height: 4),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      '$avg',
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.accentCyan),
-                    ),
-                    const Text(' /100', style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
-                  ],
+            _header(l10n.grades_currentSemester),
+            if (current.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text(
+                  l10n.grades_currentEmpty,
+                  style: context.text.bodySmall,
                 ),
-                const SizedBox(height: 2),
-                const Text('Среднее по предметам', style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('На «Отлично»', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                const SizedBox(height: 4),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      '$excellent',
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.success),
-                    ),
-                    Text(' /${_dataService.subjects.length}', style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                const Text('Баллы от 90 и выше', style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Отработки', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                const SizedBox(height: 4),
-                Text(
-                  '$retakes',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: retakes > 0 ? AppColors.warning : AppColors.success,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                const Text('Ниже 51 балла', style: TextStyle(fontSize: 10, color: AppColors.textMuted)),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSearchAndFilters() {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                onChanged: (v) => setState(() => _searchQuery = v),
-                style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: AppColors.surface,
-                  hintText: 'Найти предмет...',
-                  hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
-                  prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.textSecondary),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: AppColors.border),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: AppColors.border),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: AppColors.accentCyan),
-                  ),
-                ),
+              )
+            else
+              _CourseGroup(courses: current, onTap: _openCourse),
+            if (past.isNotEmpty) ...[
+              const SizedBox(height: 24),
+              _PastToggle(
+                expanded: _pastExpanded,
+                count: past.length,
+                overallGpa: overallGpa,
+                onTap: () => setState(() => _pastExpanded = !_pastExpanded),
               ),
-            ),
-            const SizedBox(width: 8),
+              if (_pastExpanded) ...[
+                const SizedBox(height: 8),
+                _CourseGroup(courses: past, onTap: _openCourse),
+              ],
+            ],
+            const SizedBox(height: 24),
             Container(
               decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.border),
+                color: palette.surface,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(color: palette.border),
               ),
-              child: Row(
-                children: [
-                  _buildScaleButton('100', !_useFivePointScale),
-                  _buildScaleButton('5 б.', _useFivePointScale),
-                ],
+              clipBehavior: Clip.antiAlias,
+              child: ListRow(
+                title: l10n.grades_addManual,
+                leading: const Icon(Icons.add),
+                onTap: _addManual,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 10),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: ['Все', 'Отработки', 'Отличные', 'Спорные'].map((f) {
-              final isSel = _activeFilter == f;
-              return Padding(
-                padding: const EdgeInsets.only(right: 6.0),
-                child: ChoiceChip(
-                  label: Text(f),
-                  selected: isSel,
-                  onSelected: (_) => setState(() => _activeFilter = f),
-                  labelStyle: TextStyle(
-                    fontSize: 12,
-                    fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
-                    color: isSel ? Colors.black : AppColors.textSecondary,
-                  ),
-                  selectedColor: AppColors.accentCyan,
-                  backgroundColor: AppColors.surface,
-                  side: BorderSide(color: isSel ? AppColors.accentCyan : AppColors.border),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  showCheckmark: false,
-                ),
-              );
-            }).toList(),
-          ),
-        ),
+      ),
+    );
+  }
+
+  /// Section titles align with the text inside the row groups below.
+  Widget _header(String title) => SectionHeader(title);
+}
+
+class _CourseGroup extends StatelessWidget {
+  final List<LmsCourse> courses;
+  final ValueChanged<LmsCourse> onTap;
+
+  const _CourseGroup({required this.courses, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListGroup(
+      children: [
+        for (final c in courses) CourseRow(course: c, onTap: () => onTap(c)),
       ],
     );
   }
+}
 
-  Widget _buildScaleButton(String label, bool isSelected) {
-    return InkWell(
-      onTap: () => setState(() => _useFivePointScale = label == '5 б.'),
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.accentCyan : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            color: isSelected ? Colors.black : AppColors.textSecondary,
-          ),
-        ),
-      ),
-    );
-  }
+/// Collapsed «Прошлые семестры» row with the overall GPA on the right.
+class _PastToggle extends StatelessWidget {
+  final bool expanded;
+  final int count;
+  final double? overallGpa;
+  final VoidCallback onTap;
 
-  Widget _buildSubjectCard(SubjectGrade subject) {
-    final statusColor = subject.average >= 90
-        ? AppColors.success
-        : subject.average >= 75
-            ? AppColors.accentCyan
-            : subject.average >= 51
-                ? AppColors.warning
-                : AppColors.danger;
+  const _PastToggle({
+    required this.expanded,
+    required this.count,
+    required this.overallGpa,
+    required this.onTap,
+  });
 
-    final displayScore = _useFivePointScale ? subject.gpaLetter : '${subject.average}';
-
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final palette = context.palette;
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: subject.hasWarning ? AppColors.plate(AppColors.danger, 0.4) : AppColors.border,
-        ),
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: palette.border),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      subject.name,
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subject.teacher,
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.plate(statusColor, 0.15),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.plate(statusColor, 0.4)),
-                ),
-                child: Text(
-                  subject.statusText,
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: statusColor),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                ...subject.grades.map((g) {
-                  final chipColor = g.score >= 90
-                      ? AppColors.success
-                      : g.score >= 75
-                          ? AppColors.accentCyan
-                          : g.score >= 51
-                              ? AppColors.warning
-                              : AppColors.danger;
-
-                  return Container(
-                    margin: const EdgeInsets.only(right: 6),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: g.isVirtual ? AppColors.plate(AppColors.accent, 0.25) : AppColors.elevated,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: g.isVirtual ? AppColors.accent : AppColors.border,
-                        width: g.isVirtual ? 1.5 : 1,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          '${g.score}',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                            color: g.isVirtual ? AppColors.accent : chipColor,
-                          ),
-                        ),
-                        Text(
-                          g.date,
-                          style: const TextStyle(fontSize: 9, color: AppColors.textMuted),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-                IconButton(
-                  onPressed: () => _showAddVirtualGradeDialog(subject),
-                  icon: const Icon(Icons.add_circle_outline_rounded, size: 22, color: AppColors.accentCyan),
-                  tooltip: 'Добавить прогноз',
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-          const Divider(color: AppColors.border, height: 1),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Средний балл: $displayScore',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: statusColor,
-                ),
-              ),
-              if (widget.onOpenSimulator != null)
-                TextButton(
-                  onPressed: widget.onOpenSimulator,
-                  child: const Text('Смоделировать в «А что, если?» →', style: TextStyle(fontSize: 11, color: AppColors.accentCyan)),
-                ),
-            ],
-          ),
-        ],
+      clipBehavior: Clip.antiAlias,
+      child: ListRow(
+        title: l10n.grades_pastSemesters,
+        subtitle: overallGpa == null
+            ? null
+            : l10n.grades_overallGpa(formatGpa(overallGpa!)),
+        onTap: onTap,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('$count'),
+            const SizedBox(width: 4),
+            Icon(expanded ? Icons.expand_less : Icons.expand_more),
+          ],
+        ),
       ),
     );
   }

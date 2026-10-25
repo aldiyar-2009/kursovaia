@@ -1,0 +1,103 @@
+{
+  "@@locale": "ru",
+  "grades_title": "Оценки",
+  "grades_emptyTitle": "Оценок пока нет",
+  "grades_emptyMessage": "Импортируйте их из LMS — вход через ваш аккаунт Microsoft АИТУ",
+  "grades_emptyMessageWeb": "Импорт доступен в приложении для Android, iOS и Windows. Здесь оценки можно ввести вручную.",
+  "grades_emptyMessageNoImport": "Импорт из LMS пока недоступен. Оценки можно ввести вручную.",
+  "grades_importLms": "Импортировать из LMS",
+  "grades_refreshLms": "Обновить из LMS",
+  "grades_addManual": "Добавить предмет вручную",
+  "grades_average": "Средний балл",
+  "grades_gpaSemester": "GPA семестра",
+  "grades_scholarship": "Стипендия",
+  "grades_scholarshipIncreased": "Повышенная",
+  "grades_scholarshipRegular": "Обычная",
+  "grades_scholarshipNone": "Нет",
+  "grades_scholarshipUnknown": "Нет данных",
+  "grades_lastImport": "Последний импорт: {date}",
+  "@grades_lastImport": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "grades_currentSemester": "Текущий семестр",
+  "grades_pastSemesters": "Прошлые семестры",
+  "grades_overallGpa": "Общий GPA {value}",
+  "@grades_overallGpa": {
+    "placeholders": {
+      "value": {"type": "String"}
+    }
+  },
+  "grades_currentEmpty": "В текущем семестре предметов нет",
+  "grades_noGrade": "нет оценки",
+  "grades_credits": "{count, plural, one{{count} кредит} few{{count} кредита} many{{count} кредитов} other{{count} кредита}}",
+  "@grades_credits": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "grades_statusInProgress": "Идёт",
+  "grades_statusPassed": "Сдано",
+  "grades_statusAtRisk": "Риск отработки",
+  "grades_statusFailed": "Отработка",
+  "grades_components": "Компоненты",
+  "grades_midterm": "Register Midterm",
+  "grades_endterm": "Register Endterm",
+  "grades_admission": "Рейтинг допуска",
+  "grades_admissionShort": "допуск",
+  "grades_finalExam": "Финальный экзамен",
+  "grades_total": "Итог",
+  "grades_edit": "Изменить",
+  "grades_finalSection": "Что нужно на финале",
+  "grades_toPass": "Чтобы сдать",
+  "grades_toGetAtLeast": "Чтобы получить {score}+",
+  "@grades_toGetAtLeast": {
+    "placeholders": {
+      "score": {"type": "String"}
+    }
+  },
+  "grades_needScore": "нужно {score}",
+  "@grades_needScore": {
+    "placeholders": {
+      "score": {"type": "String"}
+    }
+  },
+  "grades_unreachable": "недостижимо",
+  "grades_noAdmission": "Рейтинг допуска ниже проходного — к экзамену не допускают",
+  "grades_whatIf": "Что будет, если…",
+  "grades_whatIfHint": "Передвиньте ползунок или введите балл за финал. Значение не сохраняется.",
+  "grades_whatIfFinal": "Балл за финал",
+  "grades_whatIfStatus": "Статус",
+  "grades_course": "Предмет",
+  "grades_creditsLabel": "Кредиты",
+  "grades_creditsDecrease": "Меньше кредитов",
+  "grades_creditsIncrease": "Больше кредитов",
+  "grades_teacher": "Преподаватель",
+  "grades_source": "Источник",
+  "grades_sourceLms": "LMS",
+  "grades_sourceManual": "Введено вручную",
+  "grades_imported": "Импортировано",
+  "grades_deleteCourse": "Удалить предмет",
+  "grades_deleteConfirmTitle": "Удалить предмет?",
+  "grades_deleteConfirmMessage": "«{title}» и его оценки будут удалены на всех устройствах.",
+  "@grades_deleteConfirmMessage": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "grades_formAddTitle": "Новый предмет",
+  "grades_formEditTitle": "Оценки предмета",
+  "grades_formName": "Название",
+  "grades_formNameHint": "Например, Calculus 1",
+  "grades_formNameRequired": "Введите название",
+  "grades_formSemester": "Семестр",
+  "grades_formSemesterCurrent": "Текущий",
+  "grades_formSemesterPast": "Прошлый",
+  "grades_formScoresSection": "Баллы",
+  "grades_formScoresHelp": "Оставьте поле пустым, если оценки ещё нет.",
+  "grades_formTotalHelp": "Если известен только итог. Когда заполнены все три компонента, итог считается сам.",
+  "grades_formScoreInvalid": "Число от 0 до 100",
+  "grades_formCreditsInvalid": "Целое число от 1 до 30",
+  "grades_scoreEmpty": "—"
+}
