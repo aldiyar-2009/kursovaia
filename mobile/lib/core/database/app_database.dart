@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:flutter/foundation.dart';
+import 'package:studyplan/core/database/lms_dao.dart';
 
 part 'app_database.g.dart';
 
@@ -80,16 +81,69 @@ class Subtasks extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-class ChatMessages extends Table {
+/// Course imported from LMS or added manually. Mirrors server `lms_courses`.
+class LmsCourses extends Table {
   TextColumn get id => text()();
-  TextColumn get groupId => text()();
-  TextColumn get senderId => text()();
-  TextColumn get senderName => text().withLength(max: 120)();
-  TextColumn get messageType => text().withDefault(const Constant('text'))(); // text | schedule_update | homework | file
-  TextColumn get content => text()();
-  TextColumn get payloadJson => text().nullable()();
-  BoolColumn get isPinned => boolean().withDefault(const Constant(false))();
-  Int64Column get createdAt => int64()();
+  TextColumn get userId => text()();
+  TextColumn get source => text().withDefault(const Constant('manual'))(); // lms | manual
+  IntColumn get lmsCourseId => integer().nullable()();
+  TextColumn get subjectId => text().nullable()();
+  TextColumn get classification => text().nullable()(); // inprogress | past | future
+  TextColumn get title => text().withLength(min: 1, max: 255)();
+  TextColumn get teacherName => text().nullable().withLength(max: 160)();
+  IntColumn get credits => integer().withDefault(const Constant(5))(); // 1..30
+  RealColumn get registerMidterm => real().nullable()();
+  RealColumn get registerEndterm => real().nullable()();
+  RealColumn get finalExam => real().nullable()();
+  RealColumn get total => real().nullable()();
+  TextColumn get gradeItemsJson => text().nullable()();
+  Int64Column get importedAt => int64().nullable()(); // epoch ms
+  BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
+  Int64Column get updatedAt => int64()();
+  TextColumn get syncStatus => text().withDefault(const Constant('synced'))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// LMS deadline / class / other calendar event. Mirrors server `lms_events`.
+class LmsEvents extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  IntColumn get lmsEventId => integer().nullable()();
+  IntColumn get lmsCourseId => integer().nullable()();
+  TextColumn get title => text().withLength(min: 1, max: 255)();
+  TextColumn get courseTitle => text().nullable().withLength(max: 255)();
+  TextColumn get eventType => text().withDefault(const Constant('other'))(); // deadline | class | other
+  TextColumn get moduleName => text().nullable().withLength(max: 64)();
+  Int64Column get startsAt => int64()(); // epoch ms
+  IntColumn get durationMin => integer().nullable()();
+  TextColumn get location => text().nullable().withLength(max: 128)();
+  TextColumn get url => text().nullable().withLength(max: 1024)();
+  BoolColumn get isDone => boolean().withDefault(const Constant(false))();
+  Int64Column get importedAt => int64().nullable()();
+  BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
+  Int64Column get updatedAt => int64()();
+  TextColumn get syncStatus => text().withDefault(const Constant('synced'))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// LMS course material (file, folder, link, page). Mirrors server `lms_materials`.
+class LmsMaterials extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  IntColumn get lmsModuleId => integer().nullable()();
+  IntColumn get lmsCourseId => integer().nullable()();
+  TextColumn get courseTitle => text().nullable().withLength(max: 255)();
+  TextColumn get sectionTitle => text().nullable().withLength(max: 255)();
+  TextColumn get title => text().withLength(min: 1, max: 255)();
+  TextColumn get materialType => text().withDefault(const Constant('other'))(); // file | folder | url | page | other
+  TextColumn get url => text().nullable().withLength(max: 1024)();
+  Int64Column get importedAt => int64().nullable()();
+  BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
+  Int64Column get updatedAt => int64()();
   TextColumn get syncStatus => text().withDefault(const Constant('synced'))();
 
   @override
@@ -110,12 +164,31 @@ class Attachments extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-@DriftDatabase(tables: [Subjects, Lessons, Tasks, Subtasks, ChatMessages, Attachments])
+@DriftDatabase(
+  tables: [Subjects, Lessons, Tasks, Subtasks, Attachments, LmsCourses, LmsEvents, LmsMaterials],
+  daos: [LmsDao],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
+  /// Opens the database on an explicit executor (e.g. `NativeDatabase.memory()` in tests).
+  AppDatabase.forTesting(super.executor);
+
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (m) => m.createAll(),
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.createTable(lmsCourses);
+            await m.createTable(lmsEvents);
+            await m.createTable(lmsMaterials);
+            await m.deleteTable('chat_messages');
+          }
+        },
+      );
 
   static QueryExecutor _openConnection() {
     return driftDatabase(

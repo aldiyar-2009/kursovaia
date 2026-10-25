@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:studyplan/core/database/app_database.dart';
@@ -22,28 +21,45 @@ class SyncRepository {
     await prefs.setInt(_lastSyncedKey, timestamp);
   }
 
-  Future<int> getPendingChangesCount(String userId) async {
-    final pendingSubjects = await (db.select(db.subjects)
-          ..where((t) => t.userId.equals(userId) & t.syncStatus.isNotValue('synced')))
-        .get();
-    final pendingLessons = await (db.select(db.lessons)
-          ..where((t) => t.userId.equals(userId) & t.syncStatus.isNotValue('synced')))
-        .get();
-    final pendingTasks = await (db.select(db.tasks)
-          ..where((t) => t.userId.equals(userId) & t.syncStatus.isNotValue('synced')))
-        .get();
-    final pendingSubtasks = await (db.select(db.subtasks)
-          ..where((t) => t.userId.equals(userId) & t.syncStatus.isNotValue('synced')))
-        .get();
-    final pendingMessages = await (db.select(db.chatMessages)
-          ..where((t) => t.senderId.equals(userId) & t.syncStatus.isNotValue('synced')))
-        .get();
+  Future<List<Subject>> _pendingSubjects(String userId) => (db.select(db.subjects)
+        ..where((t) => t.userId.equals(userId) & t.syncStatus.isNotValue('synced')))
+      .get();
 
-    return pendingSubjects.length +
-        pendingLessons.length +
-        pendingTasks.length +
-        pendingSubtasks.length +
-        pendingMessages.length;
+  Future<List<Lesson>> _pendingLessons(String userId) => (db.select(db.lessons)
+        ..where((t) => t.userId.equals(userId) & t.syncStatus.isNotValue('synced')))
+      .get();
+
+  Future<List<Task>> _pendingTasks(String userId) => (db.select(db.tasks)
+        ..where((t) => t.userId.equals(userId) & t.syncStatus.isNotValue('synced')))
+      .get();
+
+  Future<List<Subtask>> _pendingSubtasks(String userId) => (db.select(db.subtasks)
+        ..where((t) => t.userId.equals(userId) & t.syncStatus.isNotValue('synced')))
+      .get();
+
+  Future<List<LmsCourse>> _pendingLmsCourses(String userId) => (db.select(db.lmsCourses)
+        ..where((t) => t.userId.equals(userId) & t.syncStatus.isNotValue('synced')))
+      .get();
+
+  Future<List<LmsEvent>> _pendingLmsEvents(String userId) => (db.select(db.lmsEvents)
+        ..where((t) => t.userId.equals(userId) & t.syncStatus.isNotValue('synced')))
+      .get();
+
+  Future<List<LmsMaterial>> _pendingLmsMaterials(String userId) => (db.select(db.lmsMaterials)
+        ..where((t) => t.userId.equals(userId) & t.syncStatus.isNotValue('synced')))
+      .get();
+
+  Future<int> getPendingChangesCount(String userId) async {
+    final counts = await Future.wait([
+      _pendingSubjects(userId).then((l) => l.length),
+      _pendingLessons(userId).then((l) => l.length),
+      _pendingTasks(userId).then((l) => l.length),
+      _pendingSubtasks(userId).then((l) => l.length),
+      _pendingLmsCourses(userId).then((l) => l.length),
+      _pendingLmsEvents(userId).then((l) => l.length),
+      _pendingLmsMaterials(userId).then((l) => l.length),
+    ]);
+    return counts.fold<int>(0, (sum, c) => sum + c);
   }
 
   /// Pushes local pending changes and pulls latest server records
@@ -51,21 +67,13 @@ class SyncRepository {
     final lastSyncedAt = await getLastSyncedAt();
 
     // 1. Collect pending changes from Drift
-    final pendingSubjects = await (db.select(db.subjects)
-          ..where((t) => t.userId.equals(userId) & t.syncStatus.isNotValue('synced')))
-        .get();
-    final pendingLessons = await (db.select(db.lessons)
-          ..where((t) => t.userId.equals(userId) & t.syncStatus.isNotValue('synced')))
-        .get();
-    final pendingTasks = await (db.select(db.tasks)
-          ..where((t) => t.userId.equals(userId) & t.syncStatus.isNotValue('synced')))
-        .get();
-    final pendingSubtasks = await (db.select(db.subtasks)
-          ..where((t) => t.userId.equals(userId) & t.syncStatus.isNotValue('synced')))
-        .get();
-    final pendingMessages = await (db.select(db.chatMessages)
-          ..where((t) => t.senderId.equals(userId) & t.syncStatus.isNotValue('synced')))
-        .get();
+    final pendingSubjects = await _pendingSubjects(userId);
+    final pendingLessons = await _pendingLessons(userId);
+    final pendingTasks = await _pendingTasks(userId);
+    final pendingSubtasks = await _pendingSubtasks(userId);
+    final pendingLmsCourses = await _pendingLmsCourses(userId);
+    final pendingLmsEvents = await _pendingLmsEvents(userId);
+    final pendingLmsMaterials = await _pendingLmsMaterials(userId);
 
     final payload = {
       'last_synced_at': lastSyncedAt,
@@ -120,12 +128,53 @@ class SyncRepository {
               'is_deleted': st.isDeleted,
               'updated_at': st.updatedAt.toInt(),
             }).toList(),
-        'chat_messages': pendingMessages.map((m) => {
+        'lms_courses': pendingLmsCourses.map((c) => {
+              'id': c.id,
+              'source': c.source,
+              'lms_course_id': c.lmsCourseId,
+              'subject_id': c.subjectId,
+              'classification': c.classification,
+              'title': c.title,
+              'teacher_name': c.teacherName,
+              'credits': c.credits,
+              'register_midterm': c.registerMidterm,
+              'register_endterm': c.registerEndterm,
+              'final_exam': c.finalExam,
+              'total': c.total,
+              'grade_items_json': c.gradeItemsJson,
+              'imported_at': c.importedAt?.toInt(),
+              'is_deleted': c.isDeleted,
+              'updated_at': c.updatedAt.toInt(),
+            }).toList(),
+        'lms_events': pendingLmsEvents.map((e) => {
+              'id': e.id,
+              'lms_event_id': e.lmsEventId,
+              'lms_course_id': e.lmsCourseId,
+              'title': e.title,
+              'course_title': e.courseTitle,
+              'event_type': e.eventType,
+              'module_name': e.moduleName,
+              'starts_at': e.startsAt.toInt(),
+              'duration_min': e.durationMin,
+              'location': e.location,
+              'url': e.url,
+              'is_done': e.isDone,
+              'imported_at': e.importedAt?.toInt(),
+              'is_deleted': e.isDeleted,
+              'updated_at': e.updatedAt.toInt(),
+            }).toList(),
+        'lms_materials': pendingLmsMaterials.map((m) => {
               'id': m.id,
-              'message_type': m.messageType,
-              'content': m.content,
-              'payload_json': m.payloadJson != null ? jsonDecode(m.payloadJson!) : null,
-              'created_at': m.createdAt.toInt(),
+              'lms_module_id': m.lmsModuleId,
+              'lms_course_id': m.lmsCourseId,
+              'course_title': m.courseTitle,
+              'section_title': m.sectionTitle,
+              'title': m.title,
+              'material_type': m.materialType,
+              'url': m.url,
+              'imported_at': m.importedAt?.toInt(),
+              'is_deleted': m.isDeleted,
+              'updated_at': m.updatedAt.toInt(),
             }).toList(),
       },
     };
@@ -181,11 +230,37 @@ class SyncRepository {
         }
       }
 
-      // Messages
-      for (final m in pendingMessages) {
-        await (db.update(db.chatMessages)..where((t) => t.id.equals(m.id))).write(
-          const ChatMessagesCompanion(syncStatus: Value('synced')),
-        );
+      // LMS courses
+      for (final c in pendingLmsCourses) {
+        if (c.isDeleted) {
+          await (db.delete(db.lmsCourses)..where((t) => t.id.equals(c.id))).go();
+        } else {
+          await (db.update(db.lmsCourses)..where((t) => t.id.equals(c.id))).write(
+            const LmsCoursesCompanion(syncStatus: Value('synced')),
+          );
+        }
+      }
+
+      // LMS events
+      for (final e in pendingLmsEvents) {
+        if (e.isDeleted) {
+          await (db.delete(db.lmsEvents)..where((t) => t.id.equals(e.id))).go();
+        } else {
+          await (db.update(db.lmsEvents)..where((t) => t.id.equals(e.id))).write(
+            const LmsEventsCompanion(syncStatus: Value('synced')),
+          );
+        }
+      }
+
+      // LMS materials
+      for (final m in pendingLmsMaterials) {
+        if (m.isDeleted) {
+          await (db.delete(db.lmsMaterials)..where((t) => t.id.equals(m.id))).go();
+        } else {
+          await (db.update(db.lmsMaterials)..where((t) => t.id.equals(m.id))).write(
+            const LmsMaterialsCompanion(syncStatus: Value('synced')),
+          );
+        }
       }
 
       // 3. Apply server changes (Last-Write-Wins pull)
@@ -295,27 +370,113 @@ class SyncRepository {
         }
       }
 
-      final serverMessages = (changes['chat_messages'] as List<dynamic>? ?? []);
-      for (final raw in serverMessages) {
+      final serverLmsCourses = (changes['lms_courses'] as List<dynamic>? ?? []);
+      for (final raw in serverLmsCourses) {
+        final c = raw as Map<String, dynamic>;
+        if (_bool(c['is_deleted'])) {
+          await (db.delete(db.lmsCourses)..where((t) => t.id.equals(c['id']))).go();
+        } else {
+          await db.into(db.lmsCourses).insertOnConflictUpdate(
+                LmsCoursesCompanion(
+                  id: Value(c['id']),
+                  userId: Value(userId),
+                  source: Value(c['source'] ?? 'manual'),
+                  lmsCourseId: Value(_int(c['lms_course_id'])),
+                  subjectId: Value(c['subject_id']),
+                  classification: Value(c['classification']),
+                  title: Value(c['title']),
+                  teacherName: Value(c['teacher_name']),
+                  credits: Value(_int(c['credits']) ?? 5),
+                  registerMidterm: Value(_double(c['register_midterm'])),
+                  registerEndterm: Value(_double(c['register_endterm'])),
+                  finalExam: Value(_double(c['final_exam'])),
+                  total: Value(_double(c['total'])),
+                  gradeItemsJson: Value(c['grade_items_json']),
+                  importedAt: Value(_bigInt(c['imported_at'])),
+                  isDeleted: const Value(false),
+                  updatedAt: Value(BigInt.from(c['updated_at'] as num)),
+                  syncStatus: const Value('synced'),
+                ),
+              );
+        }
+      }
+
+      final serverLmsEvents = (changes['lms_events'] as List<dynamic>? ?? []);
+      for (final raw in serverLmsEvents) {
+        final e = raw as Map<String, dynamic>;
+        if (_bool(e['is_deleted'])) {
+          await (db.delete(db.lmsEvents)..where((t) => t.id.equals(e['id']))).go();
+        } else {
+          await db.into(db.lmsEvents).insertOnConflictUpdate(
+                LmsEventsCompanion(
+                  id: Value(e['id']),
+                  userId: Value(userId),
+                  lmsEventId: Value(_int(e['lms_event_id'])),
+                  lmsCourseId: Value(_int(e['lms_course_id'])),
+                  title: Value(e['title']),
+                  courseTitle: Value(e['course_title']),
+                  eventType: Value(e['event_type'] ?? 'other'),
+                  moduleName: Value(e['module_name']),
+                  startsAt: Value(BigInt.from(e['starts_at'] as num)),
+                  durationMin: Value(_int(e['duration_min'])),
+                  location: Value(e['location']),
+                  url: Value(e['url']),
+                  isDone: Value(_bool(e['is_done'])),
+                  importedAt: Value(_bigInt(e['imported_at'])),
+                  isDeleted: const Value(false),
+                  updatedAt: Value(BigInt.from(e['updated_at'] as num)),
+                  syncStatus: const Value('synced'),
+                ),
+              );
+        }
+      }
+
+      final serverLmsMaterials = (changes['lms_materials'] as List<dynamic>? ?? []);
+      for (final raw in serverLmsMaterials) {
         final m = raw as Map<String, dynamic>;
-        await db.into(db.chatMessages).insertOnConflictUpdate(
-              ChatMessagesCompanion(
-                id: Value(m['id']),
-                groupId: Value(m['group_id']),
-                senderId: Value(m['sender_id']),
-                senderName: Value(m['sender_name'] ?? 'Студент'),
-                messageType: Value(m['message_type'] ?? 'text'),
-                content: Value(m['content']),
-                payloadJson: Value(m['payload_json'] != null ? jsonEncode(m['payload_json']) : null),
-                isPinned: Value(m['is_pinned'] == true),
-                createdAt: Value(BigInt.from(m['created_at'] as num)),
-                syncStatus: const Value('synced'),
-              ),
-            );
+        if (_bool(m['is_deleted'])) {
+          await (db.delete(db.lmsMaterials)..where((t) => t.id.equals(m['id']))).go();
+        } else {
+          await db.into(db.lmsMaterials).insertOnConflictUpdate(
+                LmsMaterialsCompanion(
+                  id: Value(m['id']),
+                  userId: Value(userId),
+                  lmsModuleId: Value(_int(m['lms_module_id'])),
+                  lmsCourseId: Value(_int(m['lms_course_id'])),
+                  courseTitle: Value(m['course_title']),
+                  sectionTitle: Value(m['section_title']),
+                  title: Value(m['title']),
+                  materialType: Value(m['material_type'] ?? 'other'),
+                  url: Value(m['url']),
+                  importedAt: Value(_bigInt(m['imported_at'])),
+                  isDeleted: const Value(false),
+                  updatedAt: Value(BigInt.from(m['updated_at'] as num)),
+                  syncStatus: const Value('synced'),
+                ),
+              );
+        }
       }
     });
 
     await setLastSyncedAt(serverTime);
-    return (serverTime: serverTime, appliedCount: pendingSubjects.length + pendingLessons.length + pendingTasks.length);
+    return (
+      serverTime: serverTime,
+      appliedCount: pendingSubjects.length +
+          pendingLessons.length +
+          pendingTasks.length +
+          pendingSubtasks.length +
+          pendingLmsCourses.length +
+          pendingLmsEvents.length +
+          pendingLmsMaterials.length,
+    );
   }
+
+  // Server may return booleans as 0/1 (SQLite) or true/false (PostgreSQL).
+  static bool _bool(Object? v) => v == true || v == 1;
+
+  static int? _int(Object? v) => v == null ? null : (v as num).toInt();
+
+  static double? _double(Object? v) => v == null ? null : (v as num).toDouble();
+
+  static BigInt? _bigInt(Object? v) => v == null ? null : BigInt.from(v as num);
 }
