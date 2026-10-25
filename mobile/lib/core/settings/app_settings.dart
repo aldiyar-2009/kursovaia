@@ -17,6 +17,21 @@ Locale resolveLocale(List<Locale> device) {
 Locale? _supported(String languageCode) =>
     kSupportedLocales.where((l) => l.languageCode == languageCode).firstOrNull;
 
+/// The app language where no BuildContext is available (notifications):
+/// the saved `settings.locale`, otherwise [resolveLocale] of the device
+/// locales — the same choice `MaterialApp` makes.
+Future<Locale> currentAppLocale() async {
+  Locale? saved;
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    saved = _supported(prefs.getString(AppSettings.localeKey) ?? '');
+  } catch (_) {
+    saved = null;
+  }
+  return saved ??
+      resolveLocale(WidgetsBinding.instance.platformDispatcher.locales);
+}
+
 /// User preferences for appearance and language, persisted in
 /// SharedPreferences. Passed down through constructors like `db`.
 class AppSettings extends ChangeNotifier {
