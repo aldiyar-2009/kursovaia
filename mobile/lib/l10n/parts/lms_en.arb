@@ -34,6 +34,5 @@
   "lms_close": "Close",
   "lms_errorTitle": "Couldn't load data",
   "lms_errorTimeout": "LMS didn't respond within 60 seconds. Check your connection and try again. You're still signed in, so you won't need to enter your password again.",
-  "lms_errorGeneric": "The import was interrupted. Try again. You're still signed in, so you won't need to enter your password again.",
-  "lms_unsupported": "Import from LMS is available in the Android, iOS and Windows apps."
+  "lms_errorGeneric": "The import was interrupted. Try again. You're still signed in, so you won't need to enter your password again."
 }

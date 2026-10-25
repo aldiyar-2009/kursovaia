@@ -1,0 +1,8 @@
+{
+  "@@locale": "en",
+  "notify_deadline24hTitle": "Due in 24 hours",
+  "notify_deadline2hTitle": "Due in 2 hours",
+  "notify_channelName": "Deadlines and tasks",
+  "notify_channelDescription": "Reminders about assignment due dates",
+  "notify_openAction": "Open notification"
+}

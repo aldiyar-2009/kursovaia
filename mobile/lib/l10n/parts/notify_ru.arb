@@ -1,8 +1,8 @@
 {
   "@@locale": "ru",
-  "notify_deadline24hTitle": "Горит дедлайн: через 24 часа",
-  "notify_deadline2hTitle": "Срочный дедлайн: через 2 часа!",
+  "notify_deadline24hTitle": "Дедлайн через 24 часа",
+  "notify_deadline2hTitle": "Дедлайн через 2 часа",
   "notify_channelName": "Дедлайны и задачи",
-  "notify_channelDescription": "Уведомления о сроках сдачи заданий",
+  "notify_channelDescription": "Напоминания о сроках сдачи заданий",
   "notify_openAction": "Открыть уведомление"
 }
