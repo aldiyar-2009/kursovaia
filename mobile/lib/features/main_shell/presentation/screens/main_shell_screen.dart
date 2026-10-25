@@ -128,10 +128,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
           ),
         );
       case AppTab.grades:
-        return Scaffold(
-          appBar: AppBar(title: Text(l10n.nav_grades)),
-          body: const GradesScreen(),
-        );
+        // GradesScreen has its own AppBar (import / add actions).
+        return GradesScreen(db: widget.db, userId: userId, onImportLms: null);
       case AppTab.more:
         return MoreScreen(
           db: widget.db,
