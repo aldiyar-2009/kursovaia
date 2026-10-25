@@ -22,6 +22,10 @@ class MoreScreen extends StatelessWidget {
   final VoidCallback onLogout;
   final ValueChanged<Map<String, dynamic>>? onUserUpdated;
 
+  /// Called with the new group (null after leaving) when it changes on the
+  /// group screen; `group_data` in SharedPreferences is already updated.
+  final ValueChanged<Map<String, dynamic>?>? onGroupChanged;
+
   const MoreScreen({
     super.key,
     required this.db,
@@ -31,6 +35,7 @@ class MoreScreen extends StatelessWidget {
     this.group,
     required this.onLogout,
     this.onUserUpdated,
+    this.onGroupChanged,
   });
 
   void _push(BuildContext context, Widget screen) {
@@ -75,7 +80,16 @@ class MoreScreen extends StatelessWidget {
               title: l10n.nav_group,
               subtitle: groupTitle ?? l10n.nav_groupNone,
               trailing: const ListRowChevron(),
-              onTap: () => _push(context, GroupScreen(group: group)),
+              onTap: () => _push(
+                context,
+                GroupScreen(
+                  db: db,
+                  apiClient: apiClient,
+                  userId: user['id'] as String,
+                  group: group,
+                  onGroupChanged: onGroupChanged,
+                ),
+              ),
             ),
             ListRow(
               title: l10n.nav_campusMap,
