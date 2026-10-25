@@ -11,6 +11,7 @@ import 'package:studyplan/core/theme/theme_ext.dart';
 import 'package:studyplan/core/widgets/ui/empty_state.dart';
 import 'package:studyplan/features/auth/presentation/screens/auth_screen.dart';
 import 'package:studyplan/features/grades/presentation/screens/grades_screen.dart';
+import 'package:studyplan/features/lms/presentation/lms_import_screen.dart';
 import 'package:studyplan/features/more/presentation/screens/more_screen.dart';
 import 'package:studyplan/features/schedule/presentation/screens/schedule_screen.dart';
 import 'package:studyplan/features/tasks/presentation/screens/tasks_screen.dart';
@@ -48,13 +49,36 @@ class MainShellScreen extends StatefulWidget {
 class _MainShellScreenState extends State<MainShellScreen> {
   AppTab _tab = AppTab.home;
   late final SyncRepository _syncRepo;
+  late final SyncBloc _syncBloc;
   late Map<String, dynamic> _currentUser;
+  Map<String, dynamic>? _group;
 
   @override
   void initState() {
     super.initState();
     _currentUser = Map<String, dynamic>.from(widget.user);
+    _group = widget.group;
     _syncRepo = SyncRepository(db: widget.db, apiClient: widget.apiClient);
+    _syncBloc = SyncBloc(
+      repository: _syncRepo,
+      userId: _currentUser['id'] as String,
+    );
+  }
+
+  @override
+  void dispose() {
+    _syncBloc.close();
+    super.dispose();
+  }
+
+  /// Opens the Microsoft/LMS import flow; null where import is unavailable (web).
+  VoidCallback? _lmsImportAction(String userId) {
+    if (!isLmsImportSupported) return null;
+    return () async {
+      final summary =
+          await openLmsImport(context, db: widget.db, userId: userId);
+      if (summary != null) _syncBloc.add(SyncTriggered());
+    };
   }
 
   void _select(AppTab tab) {
@@ -111,7 +135,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
           ),
         );
       case AppTab.schedule:
-        final semesterStart = widget.group?['semester_start'];
+        final semesterStart = _group?['semester_start'];
         return ScheduleScreen(
           db: widget.db,
           userId: userId,
@@ -122,21 +146,27 @@ class _MainShellScreenState extends State<MainShellScreen> {
         return TasksScreen(
           db: widget.db,
           userId: userId,
-          group: widget.group,
+          group: _group,
           onOpenGroup: () => _select(AppTab.more),
         );
       case AppTab.grades:
         // GradesScreen has its own AppBar (import / add actions).
-        return GradesScreen(db: widget.db, userId: userId, onImportLms: null);
+        return GradesScreen(
+          db: widget.db,
+          userId: userId,
+          onImportLms: _lmsImportAction(userId),
+        );
       case AppTab.more:
         return MoreScreen(
           db: widget.db,
           apiClient: widget.apiClient,
           settings: widget.settings,
           user: _currentUser,
-          group: widget.group,
+          group: _group,
           onLogout: _logout,
           onUserUpdated: (updated) => setState(() => _currentUser = updated),
+          onGroupChanged: (g) => setState(() => _group = g),
+          onImportLms: _lmsImportAction(userId),
         );
     }
   }
@@ -154,8 +184,8 @@ class _MainShellScreenState extends State<MainShellScreen> {
       ],
     );
 
-    return BlocProvider(
-      create: (_) => SyncBloc(repository: _syncRepo, userId: userId),
+    return BlocProvider.value(
+      value: _syncBloc,
       child: PopScope(
         canPop: _tab == AppTab.home,
         onPopInvokedWithResult: (didPop, _) {
