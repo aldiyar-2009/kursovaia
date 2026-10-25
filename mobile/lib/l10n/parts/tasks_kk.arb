@@ -34,7 +34,7 @@
   "tasks_noGroupTitle": "Сіз әлі топқа қосылмағансыз",
   "tasks_noGroupMessage": "Топтастарыңыздың ортақ тапсырмаларын көру үшін «Тағы» → «Топ» бөлімінде топ құрыңыз немесе код арқылы қосылыңыз.",
   "tasks_noGroupAction": "«Тағы» бөлімін ашу",
-  "tasks_emptyLmsTitle": "LMS мерзімдері жоқ",
+  "tasks_emptyLmsTitle": "LMS жүйесінен мерзім жоқ",
   "tasks_emptyLmsMessage": "Оларды «Бағалар» қойындысында LMS жүйесіне кіріп импорттаңыз.",
   "tasks_emptyDoneTitle": "Орындалған тапсырма жоқ",
   "tasks_emptyDoneMessage": "Белгіленген тапсырмалар осында пайда болады.",
