@@ -13,7 +13,7 @@ import 'package:studyplan/features/auth/presentation/screens/auth_screen.dart';
 import 'package:studyplan/features/grades/presentation/screens/grades_screen.dart';
 import 'package:studyplan/features/more/presentation/screens/more_screen.dart';
 import 'package:studyplan/features/schedule/presentation/screens/schedule_screen.dart';
-import 'package:studyplan/features/tasks/presentation/screens/deadlines_screen.dart';
+import 'package:studyplan/features/tasks/presentation/screens/tasks_screen.dart';
 
 enum AppTab { home, schedule, tasks, grades, more }
 
@@ -99,7 +99,6 @@ class _MainShellScreenState extends State<MainShellScreen> {
   Widget _tabBody(AppTab tab, BuildContext context) {
     final l10n = context.l10n;
     final userId = _currentUser['id'] as String;
-    final groupId = widget.group?['id'] as String?;
     switch (tab) {
       case AppTab.home:
         return Scaffold(
@@ -117,15 +116,11 @@ class _MainShellScreenState extends State<MainShellScreen> {
           body: ScheduleCalendarScreen(db: widget.db, userId: userId),
         );
       case AppTab.tasks:
-        return Scaffold(
-          appBar: AppBar(title: Text(l10n.nav_tasks)),
-          body: DeadlinesScreen(
-            db: widget.db,
-            userId: userId,
-            groupId: groupId,
-            // Roles are gone: every group member may publish group tasks.
-            isHeadman: groupId != null && groupId.isNotEmpty,
-          ),
+        return TasksScreen(
+          db: widget.db,
+          userId: userId,
+          group: widget.group,
+          onOpenGroup: () => _select(AppTab.more),
         );
       case AppTab.grades:
         return Scaffold(
