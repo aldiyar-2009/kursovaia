@@ -7,6 +7,7 @@ import 'package:studyplan/core/network/api_client.dart';
 import 'package:studyplan/core/settings/app_settings.dart';
 import 'package:studyplan/core/sync/sync_bloc.dart';
 import 'package:studyplan/core/sync/sync_repository.dart';
+import 'package:studyplan/core/theme/app_theme.dart';
 import 'package:studyplan/core/theme/theme_ext.dart';
 import 'package:studyplan/features/auth/presentation/screens/auth_screen.dart';
 import 'package:studyplan/features/grades/presentation/screens/grades_screen.dart';
@@ -76,8 +77,11 @@ class _MainShellScreenState extends State<MainShellScreen> {
   VoidCallback? _lmsImportAction(String userId) {
     if (!isLmsImportSupported) return null;
     return () async {
-      final summary =
-          await openLmsImport(context, db: widget.db, userId: userId);
+      final summary = await openLmsImport(
+        context,
+        db: widget.db,
+        userId: userId,
+      );
       if (summary != null) _syncBloc.add(SyncTriggered());
     };
   }
@@ -148,8 +152,9 @@ class _MainShellScreenState extends State<MainShellScreen> {
         return ScheduleScreen(
           db: widget.db,
           userId: userId,
-          semesterStart:
-              semesterStart is String ? DateTime.tryParse(semesterStart) : null,
+          semesterStart: semesterStart is String
+              ? DateTime.tryParse(semesterStart)
+              : null,
         );
       case AppTab.tasks:
         return TasksScreen(
@@ -217,6 +222,9 @@ class _MainShellScreenState extends State<MainShellScreen> {
                           NavigationDestination(
                             icon: Icon(d.icon),
                             label: d.label,
+                            // The label is always visible; a hover tooltip
+                            // would only repeat it.
+                            tooltip: '',
                           ),
                       ],
                     ),
@@ -224,27 +232,33 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 ),
               );
             }
+            // M3 NavigationRail draws its indicator around the icon only, even
+            // when extended; the wide layout uses a sidebar whose selection
+            // covers the whole row instead.
             final extended = width >= kExtendedRailBreakpoint;
             return Scaffold(
               body: Row(
                 children: [
-                  NavigationRail(
-                    extended: extended,
-                    minExtendedWidth: 220,
-                    labelType: extended
-                        ? NavigationRailLabelType.none
-                        : NavigationRailLabelType.all,
-                    selectedIndex: _tab.index,
-                    onDestinationSelected: (i) => _select(AppTab.values[i]),
-                    leading: _RailHeader(extended: extended),
-                    destinations: [
-                      for (final d in destinations)
-                        NavigationRailDestination(
-                          icon: Icon(d.icon),
-                          label: Text(d.label),
-                        ),
-                    ],
-                  ),
+                  if (extended)
+                    _Sidebar(
+                      destinations: destinations,
+                      selectedIndex: _tab.index,
+                      onSelected: (i) => _select(AppTab.values[i]),
+                    )
+                  else
+                    NavigationRail(
+                      labelType: NavigationRailLabelType.all,
+                      selectedIndex: _tab.index,
+                      onDestinationSelected: (i) => _select(AppTab.values[i]),
+                      leading: const SizedBox(height: 8),
+                      destinations: [
+                        for (final d in destinations)
+                          NavigationRailDestination(
+                            icon: Icon(d.icon),
+                            label: Text(d.label),
+                          ),
+                      ],
+                    ),
                   const VerticalDivider(width: 1, thickness: 1),
                   Expanded(child: body),
                 ],
@@ -257,21 +271,113 @@ class _MainShellScreenState extends State<MainShellScreen> {
   }
 }
 
-class _RailHeader extends StatelessWidget {
-  final bool extended;
+/// Width of the labelled sidebar on wide windows.
+const double kSidebarWidth = 220;
 
-  const _RailHeader({required this.extended});
+/// Labelled navigation for windows >= [kExtendedRailBreakpoint]: the
+/// selected destination is highlighted across the full row.
+class _Sidebar extends StatelessWidget {
+  final List<({IconData icon, String label})> destinations;
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+
+  const _Sidebar({
+    required this.destinations,
+    required this.selectedIndex,
+    required this.onSelected,
+  });
 
   @override
   Widget build(BuildContext context) {
-    if (!extended) return const SizedBox(height: 8);
-    return SizedBox(
-      width: 220,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 8, 16, 16),
-        child: Text(
-          context.l10n.common_appName,
-          style: context.text.titleMedium,
+    final p = context.palette;
+    return Material(
+      color: p.surface,
+      child: SafeArea(
+        right: false,
+        child: SizedBox(
+          width: kSidebarWidth,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 20, 16, 16),
+                child: Text(
+                  context.l10n.common_appName,
+                  style: context.text.titleMedium,
+                ),
+              ),
+              for (var i = 0; i < destinations.length; i++)
+                _SidebarItem(
+                  icon: destinations[i].icon,
+                  label: destinations[i].label,
+                  selected: i == selectedIndex,
+                  onTap: () => onSelected(i),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SidebarItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _SidebarItem({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.palette;
+    final color = selected ? p.textPrimary : p.textSecondary;
+    const radius = BorderRadius.all(Radius.circular(AppRadius.md));
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      child: Semantics(
+        button: true,
+        selected: selected,
+        child: Material(
+          color: selected ? p.surfaceMuted : Colors.transparent,
+          borderRadius: radius,
+          child: InkWell(
+            borderRadius: radius,
+            onTap: onTap,
+            child: SizedBox(
+              height: 44,
+              child: Row(
+                children: [
+                  const SizedBox(width: 12),
+                  Icon(
+                    icon,
+                    size: 22,
+                    color: selected ? p.textPrimary : p.textTertiary,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.labelLarge!.copyWith(
+                        color: color,
+                        fontWeight: selected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

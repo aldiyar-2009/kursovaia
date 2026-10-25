@@ -80,6 +80,32 @@ void main() {
     await _dispose(tester, db);
   });
 
+  testWidgets('bottom bar destinations have no duplicate tooltips',
+      (tester) async {
+    final db = await _pumpShell(tester, const Size(400, 800));
+    for (final d in tester.widgetList<NavigationDestination>(
+        find.byType(NavigationDestination))) {
+      expect(d.tooltip, '');
+    }
+    await _dispose(tester, db);
+  });
+
+  testWidgets('wide window shows a labelled sidebar that switches tabs',
+      (tester) async {
+    final db = await _pumpShell(tester, const Size(1300, 800));
+
+    expect(find.byType(NavigationRail), findsNothing);
+    expect(find.byType(NavigationBar), findsNothing);
+    expect(find.text('StudyPlan'), findsWidgets);
+    await tester.tap(find.text('Оценки').first);
+    await tester.pump();
+    expect(
+      tester.widget<IndexedStack>(find.byType(IndexedStack).first).index,
+      AppTab.grades.index,
+    );
+    await _dispose(tester, db);
+  });
+
   testWidgets('tapping a destination switches the body', (tester) async {
     final db = await _pumpShell(tester, const Size(800, 1000));
 

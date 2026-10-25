@@ -96,10 +96,16 @@ abstract final class AppTheme {
 
     final buttonText = text.labelLarge!;
     const buttonPadding = EdgeInsets.symmetric(horizontal: 16);
+    // Min height 44 for every button; full-width primary actions use 48
+    // (`kPrimaryButtonHeight`, applied by AppSheetLayout).
     const buttonMinSize = Size(64, 44);
 
     return ThemeData(
       useMaterial3: true,
+      // Desktop and web would otherwise default to compact density, which
+      // shrinks buttons to 36 px and inputs/list rows accordingly.
+      visualDensity: VisualDensity.standard,
+      materialTapTargetSize: MaterialTapTargetSize.padded,
       brightness: brightness,
       colorScheme: scheme,
       fontFamily: fontFamily,
