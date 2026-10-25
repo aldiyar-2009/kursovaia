@@ -32,7 +32,7 @@
   "group_membersUnavailable": "Мүшелер тізімі жүктелмеді",
   "group_materials": "Топ материалдары",
   "group_leave": "Топтан шығу",
-  "group_leaveConfirmTitle": "Топтан шығасыз ба?",
+  "group_leaveConfirmTitle": "Топтан шығу керек пе?",
   "group_leaveConfirmMessage": "Топтық тапсырмалар мен материалдар қолжетімсіз болады. Шақыру коды арқылы қайта қосылуға болады.",
   "group_leaveConfirm": "Шығу",
   "group_leaveDone": "Сіз топтан шықтыңыз",
