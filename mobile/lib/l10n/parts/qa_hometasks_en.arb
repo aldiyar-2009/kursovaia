@@ -1,0 +1,9 @@
+{
+  "@@locale": "en",
+  "home_stepGradesManual": "Add grades",
+  "home_stepGradesManualHint": "Enter your course scores manually",
+  "tasks_rowDue": "due {due}",
+  "tasks_statusOpen": "not done",
+  "tasks_statusDone": "done",
+  "tasks_statusOverdue": "overdue"
+}

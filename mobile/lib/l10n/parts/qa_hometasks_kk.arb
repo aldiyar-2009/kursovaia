@@ -1,0 +1,9 @@
+{
+  "@@locale": "kk",
+  "home_stepGradesManual": "Бағаларды қосу",
+  "home_stepGradesManualHint": "Пәндер бойынша балдарды қолмен енгізіңіз",
+  "tasks_rowDue": "мерзімі: {due}",
+  "tasks_statusOpen": "орындалмады",
+  "tasks_statusDone": "орындалды",
+  "tasks_statusOverdue": "мерзімі өтті"
+}

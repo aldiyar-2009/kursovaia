@@ -6,9 +6,10 @@ import 'package:studyplan/core/database/app_database.dart';
 import 'package:studyplan/core/database/task_dao.dart';
 import 'package:studyplan/core/theme/app_theme.dart';
 import 'package:studyplan/core/theme/theme_ext.dart';
+import 'package:studyplan/core/widgets/ui/content_column.dart';
 import 'package:studyplan/core/widgets/ui/empty_state.dart';
+import 'package:studyplan/core/widgets/ui/filter_chips.dart';
 import 'package:studyplan/core/widgets/ui/list_row.dart';
-import 'package:studyplan/core/widgets/ui/section_header.dart';
 import 'package:studyplan/features/tasks/domain/task_group_info.dart';
 import 'package:studyplan/features/tasks/domain/task_list_item.dart';
 import 'package:studyplan/features/tasks/presentation/widgets/task_detail_bottom_sheet.dart';
@@ -30,12 +31,16 @@ class TasksScreen extends StatefulWidget {
   /// Opens the place where a group can be created or joined.
   final VoidCallback? onOpenGroup;
 
+  /// Source of "now" for grouping and due labels; injectable for tests.
+  final DateTime Function() clock;
+
   const TasksScreen({
     super.key,
     required this.db,
     required this.userId,
     this.group,
     this.onOpenGroup,
+    this.clock = DateTime.now,
   });
 
   @override
@@ -165,7 +170,7 @@ class _TasksScreenState extends State<TasksScreen> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return Scaffold(
-      appBar: AppBar(
+      appBar: ContentAppBar(
         title: Text(l10n.tasks_title),
         actions: [
           IconButton(
@@ -173,20 +178,40 @@ class _TasksScreenState extends State<TasksScreen> {
             icon: const Icon(Icons.add),
             onPressed: () => _openEditor(),
           ),
-          const SizedBox(width: 8),
         ],
       ),
-      body: Column(
-        children: [
-          _FilterBar(selected: _filter, onSelected: _setFilter),
-          const Divider(height: 1),
-          Expanded(child: _buildBody(context)),
-        ],
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: FilterChipsRow<TaskFilter>(
+                  key: const ValueKey('tasks-filters'),
+                  // First chip starts at the content column edge.
+                  horizontalPadding: contentInset(width),
+                  items: [
+                    (TaskFilter.all, l10n.tasks_filterAll),
+                    (TaskFilter.mine, l10n.tasks_filterMine),
+                    (TaskFilter.group, l10n.tasks_filterGroup),
+                    (TaskFilter.lms, l10n.tasks_filterLms),
+                    (TaskFilter.done, l10n.tasks_filterDone),
+                  ],
+                  value: _filter,
+                  onChanged: _setFilter,
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(child: _buildBody(context, width)),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildBody(BuildContext context) {
+  Widget _buildBody(BuildContext context, double width) {
     final l10n = context.l10n;
     if (_filter == TaskFilter.group && _group == null) {
       return EmptyState(
@@ -212,7 +237,7 @@ class _TasksScreenState extends State<TasksScreen> {
                   for (final t in taskSnap.data!) TaskListItem.task(t),
                   for (final e in lmsSnap.data!) TaskListItem.lms(e),
                 ];
-                return _buildList(context, all, subSnap.data ?? const []);
+                return _buildList(context, all, subSnap.data ?? const [], width);
               },
             );
           },
@@ -225,8 +250,9 @@ class _TasksScreenState extends State<TasksScreen> {
     BuildContext context,
     List<TaskListItem> all,
     List<Subtask> subtasks,
+    double width,
   ) {
-    final now = DateTime.now();
+    final now = widget.clock();
     final visible = all.where((i) => i.matches(_filter, widget.userId)).toList();
     if (visible.isEmpty) return _emptyFor(context, all);
 
@@ -255,33 +281,23 @@ class _TasksScreenState extends State<TasksScreen> {
     }
 
     return ListView(
-      padding: const EdgeInsets.only(bottom: 32),
+      padding: contentPadding(width, bottom: 32),
       children: [
-        for (final entry in sections.entries)
-          _Constrained(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SectionHeader(
-                  entry.key,
-                  trailing: Text(
-                    '${entry.value.length}',
-                    style: context.text.labelMedium!.tabular,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: ListGroup(
-                    dividerIndent: 48,
-                    children: [
-                      for (final item in entry.value)
-                        _rowFor(item, now, progress),
-                    ],
-                  ),
-                ),
-              ],
+        for (final entry in sections.entries) ...[
+          _SectionHeader(
+            entry.key,
+            trailing: Text(
+              '${entry.value.length}',
+              style: context.text.labelMedium!.tabular,
             ),
           ),
+          ListGroup(
+            dividerIndent: 48,
+            children: [
+              for (final item in entry.value) _rowFor(item, now, progress),
+            ],
+          ),
+        ],
       ],
     );
   }
@@ -371,67 +387,33 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 }
 
-/// Centres content and caps its width on wide windows.
-class _Constrained extends StatelessWidget {
-  final Widget child;
+/// Section heading above a group of task rows. No horizontal padding of its
+/// own: the list already sits in the content column, so the heading starts
+/// at the same x as the row group.
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final Widget trailing;
 
-  const _Constrained({required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 720),
-        child: child,
-      ),
-    );
-  }
-}
-
-class _FilterBar extends StatelessWidget {
-  final TaskFilter selected;
-  final ValueChanged<TaskFilter> onSelected;
-
-  const _FilterBar({required this.selected, required this.onSelected});
+  const _SectionHeader(this.title, {required this.trailing});
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final p = context.palette;
-    final labels = {
-      TaskFilter.all: l10n.tasks_filterAll,
-      TaskFilter.mine: l10n.tasks_filterMine,
-      TaskFilter.group: l10n.tasks_filterGroup,
-      TaskFilter.lms: l10n.tasks_filterLms,
-      TaskFilter.done: l10n.tasks_filterDone,
-    };
-    return SizedBox(
-      height: 52,
-      child: _Constrained(
-        child: ListView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          children: [
-            for (final e in labels.entries) ...[
-              ChoiceChip(
-                key: ValueKey('tasks-filter-${e.key.name}'),
-                label: Text(e.value),
-                labelPadding: const EdgeInsets.symmetric(horizontal: 4),
-                selected: selected == e.key,
-                onSelected: (_) => onSelected(e.key),
-                side: BorderSide(
-                  color: selected == e.key ? p.textTertiary : p.border,
-                ),
-                labelStyle: context.text.labelMedium!.copyWith(
-                  color: selected == e.key ? p.textPrimary : p.textSecondary,
-                  fontWeight: selected == e.key ? FontWeight.w600 : FontWeight.w500,
-                ),
+    return Padding(
+      padding: const EdgeInsets.only(top: 24, bottom: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Semantics(
+              header: true,
+              child: Text(
+                title,
+                style: context.text.labelMedium!
+                    .copyWith(color: context.palette.textSecondary),
               ),
-              const SizedBox(width: 8),
-            ],
-          ],
-        ),
+            ),
+          ),
+          trailing,
+        ],
       ),
     );
   }

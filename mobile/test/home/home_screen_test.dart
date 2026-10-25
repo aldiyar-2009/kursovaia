@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:studyplan/core/database/app_database.dart';
 import 'package:studyplan/core/theme/app_theme.dart';
+import 'package:studyplan/core/widgets/ui/list_row.dart';
 import 'package:studyplan/features/home/presentation/screens/home_screen.dart';
 import 'package:studyplan/features/main_shell/presentation/screens/main_shell_screen.dart';
 import 'package:studyplan/l10n/generated/app_localizations.dart';
@@ -40,6 +41,7 @@ Future<AppDatabase> _pump(
   ThemeData? theme,
   Future<void> Function(AppDatabase db)? seed,
   List<AppTab>? opened,
+  bool lmsImportAvailable = true,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -63,6 +65,7 @@ Future<AppDatabase> _pump(
       clock: () => _now,
       onOpenTab: (tab) => opened?.add(tab),
       onOpenGroup: () {},
+      lmsImportAvailable: lmsImportAvailable,
     ),
   ));
   await _settle(tester);
@@ -260,5 +263,49 @@ void main() {
     db = await _pump(tester, size: const Size(1400, 900), seed: seed);
     expect(tester.takeException(), isNull);
     await _dispose(tester, db);
+  });
+
+  testWidgets('without LMS import (web) the grades step offers manual entry',
+      (tester) async {
+    final opened = <AppTab>[];
+    final db = await _pump(tester, opened: opened, lmsImportAvailable: false);
+
+    expect(find.text('Импортировать оценки из LMS'), findsNothing);
+    expect(find.text('Добавить оценки'), findsOneWidget);
+    expect(find.text('Введите баллы по предметам вручную'), findsOneWidget);
+    await tester.tap(find.text('Добавить оценки'));
+    expect(opened, [AppTab.grades]);
+    await _dispose(tester, db);
+  });
+
+  testWidgets('section headers and the app bar title line up with the rows',
+      (tester) async {
+    Future<void> seed(AppDatabase db) => db.into(db.tasks).insert(
+          TasksCompanion.insert(
+            id: 't1',
+            userId: _user,
+            title: 'Лабораторная работа 3',
+            dueDate: Value(_ms(DateTime(2026, 10, 27, 18, 0))),
+            updatedAt: _ms(_now),
+          ),
+        );
+
+    for (final size in const [Size(390, 844), Size(1400, 900)]) {
+      final db = await _pump(tester, size: size, seed: seed);
+
+      final groups = find.byType(ListGroup);
+      expect(groups, findsNWidgets(2)); // deadlines + first steps
+      final rowsX = tester.getTopLeft(groups.first).dx;
+      expect(tester.getTopLeft(find.text('Дедлайны')).dx, rowsX);
+      expect(tester.getTopLeft(find.text('С чего начать')).dx, rowsX);
+      expect(tester.getTopLeft(groups.last).dx, rowsX);
+      expect(tester.getTopLeft(find.text('Понедельник, 26 октября')).dx, rowsX);
+      if (size.width < 600) expect(rowsX, 16);
+
+      // Same toolbar height as the other tabs.
+      expect(tester.getSize(find.byType(AppBar)).height, kToolbarHeight);
+      expect(tester.takeException(), isNull);
+      await _dispose(tester, db);
+    }
   });
 }
