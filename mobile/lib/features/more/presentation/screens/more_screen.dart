@@ -7,6 +7,7 @@ import 'package:studyplan/core/settings/app_settings.dart';
 import 'package:studyplan/core/sync/sync_bloc.dart';
 import 'package:studyplan/core/sync/sync_state.dart';
 import 'package:studyplan/core/theme/theme_ext.dart';
+import 'package:studyplan/core/widgets/ui/content_column.dart';
 import 'package:studyplan/core/widgets/ui/list_row.dart';
 import 'package:studyplan/features/campus_map/presentation/screens/campus_map_screen.dart';
 import 'package:studyplan/features/group/presentation/screens/group_screen.dart';
@@ -54,62 +55,68 @@ class MoreScreen extends StatelessWidget {
     final groupTitle = group?['title'] as String?;
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.nav_more)),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
-        children: [
-          const _SyncStatusRow(),
-          const SizedBox(height: 8),
-          ListGroup(children: [
-            ListRow(
-              title: l10n.nav_profileSettings,
-              subtitle: _join(name, email),
-              trailing: const ListRowChevron(),
-              onTap: () => _push(
-                context,
-                ProfileScreen(
-                  db: db,
-                  apiClient: apiClient,
-                  settings: settings,
-                  user: user,
-                  group: group,
-                  onLogout: onLogout,
-                  onUserUpdated: onUserUpdated,
-                  onImportLms: onImportLms,
+      appBar: ContentAppBar(title: Text(l10n.nav_more)),
+      body: LayoutBuilder(
+        builder: (context, constraints) => ListView(
+          padding: contentPadding(constraints.maxWidth, bottom: 32),
+          children: [
+            const _SyncStatusRow(),
+            const SizedBox(height: 8),
+            ListGroup(
+              children: [
+                ListRow(
+                  title: l10n.nav_profileSettings,
+                  subtitle: _join(name, email),
+                  trailing: const ListRowChevron(),
+                  onTap: () => _push(
+                    context,
+                    ProfileScreen(
+                      db: db,
+                      apiClient: apiClient,
+                      settings: settings,
+                      user: user,
+                      group: group,
+                      onLogout: onLogout,
+                      onUserUpdated: onUserUpdated,
+                      onImportLms: onImportLms,
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-          ]),
-          const SizedBox(height: 16),
-          ListGroup(children: [
-            ListRow(
-              title: l10n.nav_group,
-              subtitle: groupTitle ?? l10n.nav_groupNone,
-              trailing: const ListRowChevron(),
-              onTap: () => _push(
-                context,
-                GroupScreen(
-                  db: db,
-                  apiClient: apiClient,
-                  userId: user['id'] as String,
-                  group: group,
-                  onGroupChanged: onGroupChanged,
+            const SizedBox(height: 16),
+            ListGroup(
+              children: [
+                ListRow(
+                  title: l10n.nav_group,
+                  subtitle: groupTitle ?? l10n.nav_groupNone,
+                  trailing: const ListRowChevron(),
+                  onTap: () => _push(
+                    context,
+                    GroupScreen(
+                      db: db,
+                      apiClient: apiClient,
+                      userId: user['id'] as String,
+                      group: group,
+                      onGroupChanged: onGroupChanged,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            ListRow(
-              title: l10n.nav_campusMap,
-              trailing: const ListRowChevron(),
-              onTap: () => _push(
-                context,
-                Scaffold(
-                  appBar: AppBar(title: Text(l10n.nav_campusMap)),
-                  body: const CampusMapScreen(),
+                ListRow(
+                  title: l10n.nav_campusMap,
+                  trailing: const ListRowChevron(),
+                  onTap: () => _push(
+                    context,
+                    Scaffold(
+                      appBar: AppBar(title: Text(l10n.nav_campusMap)),
+                      body: const CampusMapScreen(),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-          ]),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -132,19 +139,24 @@ class _SyncStatusRow extends StatelessWidget {
       builder: (context, state) {
         final syncing = state.status == SyncStatusState.syncing;
         final (String text, Color color) = switch (state.status) {
-          SyncStatusState.syncing => (l10n.nav_syncInProgress, palette.textSecondary),
-          SyncStatusState.offlinePending =>
-            (l10n.nav_syncPending(state.pendingCount), palette.warning),
+          SyncStatusState.syncing => (
+            l10n.nav_syncInProgress,
+            palette.textSecondary,
+          ),
+          SyncStatusState.offlinePending => (
+            l10n.nav_syncPending(state.pendingCount),
+            palette.warning,
+          ),
           SyncStatusState.error => (l10n.nav_syncError, palette.danger),
           SyncStatusState.synced => (
-              state.lastSyncedAt == null
-                  ? l10n.nav_syncDone
-                  : l10n.nav_syncDoneAt(
-                      DateFormat.Hm(Localizations.localeOf(context).toString())
-                          .format(state.lastSyncedAt!),
-                    ),
-              palette.textSecondary,
-            ),
+            state.lastSyncedAt == null
+                ? l10n.nav_syncDone
+                : l10n.nav_syncDoneAt(
+                    DateFormat.Hm(Localizations.localeOf(context).toString())
+                        .format(state.lastSyncedAt!),
+                  ),
+            palette.textSecondary,
+          ),
         };
         return ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 56),
@@ -156,10 +168,7 @@ class _SyncStatusRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      l10n.nav_syncSection,
-                      style: context.text.labelSmall,
-                    ),
+                    Text(l10n.nav_syncSection, style: context.text.labelSmall),
                     const SizedBox(height: 2),
                     Text(
                       text,
@@ -179,7 +188,16 @@ class _SyncStatusRow extends StatelessWidget {
                   ),
                 )
               else
+                // Quiet row action: secondary colour and small text, so the
+                // status, not the button, is what the eye lands on.
                 TextButton(
+                  key: const ValueKey('more_sync_now'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: palette.textSecondary,
+                    textStyle: context.text.labelMedium,
+                    minimumSize: const Size(44, 44),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
                   onPressed: () =>
                       context.read<SyncBloc>().add(SyncTriggered()),
                   child: Text(l10n.nav_syncNow),

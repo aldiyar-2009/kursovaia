@@ -1,12 +1,16 @@
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:studyplan/core/database/app_database.dart';
 import 'package:studyplan/core/network/api_client.dart';
 import 'package:studyplan/core/theme/theme_ext.dart';
+import 'package:studyplan/core/widgets/ui/content_column.dart';
 import 'package:studyplan/core/widgets/ui/empty_state.dart';
+import 'package:studyplan/core/widgets/ui/filter_chips.dart';
 import 'package:studyplan/core/widgets/ui/list_row.dart';
 import 'package:studyplan/core/widgets/ui/section_header.dart';
+import 'package:studyplan/core/widgets/ui/segmented_toggle.dart';
 import 'package:studyplan/features/group/data/group_repository.dart';
 import 'package:studyplan/features/group/presentation/widgets/group_forms.dart';
 import 'package:studyplan/features/materials/data/group_material.dart';
@@ -20,8 +24,6 @@ typedef OpenUrlFn = Future<bool> Function(Uri url);
 
 Future<bool> _openExternal(Uri url) =>
     launchUrl(url, mode: LaunchMode.externalApplication);
-
-const double _maxContentWidth = 720;
 
 /// Materials: files shared with the group (server) and course materials
 /// imported from LMS (drift).
@@ -57,29 +59,10 @@ class MaterialsScreen extends StatefulWidget {
   State<MaterialsScreen> createState() => _MaterialsScreenState();
 }
 
-class _MaterialsScreenState extends State<MaterialsScreen>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabs = TabController(
-    length: 2,
-    vsync: this,
-    initialIndex: widget.initialTab,
-  );
+class _MaterialsScreenState extends State<MaterialsScreen> {
+  late int _tab = widget.initialTab.clamp(0, 1);
   late String? _groupId = widget.groupId;
   final _groupTabKey = GlobalKey<_GroupMaterialsTabState>();
-
-  @override
-  void initState() {
-    super.initState();
-    _tabs.addListener(() {
-      if (!_tabs.indexIsChanging) setState(() {});
-    });
-  }
-
-  @override
-  void dispose() {
-    _tabs.dispose();
-    super.dispose();
-  }
 
   void _onGroupChanged(Map<String, dynamic>? group) {
     setState(() => _groupId = group?['id'] as String?);
@@ -89,9 +72,9 @@ class _MaterialsScreenState extends State<MaterialsScreen>
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final canUpload = _tabs.index == 0 && _groupId != null;
+    final canUpload = _tab == 0 && _groupId != null;
     return Scaffold(
-      appBar: AppBar(
+      appBar: ContentAppBar(
         title: Text(l10n.group_materialsTitle),
         actions: [
           if (canUpload)
@@ -100,31 +83,45 @@ class _MaterialsScreenState extends State<MaterialsScreen>
               icon: const Icon(Icons.upload_file_outlined),
               onPressed: () => _groupTabKey.currentState?.upload(),
             ),
-          const SizedBox(width: 4),
         ],
-        bottom: TabBar(
-          controller: _tabs,
-          tabs: [
-            Tab(text: l10n.group_materialsTabGroup),
-            Tab(text: l10n.group_materialsTabLms),
-          ],
-        ),
       ),
-      body: TabBarView(
-        controller: _tabs,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _GroupMaterialsTab(
-            key: _groupTabKey,
-            db: widget.db,
-            apiClient: widget.apiClient,
-            userId: widget.userId,
-            groupId: _groupId,
-            onGroupChanged: _onGroupChanged,
+          ContentColumn(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: SegmentedToggle<int>(
+              key: const ValueKey('materials_tabs'),
+              expand: true,
+              segments: [
+                (0, l10n.group_materialsTabGroup),
+                (1, l10n.group_materialsTabLms),
+              ],
+              value: _tab,
+              onChanged: (tab) => setState(() => _tab = tab),
+            ),
           ),
-          _LmsMaterialsTab(
-            db: widget.db,
-            userId: widget.userId,
-            openUrl: widget.openUrl ?? _openExternal,
+          Expanded(
+            // IndexedStack keeps the group list (and its key for the upload
+            // action) alive while the LMS tab is shown.
+            child: IndexedStack(
+              index: _tab,
+              children: [
+                _GroupMaterialsTab(
+                  key: _groupTabKey,
+                  db: widget.db,
+                  apiClient: widget.apiClient,
+                  userId: widget.userId,
+                  groupId: _groupId,
+                  onGroupChanged: _onGroupChanged,
+                ),
+                _LmsMaterialsTab(
+                  db: widget.db,
+                  userId: widget.userId,
+                  openUrl: widget.openUrl ?? _openExternal,
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -140,14 +137,6 @@ String formatFileSize(AppLocalizations l10n, String locale, int bytes) {
   }
   return l10n.group_materialsSizeMb(format.format(bytes / (1024 * 1024)));
 }
-
-Widget _centered(Widget child) => Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: _maxContentWidth),
-        child: child,
-      ),
-    );
 
 // ---------------------------------------------------------------- group tab
 
@@ -171,17 +160,13 @@ class _GroupMaterialsTab extends StatefulWidget {
   State<_GroupMaterialsTab> createState() => _GroupMaterialsTabState();
 }
 
-class _GroupMaterialsTabState extends State<_GroupMaterialsTab>
-    with AutomaticKeepAliveClientMixin {
+class _GroupMaterialsTabState extends State<_GroupMaterialsTab> {
   late final MaterialsRepository _repo = MaterialsRepository(widget.apiClient);
   late final GroupRepository _groups = GroupRepository(widget.apiClient);
   List<GroupMaterial>? _items;
   MaterialsFailure? _error;
   String? _subject;
   final Set<String> _busyIds = {};
-
-  @override
-  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -215,8 +200,7 @@ class _GroupMaterialsTabState extends State<_GroupMaterialsTab>
       if (!mounted) return;
       setState(() {
         _items = fresh;
-        if (_subject != null &&
-            !fresh.any((m) => m.subjectTitle == _subject)) {
+        if (_subject != null && !fresh.any((m) => m.subjectTitle == _subject)) {
           _subject = null;
         }
       });
@@ -310,8 +294,9 @@ class _GroupMaterialsTabState extends State<_GroupMaterialsTab>
   }
 
   Future<void> _joinOrCreate({required bool create}) async {
-    final pending =
-        create ? null : await GroupRepository.takePendingInviteCode();
+    final pending = create
+        ? null
+        : await GroupRepository.takePendingInviteCode();
     if (!mounted) return;
     final result = create
         ? await showCreateGroupSheet(context, _groups)
@@ -321,7 +306,6 @@ class _GroupMaterialsTabState extends State<_GroupMaterialsTab>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
     final l10n = context.l10n;
 
     if (widget.groupId == null) {
@@ -369,8 +353,7 @@ class _GroupMaterialsTabState extends State<_GroupMaterialsTab>
     final subjects = {
       for (final m in items)
         if (m.subjectTitle != null) m.subjectTitle!,
-    }.toList()
-      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    }.toList()..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
     final visible = _subject == null
         ? items
         : items.where((m) => m.subjectTitle == _subject).toList();
@@ -378,89 +361,73 @@ class _GroupMaterialsTabState extends State<_GroupMaterialsTab>
 
     return RefreshIndicator(
       onRefresh: _load,
-      child: _centered(
-        ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-          children: [
-            if (_error != null) ...[
-              _InlineNotice(
-                message: l10n.group_materialsOfflineCached,
-                onRetry: _load,
-              ),
-              const SizedBox(height: 8),
-            ],
-            if (subjects.isNotEmpty) ...[
-              SizedBox(
-                height: 36,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: [
-                    _SubjectChip(
-                      label: l10n.group_materialsFilterAll,
-                      selected: _subject == null,
-                      onTap: () => setState(() => _subject = null),
-                    ),
-                    for (final s in subjects)
-                      _SubjectChip(
-                        label: s,
-                        selected: _subject == s,
-                        onTap: () => setState(() => _subject = s),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-            if (visible.isNotEmpty)
-              ListGroup(children: [
-                for (final m in visible)
-                  ListRow(
-                    title: m.title.isEmpty ? m.fileName : m.title,
-                    subtitle: [
-                      ?m.subjectTitle,
-                      if (m.uploaderName.isNotEmpty) m.uploaderName,
-                      formatFileSize(l10n, locale, m.fileSize),
-                    ].join(' · '),
-                    onTap: () => _download(m),
-                    trailing: _busyIds.contains(m.id)
-                        ? const SizedBox.square(
-                            dimension: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : _MaterialMenu(
-                            canDelete: m.uploaderId == widget.userId,
-                            onDownload: () => _download(m),
-                            onDelete: () => _delete(m),
-                          ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final inset = contentInset(constraints.maxWidth);
+          Widget padded(Widget child) => Padding(
+            padding: EdgeInsets.symmetric(horizontal: inset),
+            child: child,
+          );
+          return ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.only(top: 8, bottom: 32),
+            children: [
+              if (_error != null) ...[
+                padded(
+                  _InlineNotice(
+                    message: l10n.group_materialsOfflineCached,
+                    onRetry: _load,
                   ),
-              ]),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SubjectChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _SubjectChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: ChoiceChip(
-        label: Text(label),
-        selected: selected,
-        onSelected: (_) => onTap(),
+                ),
+                const SizedBox(height: 8),
+              ],
+              if (subjects.isNotEmpty) ...[
+                // Full width so the chips scroll edge to edge; the first chip
+                // still starts at the content column's edge.
+                FilterChipsRow<String?>(
+                  key: const ValueKey('materials_subjects'),
+                  horizontalPadding: inset,
+                  items: [
+                    (null, l10n.group_materialsFilterAll),
+                    for (final s in subjects) (s, s),
+                  ],
+                  value: _subject,
+                  onChanged: (s) => setState(() => _subject = s),
+                ),
+                const SizedBox(height: 12),
+              ],
+              if (visible.isNotEmpty)
+                padded(
+                  ListGroup(
+                    children: [
+                      for (final m in visible)
+                        ListRow(
+                          title: m.title.isEmpty ? m.fileName : m.title,
+                          subtitle: [
+                            ?m.subjectTitle,
+                            if (m.uploaderName.isNotEmpty) m.uploaderName,
+                            formatFileSize(l10n, locale, m.fileSize),
+                          ].join(' · '),
+                          onTap: () => _download(m),
+                          trailing: _busyIds.contains(m.id)
+                              ? const SizedBox.square(
+                                  dimension: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : _MaterialMenu(
+                                  canDelete: m.uploaderId == widget.userId,
+                                  onDownload: () => _download(m),
+                                  onDelete: () => _delete(m),
+                                ),
+                        ),
+                    ],
+                  ),
+                ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -542,8 +509,9 @@ class _LoadError extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: context.text.bodyMedium!
-                  .copyWith(color: context.palette.textSecondary),
+              style: context.text.bodyMedium!.copyWith(
+                color: context.palette.textSecondary,
+              ),
             ),
             const SizedBox(height: 8),
             TextButton(
@@ -571,12 +539,12 @@ class _LmsMaterialsTab extends StatelessWidget {
   });
 
   String _typeLabel(AppLocalizations l10n, String type) => switch (type) {
-        'file' => l10n.group_materialsTypeFile,
-        'folder' => l10n.group_materialsTypeFolder,
-        'url' => l10n.group_materialsTypeUrl,
-        'page' => l10n.group_materialsTypePage,
-        _ => l10n.group_materialsTypeOther,
-      };
+    'file' => l10n.group_materialsTypeFile,
+    'folder' => l10n.group_materialsTypeFolder,
+    'url' => l10n.group_materialsTypeUrl,
+    'page' => l10n.group_materialsTypePage,
+    _ => l10n.group_materialsTypeOther,
+  };
 
   Future<void> _open(BuildContext context, String url) async {
     final messenger = ScaffoldMessenger.of(context);
@@ -610,7 +578,10 @@ class _LmsMaterialsTab extends StatelessWidget {
         if (items.isEmpty) {
           return EmptyState(
             title: l10n.group_materialsLmsEmptyTitle,
-            message: l10n.group_materialsLmsEmptyMessage,
+            // The LMS import needs a webview, which the web build lacks.
+            message: kIsWeb
+                ? l10n.group_materialsLmsEmptyMessageWeb
+                : l10n.group_materialsLmsEmptyMessage,
           );
         }
         final byCourse = <String, List<LmsMaterial>>{};
@@ -625,27 +596,31 @@ class _LmsMaterialsTab extends StatelessWidget {
               )
               .add(m);
         }
-        return _centered(
-          ListView(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+        return LayoutBuilder(
+          builder: (context, constraints) => ListView(
+            padding: contentPadding(constraints.maxWidth, bottom: 32),
             children: [
               for (final entry in byCourse.entries) ...[
                 SectionHeader(entry.key),
-                ListGroup(children: [
-                  for (final m in entry.value)
-                    ListRow(
-                      title: m.title,
-                      subtitle: [
-                        _typeLabel(l10n, m.materialType),
-                        if ((m.sectionTitle ?? '').trim().isNotEmpty)
-                          m.sectionTitle!.trim(),
-                      ].join(' · '),
-                      trailing: m.url == null
-                          ? null
-                          : const Icon(Icons.open_in_new, size: 18),
-                      onTap: m.url == null ? null : () => _open(context, m.url!),
-                    ),
-                ]),
+                ListGroup(
+                  children: [
+                    for (final m in entry.value)
+                      ListRow(
+                        title: m.title,
+                        subtitle: [
+                          _typeLabel(l10n, m.materialType),
+                          if ((m.sectionTitle ?? '').trim().isNotEmpty)
+                            m.sectionTitle!.trim(),
+                        ].join(' · '),
+                        trailing: m.url == null
+                            ? null
+                            : const Icon(Icons.open_in_new, size: 18),
+                        onTap: m.url == null
+                            ? null
+                            : () => _open(context, m.url!),
+                      ),
+                  ],
+                ),
               ],
             ],
           ),

@@ -78,6 +78,53 @@ void main() {
     expect(find.text('Импорт из LMS'), findsOneWidget);
   });
 
+  testWidgets('intro stays in the content column at 1280 px, 44 px buttons',
+      (tester) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    await tester.pumpWidget(_app(LmsImportScreen(db: db, userId: 'u1')));
+    await tester.pump();
+
+    final button = find.widgetWithText(FilledButton, 'Войти через Microsoft');
+    expect(tester.getSize(button).width, lessThanOrEqualTo(720));
+    expect(tester.getSize(button).height, greaterThanOrEqualTo(44));
+    expect(tester.getTopLeft(button).dx, (1280 - 720) / 2);
+    final close = find.byIcon(Icons.close);
+    expect(tester.getSize(close).height, lessThanOrEqualTo(24));
+    expect(
+      tester.getSize(find.ancestor(of: close, matching: find.byType(IconButton)))
+          .height,
+      greaterThanOrEqualTo(44),
+    );
+  });
+
+  testWidgets('result buttons are at least 44 px tall', (tester) async {
+    await tester.pumpWidget(_app(
+      Scaffold(
+        body: LmsImportResultView(
+          summary: const LmsImportSummary(
+            courses: 1,
+            events: 0,
+            classes: 0,
+            materials: 0,
+            errors: {'grades': 'x'},
+          ),
+          onRetry: () {},
+          onDone: () {},
+        ),
+      ),
+    ));
+    for (final b in [
+      find.widgetWithText(OutlinedButton, 'Повторить'),
+      find.widgetWithText(FilledButton, 'Готово'),
+    ]) {
+      expect(tester.getSize(b).height, greaterThanOrEqualTo(44));
+    }
+  });
+
   testWidgets('result view shows counts and an error line with retry',
       (tester) async {
     var retried = 0;

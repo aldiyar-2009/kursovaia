@@ -10,6 +10,7 @@ import 'package:studyplan/core/theme/app_theme.dart';
 import 'package:studyplan/core/theme/theme_ext.dart';
 import 'package:studyplan/core/widgets/server_config_dialog.dart';
 import 'package:studyplan/core/widgets/ui/app_text_field.dart';
+import 'package:studyplan/core/widgets/ui/segmented_toggle.dart';
 import 'package:studyplan/features/main_shell/presentation/screens/main_shell_screen.dart';
 
 enum _AuthMode { signIn, signUp }
@@ -48,6 +49,7 @@ class _AuthScreenState extends State<AuthScreen> {
   final _confirmController = TextEditingController();
   final _inviteController = TextEditingController();
   bool _obscure = true;
+  bool _obscureConfirm = true;
 
   bool _isLoading = false;
   String? _errorMessage;
@@ -111,16 +113,22 @@ class _AuthScreenState extends State<AuthScreen> {
     final inviteCode = _inviteController.text.trim();
     try {
       final response = signUp
-          ? await widget.apiClient.dio.post('/auth/register', data: {
-              'name': _nameController.text.trim(),
-              'email': _emailController.text.trim(),
-              'password': _passwordController.text,
-              if (inviteCode.isNotEmpty) 'invite_code': inviteCode,
-            })
-          : await widget.apiClient.dio.post('/auth/login', data: {
-              'email': _emailController.text.trim(),
-              'password': _passwordController.text,
-            });
+          ? await widget.apiClient.dio.post(
+              '/auth/register',
+              data: {
+                'name': _nameController.text.trim(),
+                'email': _emailController.text.trim(),
+                'password': _passwordController.text,
+                if (inviteCode.isNotEmpty) 'invite_code': inviteCode,
+              },
+            )
+          : await widget.apiClient.dio.post(
+              '/auth/login',
+              data: {
+                'email': _emailController.text.trim(),
+                'password': _passwordController.text,
+              },
+            );
 
       final data = response.data as Map<String, dynamic>;
       final token = data['token'] as String;
@@ -192,25 +200,21 @@ class _AuthScreenState extends State<AuthScreen> {
                       const SizedBox(height: 4),
                       Text(
                         l10n.auth_tagline,
-                        style: context.text.bodyMedium!
-                            .copyWith(color: palette.textSecondary),
+                        style: context.text.bodyMedium!.copyWith(
+                          color: palette.textSecondary,
+                        ),
                       ),
                       const SizedBox(height: 32),
-                      SegmentedButton<_AuthMode>(
-                        showSelectedIcon: false,
-                        expandedInsets: EdgeInsets.zero,
+                      SegmentedToggle<_AuthMode>(
+                        key: const ValueKey('auth_mode'),
+                        expand: true,
+                        height: 44,
                         segments: [
-                          ButtonSegment(
-                            value: _AuthMode.signIn,
-                            label: Text(l10n.auth_signIn),
-                          ),
-                          ButtonSegment(
-                            value: _AuthMode.signUp,
-                            label: Text(l10n.auth_signUp),
-                          ),
+                          (_AuthMode.signIn, l10n.auth_signIn),
+                          (_AuthMode.signUp, l10n.auth_signUp),
                         ],
-                        selected: {_mode},
-                        onSelectionChanged: (s) => _setMode(s.first),
+                        value: _mode,
+                        onChanged: _setMode,
                       ),
                       const SizedBox(height: 24),
                       ..._fields(signUp),
@@ -229,9 +233,11 @@ class _AuthScreenState extends State<AuthScreen> {
                                   color: palette.textSecondary,
                                 ),
                               )
-                            : Text(signUp
-                                ? l10n.auth_submitSignUp
-                                : l10n.auth_submitSignIn),
+                            : Text(
+                                signUp
+                                    ? l10n.auth_submitSignUp
+                                    : l10n.auth_submitSignIn,
+                              ),
                       ),
                       const SizedBox(height: 24),
                       Center(
@@ -266,6 +272,19 @@ class _AuthScreenState extends State<AuthScreen> {
         size: 20,
       ),
       onPressed: () => setState(() => _obscure = !_obscure),
+    );
+    final confirmVisibility = IconButton(
+      key: const ValueKey('auth_confirm_visibility'),
+      tooltip: _obscureConfirm
+          ? l10n.auth_showPasswordRepeat
+          : l10n.auth_hidePasswordRepeat,
+      icon: Icon(
+        _obscureConfirm
+            ? Icons.visibility_outlined
+            : Icons.visibility_off_outlined,
+        size: 20,
+      ),
+      onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
     );
 
     const gap = SizedBox(height: 16);
@@ -304,8 +323,7 @@ class _AuthScreenState extends State<AuthScreen> {
         label: l10n.auth_password,
         obscureText: _obscure,
         suffix: visibility,
-        textInputAction:
-            signUp ? TextInputAction.next : TextInputAction.done,
+        textInputAction: signUp ? TextInputAction.next : TextInputAction.done,
         autofillHints: [
           signUp ? AutofillHints.newPassword : AutofillHints.password,
         ],
@@ -322,7 +340,8 @@ class _AuthScreenState extends State<AuthScreen> {
           key: const ValueKey('auth_confirm'),
           controller: _confirmController,
           label: l10n.auth_passwordRepeat,
-          obscureText: _obscure,
+          obscureText: _obscureConfirm,
+          suffix: confirmVisibility,
           textInputAction: TextInputAction.next,
           validator: (v) => v != _passwordController.text
               ? l10n.auth_errorPasswordMismatch

@@ -7,6 +7,7 @@ import 'package:studyplan/core/database/app_database.dart';
 import 'package:studyplan/core/network/api_client.dart';
 import 'package:studyplan/core/settings/app_settings.dart';
 import 'package:studyplan/core/theme/app_theme.dart';
+import 'package:studyplan/core/widgets/ui/segmented_toggle.dart';
 import 'package:studyplan/features/auth/presentation/screens/auth_screen.dart';
 import 'package:studyplan/l10n/generated/app_localizations.dart';
 
@@ -20,18 +21,20 @@ Future<AppDatabase> _pump(
   addTearDown(tester.view.reset);
 
   final db = AppDatabase(NativeDatabase.memory());
-  await tester.pumpWidget(MaterialApp(
-    theme: theme ?? AppTheme.light(),
-    locale: const Locale('ru'),
-    supportedLocales: kSupportedLocales,
-    localizationsDelegates: const [
-      AppLocalizations.delegate,
-      GlobalMaterialLocalizations.delegate,
-      GlobalWidgetsLocalizations.delegate,
-      GlobalCupertinoLocalizations.delegate,
-    ],
-    home: AuthScreen(apiClient: ApiClient(), db: db, settings: AppSettings()),
-  ));
+  await tester.pumpWidget(
+    MaterialApp(
+      theme: theme ?? AppTheme.light(),
+      locale: const Locale('ru'),
+      supportedLocales: kSupportedLocales,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      home: AuthScreen(apiClient: ApiClient(), db: db, settings: AppSettings()),
+    ),
+  );
   await tester.pumpAndSettle();
   return db;
 }
@@ -42,16 +45,19 @@ Future<void> _dispose(WidgetTester tester, AppDatabase db) async {
 }
 
 String _inviteText(WidgetTester tester) => tester
-    .widget<EditableText>(find.descendant(
-      of: find.byKey(const ValueKey('auth_invite')),
-      matching: find.byType(EditableText),
-    ))
+    .widget<EditableText>(
+      find.descendant(
+        of: find.byKey(const ValueKey('auth_invite')),
+        matching: find.byType(EditableText),
+      ),
+    )
     .controller
     .text;
 
 void main() {
-  testWidgets('sign-in shows no demo accounts and no prefilled values',
-      (tester) async {
+  testWidgets('sign-in shows no demo accounts and no prefilled values', (
+    tester,
+  ) async {
     SharedPreferences.setMockInitialValues({});
     final db = await _pump(tester, size: const Size(360, 740));
 
@@ -62,15 +68,18 @@ void main() {
     for (final demo in ['headman', 'student@', 'password123', 'Демо', 'демо']) {
       expect(find.textContaining(demo), findsNothing);
     }
-    for (final field in tester.widgetList<EditableText>(find.byType(EditableText))) {
+    for (final field in tester.widgetList<EditableText>(
+      find.byType(EditableText),
+    )) {
       expect(field.controller.text, isEmpty);
     }
     expect(tester.takeException(), isNull);
     await _dispose(tester, db);
   });
 
-  testWidgets('sign-up invite code is empty without a pending invite',
-      (tester) async {
+  testWidgets('sign-up invite code is empty without a pending invite', (
+    tester,
+  ) async {
     SharedPreferences.setMockInitialValues({});
     final db = await _pump(tester);
 
@@ -86,8 +95,9 @@ void main() {
     await _dispose(tester, db);
   });
 
-  testWidgets('sign-up invite code is prefilled from pending_invite_code',
-      (tester) async {
+  testWidgets('sign-up invite code is prefilled from pending_invite_code', (
+    tester,
+  ) async {
     SharedPreferences.setMockInitialValues({
       AuthScreen.pendingInviteKey: 'ABC123',
     });
@@ -97,6 +107,57 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(_inviteText(tester), 'ABC123');
+    await _dispose(tester, db);
+  });
+
+  testWidgets('mode switch is the core segmented toggle', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final db = await _pump(tester);
+
+    expect(find.byWidgetPredicate((w) => w is SegmentedButton), findsNothing);
+    final toggle = find.byKey(const ValueKey('auth_mode'));
+    expect(toggle, findsOneWidget);
+    expect(tester.widget(toggle), isA<SegmentedToggle<Object?>>());
+    // Stretched to the form width.
+    expect(
+      tester.getSize(toggle).width,
+      tester.getSize(find.byType(Form)).width,
+    );
+    await _dispose(tester, db);
+  });
+
+  testWidgets('confirm password has its own visibility toggle', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final db = await _pump(tester);
+
+    await tester.tap(find.text('Регистрация'));
+    await tester.pumpAndSettle();
+
+    bool obscured(String key) => tester
+        .widget<EditableText>(
+          find.descendant(
+            of: find.byKey(ValueKey(key)),
+            matching: find.byType(EditableText),
+          ),
+        )
+        .obscureText;
+
+    final toggle = find.byKey(const ValueKey('auth_confirm_visibility'));
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('auth_confirm')),
+        matching: toggle,
+      ),
+      findsOneWidget,
+    );
+    expect(find.byTooltip('Показать повтор пароля'), findsOneWidget);
+    expect(obscured('auth_confirm'), isTrue);
+
+    await tester.tap(toggle);
+    await tester.pumpAndSettle();
+    expect(obscured('auth_confirm'), isFalse);
+    expect(obscured('auth_password'), isTrue);
+    expect(find.byTooltip('Скрыть повтор пароля'), findsOneWidget);
     await _dispose(tester, db);
   });
 

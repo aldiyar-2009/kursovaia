@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:studyplan/core/theme/theme_ext.dart';
+import 'package:studyplan/core/widgets/ui/app_sheet.dart'
+    show kPrimaryButtonHeight;
+import 'package:studyplan/core/widgets/ui/content_column.dart';
 import 'package:studyplan/features/lms/data/lms_importer.dart';
 import 'package:studyplan/l10n/generated/app_localizations.dart';
 
@@ -17,14 +20,14 @@ class LmsImportResultView extends StatelessWidget {
   final VoidCallback onDone;
 
   static String kindLabel(AppLocalizations l, String kind) => switch (kind) {
-        'courses' => l.lms_kindCourses,
-        'grades' => l.lms_kindGrades,
-        'deadlines' => l.lms_kindDeadlines,
-        'classes' => l.lms_kindSchedule,
-        'materials' => l.lms_kindMaterials,
-        'profile' => l.lms_kindProfile,
-        _ => kind,
-      };
+    'courses' => l.lms_kindCourses,
+    'grades' => l.lms_kindGrades,
+    'deadlines' => l.lms_kindDeadlines,
+    'classes' => l.lms_kindSchedule,
+    'materials' => l.lms_kindMaterials,
+    'profile' => l.lms_kindProfile,
+    _ => kind,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -46,52 +49,63 @@ class LmsImportResultView extends StatelessWidget {
       child: Column(
         children: [
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
-              children: [
-                Text(
-                  partial ? l.lms_resultPartialTitle : l.lms_resultTitle,
-                  style: t.titleLarge,
+            child: LayoutBuilder(
+              builder: (context, constraints) => ListView(
+                padding: contentPadding(
+                  constraints.maxWidth,
+                  top: 24,
+                  bottom: 24,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  partial ? l.lms_resultPartialLead : l.lms_resultLead,
-                  style: t.bodyMedium!.copyWith(color: p.textSecondary),
-                ),
-                const SizedBox(height: 24),
-                _Group(
-                  children: [
-                    for (final (label, value) in counts)
-                      _CountRow(label: label, value: value),
-                  ],
-                ),
-                if (partial) ...[
-                  const SizedBox(height: 24),
+                children: [
                   Text(
-                    l.lms_errorsHeader,
-                    style: t.labelMedium!.copyWith(color: p.textSecondary),
+                    partial ? l.lms_resultPartialTitle : l.lms_resultTitle,
+                    style: t.titleLarge,
                   ),
                   const SizedBox(height: 8),
+                  Text(
+                    partial ? l.lms_resultPartialLead : l.lms_resultLead,
+                    style: t.bodyMedium!.copyWith(color: p.textSecondary),
+                  ),
+                  const SizedBox(height: 24),
                   _Group(
                     children: [
-                      for (final e in summary.errors.entries)
-                        _ErrorRow(
-                          label: kindLabel(l, e.key),
-                          detail: e.value,
-                        ),
+                      for (final (label, value) in counts)
+                        _CountRow(label: label, value: value),
                     ],
                   ),
+                  if (partial) ...[
+                    const SizedBox(height: 24),
+                    Text(
+                      l.lms_errorsHeader,
+                      style: t.labelMedium!.copyWith(color: p.textSecondary),
+                    ),
+                    const SizedBox(height: 8),
+                    _Group(
+                      children: [
+                        for (final e in summary.errors.entries)
+                          _ErrorRow(
+                            label: kindLabel(l, e.key),
+                            detail: e.value,
+                          ),
+                      ],
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
-          Padding(
+          ContentColumn(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
             child: Row(
               children: [
                 if (partial) ...[
                   Expanded(
                     child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(
+                          kPrimaryButtonHeight,
+                        ),
+                      ),
                       onPressed: onRetry,
                       child: Text(l.lms_retry),
                     ),
@@ -100,6 +114,9 @@ class LmsImportResultView extends StatelessWidget {
                 ],
                 Expanded(
                   child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(kPrimaryButtonHeight),
+                    ),
                     onPressed: onDone,
                     child: Text(l.lms_done),
                   ),

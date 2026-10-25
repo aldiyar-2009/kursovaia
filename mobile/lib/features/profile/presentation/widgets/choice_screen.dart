@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:studyplan/core/theme/theme_ext.dart';
+import 'package:studyplan/core/widgets/ui/content_column.dart';
 import 'package:studyplan/core/widgets/ui/list_row.dart';
 
 /// One option of a [ChoiceScreen].
@@ -32,18 +33,17 @@ class ChoiceScreen<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: ListenableBuilder(
-        listenable: listenable,
-        builder: (context, _) {
-          final current = selected();
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-            children: [
-              Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 640),
-                  child: ListGroup(children: [
+      appBar: ContentAppBar(title: Text(title)),
+      body: LayoutBuilder(
+        builder: (context, constraints) => ListenableBuilder(
+          listenable: listenable,
+          builder: (context, _) {
+            final current = selected();
+            return ListView(
+              padding: contentPadding(constraints.maxWidth, top: 8, bottom: 32),
+              children: [
+                ListGroup(
+                  children: [
                     for (final option in options)
                       Semantics(
                         selected: option.value == current,
@@ -52,18 +52,21 @@ class ChoiceScreen<T> extends StatelessWidget {
                           title: option.title,
                           subtitle: option.subtitle,
                           trailing: option.value == current
-                              ? Icon(Icons.check,
-                                  color: context.palette.accent, size: 20)
+                              ? Icon(
+                                  Icons.check,
+                                  color: context.palette.accent,
+                                  size: 20,
+                                )
                               : null,
                           onTap: () => onSelected(option.value),
                         ),
                       ),
-                  ]),
+                  ],
                 ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
     );
   }

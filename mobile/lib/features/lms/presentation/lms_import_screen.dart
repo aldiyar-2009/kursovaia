@@ -7,6 +7,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:studyplan/core/database/app_database.dart';
 import 'package:studyplan/core/sync/sync_bloc.dart';
 import 'package:studyplan/core/theme/theme_ext.dart';
+import 'package:studyplan/core/widgets/ui/app_sheet.dart'
+    show kPrimaryButtonHeight;
+import 'package:studyplan/core/widgets/ui/content_column.dart';
 import 'package:studyplan/features/lms/data/lms_importer.dart';
 import 'package:studyplan/features/lms/data/moodle_ajax_parser.dart';
 
@@ -44,11 +47,7 @@ Future<LmsImportSummary?> openLmsImport(
 enum _Step { intro, login, loading, result, error }
 
 class LmsImportScreen extends StatefulWidget {
-  const LmsImportScreen({
-    super.key,
-    required this.db,
-    required this.userId,
-  });
+  const LmsImportScreen({super.key, required this.db, required this.userId});
 
   final AppDatabase db;
   final String userId;
@@ -134,7 +133,9 @@ class _LmsImportScreenState extends State<LmsImportScreen> {
         _close();
       },
       child: Scaffold(
-        appBar: _step == _Step.login ? _browserBar(context) : _plainBar(context),
+        appBar: _step == _Step.login
+            ? _browserBar(context)
+            : _plainBar(context),
         body: Stack(
           fit: StackFit.expand,
           children: [
@@ -162,7 +163,7 @@ class _LmsImportScreenState extends State<LmsImportScreen> {
   }
 
   PreferredSizeWidget _plainBar(BuildContext context) {
-    return AppBar(
+    return ContentAppBar(
       automaticallyImplyLeading: false,
       leading: _step == _Step.loading
           ? null
@@ -276,80 +277,83 @@ class LmsImportIntroView extends StatelessWidget {
       child: Column(
         children: [
           Expanded(
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 560),
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
-                  children: [
-                    Text(l.lms_introHeading, style: t.titleLarge),
-                    const SizedBox(height: 8),
-                    Text(
-                      l.lms_introLead,
-                      style: t.bodyMedium!.copyWith(color: p.textSecondary),
-                    ),
-                    const SizedBox(height: 20),
-                    for (final (title, hint) in kinds)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        child: Text.rich(
-                          TextSpan(
-                            children: [
-                              TextSpan(
-                                text: title,
-                                style: t.bodyMedium!
-                                    .copyWith(fontWeight: FontWeight.w600),
+            child: LayoutBuilder(
+              builder: (context, constraints) => ListView(
+                padding: contentPadding(
+                  constraints.maxWidth,
+                  top: 24,
+                  bottom: 24,
+                ),
+                children: [
+                  Text(l.lms_introHeading, style: t.titleLarge),
+                  const SizedBox(height: 8),
+                  Text(
+                    l.lms_introLead,
+                    style: t.bodyMedium!.copyWith(color: p.textSecondary),
+                  ),
+                  const SizedBox(height: 20),
+                  for (final (title, hint) in kinds)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: title,
+                              style: t.bodyMedium!.copyWith(
+                                fontWeight: FontWeight.w600,
                               ),
-                              TextSpan(
-                                text: '  $hint',
-                                style: t.bodyMedium!
-                                    .copyWith(color: p.textSecondary),
+                            ),
+                            TextSpan(
+                              text: '  $hint',
+                              style: t.bodyMedium!.copyWith(
+                                color: p.textSecondary,
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
-                    const SizedBox(height: 24),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: p.surfaceMuted,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(Icons.lock_outline,
-                              size: 20, color: p.textSecondary),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(l.lms_privacy, style: t.bodyMedium),
-                          ),
-                        ],
-                      ),
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      l.lms_introNote,
-                      style: t.bodySmall!.copyWith(color: p.textTertiary),
+                  const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: p.surfaceMuted,
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                  ],
-                ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.lock_outline,
+                          size: 20,
+                          color: p.textSecondary,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(l.lms_privacy, style: t.bodyMedium),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    l.lms_introNote,
+                    style: t.bodySmall!.copyWith(color: p.textTertiary),
+                  ),
+                ],
               ),
             ),
           ),
-          Padding(
+          ContentColumn(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 528),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: onSignIn,
-                  child: Text(l.lms_signIn),
-                ),
+            child: FilledButton(
+              key: const ValueKey('lms_sign_in'),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(kPrimaryButtonHeight),
               ),
+              onPressed: onSignIn,
+              child: Text(l.lms_signIn),
             ),
           ),
         ],
@@ -423,14 +427,18 @@ class _MessageView extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(title,
-                  textAlign: TextAlign.center, style: context.text.titleMedium),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: context.text.titleMedium,
+              ),
               const SizedBox(height: 8),
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: context.text.bodyMedium!
-                    .copyWith(color: p.textSecondary),
+                style: context.text.bodyMedium!.copyWith(
+                  color: p.textSecondary,
+                ),
               ),
               const SizedBox(height: 24),
               SizedBox(

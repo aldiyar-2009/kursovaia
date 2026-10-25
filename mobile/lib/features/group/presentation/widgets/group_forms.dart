@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:studyplan/core/theme/theme_ext.dart';
+import 'package:studyplan/core/widgets/ui/app_sheet.dart';
 import 'package:studyplan/core/widgets/ui/app_text_field.dart';
 import 'package:studyplan/core/widgets/ui/empty_state.dart';
 import 'package:studyplan/features/group/data/group_repository.dart';
@@ -94,11 +95,8 @@ Future<GroupSnapshot?> _showFormSheet(
   String? initialValue,
   List<TextInputFormatter>? formatters,
 }) {
-  return showModalBottomSheet<GroupSnapshot>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    constraints: const BoxConstraints(maxWidth: 560),
+  return showAppSheetCustom<GroupSnapshot>(
+    context,
     builder: (_) => _FormSheet(
       title: title,
       fieldLabel: fieldLabel,
@@ -138,8 +136,9 @@ class _FormSheet extends StatefulWidget {
 }
 
 class _FormSheetState extends State<_FormSheet> {
-  late final TextEditingController _controller =
-      TextEditingController(text: widget.initialValue);
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initialValue,
+  );
   bool _busy = false;
   String? _error;
 
@@ -175,40 +174,30 @@ class _FormSheetState extends State<_FormSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final insets = MediaQuery.viewInsetsOf(context).bottom;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16, 20, 16, 16 + insets),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(widget.title, style: context.text.titleMedium),
-          const SizedBox(height: 16),
-          AppTextField(
-            controller: _controller,
-            label: widget.fieldLabel,
-            hint: widget.fieldHint,
-            errorText: _error,
-            autofocus: true,
-            enabled: !_busy,
-            textInputAction: TextInputAction.done,
-            inputFormatters: [
-              LengthLimitingTextInputFormatter(widget.maxLength),
-              ...?widget.formatters,
-            ],
-            onSubmitted: (_) => _submit(),
-          ),
-          const SizedBox(height: 16),
-          FilledButton(
-            onPressed: _busy ? null : _submit,
-            child: _busy
-                ? const SizedBox.square(
-                    dimension: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(widget.submitLabel),
-          ),
+    return AppSheetLayout(
+      title: widget.title,
+      body: AppTextField(
+        controller: _controller,
+        label: widget.fieldLabel,
+        hint: widget.fieldHint,
+        errorText: _error,
+        autofocus: true,
+        enabled: !_busy,
+        textInputAction: TextInputAction.done,
+        inputFormatters: [
+          LengthLimitingTextInputFormatter(widget.maxLength),
+          ...?widget.formatters,
         ],
+        onSubmitted: (_) => _submit(),
+      ),
+      primaryAction: FilledButton(
+        onPressed: _busy ? null : _submit,
+        child: _busy
+            ? const SizedBox.square(
+                dimension: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Text(widget.submitLabel),
       ),
     );
   }
@@ -219,6 +208,5 @@ class _UpperCaseFormatter extends TextInputFormatter {
   TextEditingValue formatEditUpdate(
     TextEditingValue oldValue,
     TextEditingValue newValue,
-  ) =>
-      newValue.copyWith(text: newValue.text.toUpperCase());
+  ) => newValue.copyWith(text: newValue.text.toUpperCase());
 }
