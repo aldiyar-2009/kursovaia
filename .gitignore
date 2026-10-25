@@ -46,3 +46,6 @@ Thumbs.db
 mobile/lib/l10n/app_*.arb
 mobile/lib/l10n/generated/
 .claude/settings.local.json
+
+# Agent worktrees
+.claude/worktrees/

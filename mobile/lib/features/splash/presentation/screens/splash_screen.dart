@@ -95,6 +95,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         MainShellScreen(
           db: widget.db,
           apiClient: widget.apiClient,
+          settings: widget.settings,
           user: user,
           group: group,
         ),
@@ -103,6 +104,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       _navigateTo(
         AuthScreen(
           apiClient: widget.apiClient,
+          settings: widget.settings,
           db: widget.db,
         ),
       );

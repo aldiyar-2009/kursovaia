@@ -1,0 +1,35 @@
+{
+  "@@locale": "ru",
+  "nav_home": "Главная",
+  "nav_schedule": "Расписание",
+  "nav_tasks": "Задания",
+  "nav_grades": "Оценки",
+  "nav_more": "Ещё",
+  "nav_homeTitle": "Сегодня",
+  "nav_homeEmptyTitle": "Здесь будет ваш день",
+  "nav_homeEmptyMessage": "Следующая пара, ближайшие дедлайны и последние оценки появятся, когда вы добавите расписание.",
+  "nav_homeEmptyAction": "Добавить расписание",
+  "nav_group": "Группа",
+  "nav_groupNone": "Группа не выбрана",
+  "nav_groupEmptyTitle": "Вы пока не в группе",
+  "nav_groupEmptyMessage": "В группе можно публиковать общие дедлайны и делиться материалами с одногруппниками.",
+  "nav_campusMap": "Карта AITU",
+  "nav_profileSettings": "Профиль и настройки",
+  "nav_syncSection": "Синхронизация",
+  "nav_syncNow": "Синхронизировать",
+  "nav_syncDone": "Все изменения сохранены",
+  "nav_syncDoneAt": "Синхронизировано в {time}",
+  "@nav_syncDoneAt": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "nav_syncInProgress": "Синхронизация…",
+  "nav_syncPending": "{count, plural, one{{count} изменение ждёт отправки} few{{count} изменения ждут отправки} many{{count} изменений ждут отправки} other{{count} изменения ждут отправки}}",
+  "@nav_syncPending": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "nav_syncError": "Не удалось связаться с сервером"
+}

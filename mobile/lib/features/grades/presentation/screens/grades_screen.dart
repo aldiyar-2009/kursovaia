@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:studyplan/core/theme/app_colors.dart';
 import 'package:studyplan/features/grades/data/models/grade_models.dart';
 import 'package:studyplan/features/grades/data/services/aitu_data_service.dart';
-import 'package:studyplan/features/lms/presentation/widgets/lms_modal.dart';
 
 class GradesScreen extends StatefulWidget {
   final VoidCallback? onOpenSimulator;
@@ -187,19 +186,6 @@ class _GradesScreenState extends State<GradesScreen> {
               style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
             ),
           ],
-        ),
-        ElevatedButton.icon(
-          onPressed: () => LmsModal.show(context),
-          icon: const Icon(Icons.file_upload_outlined, size: 16),
-          label: const Text('Импорт', style: TextStyle(fontSize: 12)),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.elevated,
-            foregroundColor: AppColors.textPrimary,
-            side: const BorderSide(color: AppColors.border),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            elevation: 0,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          ),
         ),
       ],
     );

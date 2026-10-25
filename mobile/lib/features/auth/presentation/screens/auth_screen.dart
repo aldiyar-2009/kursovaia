@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:studyplan/core/database/app_database.dart';
 import 'package:studyplan/core/network/api_client.dart';
+import 'package:studyplan/core/settings/app_settings.dart';
 import 'package:studyplan/core/theme/app_colors.dart';
 import 'package:studyplan/core/widgets/server_config_dialog.dart';
 import 'package:studyplan/features/main_shell/presentation/screens/main_shell_screen.dart';
@@ -11,12 +12,14 @@ import 'package:studyplan/features/main_shell/presentation/screens/main_shell_sc
 class AuthScreen extends StatefulWidget {
   final ApiClient apiClient;
   final AppDatabase db;
+  final AppSettings settings;
   final VoidCallback? onLoginSuccess;
 
   const AuthScreen({
     super.key,
     required this.apiClient,
     required this.db,
+    required this.settings,
     this.onLoginSuccess,
   });
 
@@ -127,6 +130,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
               child: MainShellScreen(
                 db: widget.db,
                 apiClient: widget.apiClient,
+                settings: widget.settings,
                 user: user,
                 group: group,
               ),
@@ -208,6 +212,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
               child: MainShellScreen(
                 db: widget.db,
                 apiClient: widget.apiClient,
+                settings: widget.settings,
                 user: user,
                 group: group,
               ),
