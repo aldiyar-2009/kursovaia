@@ -1,0 +1,116 @@
+{
+  "@@locale": "ru",
+  "group_title": "Группа",
+  "group_emptyTitle": "Вы не в группе",
+  "group_emptyMessage": "Вступите в группу по коду от одногруппника или создайте свою, чтобы делиться дедлайнами и материалами.",
+  "group_create": "Создать группу",
+  "group_join": "Вступить по коду",
+  "group_createTitle": "Новая группа",
+  "group_createNameLabel": "Название",
+  "group_createNameHint": "Например, BDA-2601",
+  "group_createSubmit": "Создать",
+  "group_createDone": "Группа создана. Пригласите одногруппников по коду.",
+  "group_joinTitle": "Вступить в группу",
+  "group_joinCodeLabel": "Код приглашения",
+  "group_joinCodeHint": "6 символов",
+  "group_joinSubmit": "Вступить",
+  "group_joinDone": "Вы вступили в группу «{title}»",
+  "@group_joinDone": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "group_fieldRequired": "Заполните поле",
+  "group_errorCodeNotFound": "Группа с таким кодом не найдена",
+  "group_errorAlreadyMember": "Вы уже состоите в этой группе",
+  "group_errorOffline": "Нет соединения с сервером",
+  "group_errorGeneric": "Не удалось выполнить действие. Попробуйте ещё раз.",
+  "group_inviteSection": "Приглашение",
+  "group_inviteHint": "Одногруппники вводят этот код в разделе «Группа» или открывают ссылку.",
+  "group_copy": "Копировать",
+  "group_copied": "Код скопирован",
+  "group_invite": "Пригласить",
+  "group_inviteMessage": "Вступай в группу {title} в StudyPlan: код {code}\n{link}",
+  "@group_inviteMessage": {
+    "placeholders": {
+      "title": {"type": "String"},
+      "code": {"type": "String"},
+      "link": {"type": "String"}
+    }
+  },
+  "group_membersCount": "{count, plural, one{{count} участник} few{{count} участника} many{{count} участников} other{{count} участника}}",
+  "@group_membersCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "group_membersSection": "Участники",
+  "group_memberYou": "вы",
+  "group_membersUnavailable": "Список участников не загрузился",
+  "group_materials": "Материалы группы",
+  "group_leave": "Покинуть группу",
+  "group_leaveConfirmTitle": "Покинуть группу?",
+  "group_leaveConfirmMessage": "Групповые задания и материалы перестанут быть доступны. Вернуться можно по коду приглашения.",
+  "group_leaveConfirm": "Покинуть",
+  "group_leaveDone": "Вы покинули группу",
+  "group_offlineNotice": "Нет соединения. Показаны сохранённые данные.",
+  "group_materialsTitle": "Материалы",
+  "group_materialsTabGroup": "Группа",
+  "group_materialsTabLms": "LMS",
+  "group_materialsFilterAll": "Все",
+  "group_materialsNoGroupTitle": "Материалы доступны в группе",
+  "group_materialsNoGroupMessage": "Вступите в группу или создайте её, чтобы делиться материалами.",
+  "group_materialsEmptyTitle": "Материалов пока нет",
+  "group_materialsEmptyMessage": "Загрузите конспект, презентацию или задание — их увидят все участники группы.",
+  "group_materialsUpload": "Загрузить файл",
+  "group_materialsUploadTitle": "Новый материал",
+  "group_materialsUploadNameLabel": "Название",
+  "group_materialsUploadSubjectLabel": "Предмет",
+  "group_materialsNoSubject": "Без предмета",
+  "group_materialsUploadSubmit": "Загрузить",
+  "group_materialsUploadDone": "Материал загружен",
+  "group_materialsUploadFailed": "Не удалось загрузить файл",
+  "group_materialsFileTooLarge": "Файл слишком большой",
+  "group_materialsDownload": "Скачать",
+  "group_materialsDownloadDone": "Файл сохранён",
+  "group_materialsDownloadFailed": "Не удалось скачать файл",
+  "group_materialsDelete": "Удалить",
+  "group_materialsDeleteConfirmTitle": "Удалить материал?",
+  "group_materialsDeleteConfirmMessage": "«{title}» исчезнет у всех участников группы.",
+  "@group_materialsDeleteConfirmMessage": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "group_materialsDeleteDone": "Материал удалён",
+  "group_materialsDeleteFailed": "Не удалось удалить материал",
+  "group_materialsLoadFailed": "Не удалось загрузить материалы",
+  "group_materialsOfflineCached": "Нет соединения. Показан сохранённый список.",
+  "group_materialsLmsEmptyTitle": "Материалов из LMS нет",
+  "group_materialsLmsEmptyMessage": "Файлы и ссылки курсов появятся после импорта из LMS в профиле.",
+  "group_materialsLmsNoCourse": "Без курса",
+  "group_materialsLmsOpenFailed": "Не удалось открыть ссылку",
+  "group_materialsTypeFile": "Файл",
+  "group_materialsTypeFolder": "Папка",
+  "group_materialsTypeUrl": "Ссылка",
+  "group_materialsTypePage": "Страница",
+  "group_materialsTypeOther": "Материал",
+  "group_materialsSizeB": "{size} Б",
+  "@group_materialsSizeB": {
+    "placeholders": {
+      "size": {"type": "String"}
+    }
+  },
+  "group_materialsSizeKb": "{size} КБ",
+  "@group_materialsSizeKb": {
+    "placeholders": {
+      "size": {"type": "String"}
+    }
+  },
+  "group_materialsSizeMb": "{size} МБ",
+  "@group_materialsSizeMb": {
+    "placeholders": {
+      "size": {"type": "String"}
+    }
+  }
+}

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:studyplan/core/database/app_database.dart';
@@ -5,6 +6,7 @@ import 'package:studyplan/core/network/api_client.dart';
 import 'package:studyplan/core/services/notification_service.dart';
 import 'package:studyplan/core/settings/app_settings.dart';
 import 'package:studyplan/core/theme/app_theme.dart';
+import 'package:studyplan/features/group/data/group_repository.dart';
 import 'package:studyplan/features/splash/presentation/screens/splash_screen.dart';
 import 'package:studyplan/l10n/generated/app_localizations.dart';
 
@@ -16,6 +18,9 @@ void main() async {
 
   final settings = AppSettings();
   await settings.load();
+
+  // Web invite link `<server>/join/<code>`: keep the code for the join form.
+  if (kIsWeb) await GroupRepository.storePendingInviteFromPath(Uri.base.path);
 
   final db = AppDatabase();
   final apiClient = ApiClient();
