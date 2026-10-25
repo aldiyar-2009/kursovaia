@@ -62,6 +62,44 @@ describe('University course materials API', () => {
     assert.ok(list.body.materials.some((m) => m.id === res.body.material.id));
   });
 
+  it('upload without subject stores and returns null subject fields', async () => {
+    const res = await authed(studentToken).post('/api/materials/upload').send({ title: 'Без предмета' });
+    assert.equal(res.status, 201);
+    assert.equal(res.body.material.subject_code, null);
+    assert.equal(res.body.material.subject_title, null);
+
+    const row = await db('course_materials').where({ id: res.body.material.id }).first();
+    assert.equal(row.subject_code, null);
+    assert.equal(row.subject_title, null);
+
+    const list = await authed(studentToken).get('/api/materials');
+    const listed = list.body.materials.find((m) => m.id === res.body.material.id);
+    assert.equal(listed.subject_code, null);
+    assert.equal(listed.subject_title, null);
+  });
+
+  it('empty strings and legacy placeholders none / - are stored as null', async () => {
+    for (const [code, title] of [['none', '-'], ['', ''], ['  ', ' ']]) {
+      // eslint-disable-next-line no-await-in-loop
+      const res = await authed(studentToken)
+        .post('/api/materials/upload')
+        .send({ title: 'Плейсхолдер', subject_code: code, subject_title: title });
+      assert.equal(res.status, 201);
+      assert.equal(res.body.material.subject_code, null);
+      assert.equal(res.body.material.subject_title, null);
+      // eslint-disable-next-line no-await-in-loop
+      const row = await db('course_materials').where({ id: res.body.material.id }).first();
+      assert.equal(row.subject_code, null);
+      assert.equal(row.subject_title, null);
+    }
+  });
+
+  it('virtual upload without file_size does not invent a size', async () => {
+    const res = await authed(studentToken).post('/api/materials/upload').send({ title: 'Без размера' });
+    assert.equal(res.status, 201);
+    assert.equal(res.body.material.file_size, 0);
+  });
+
   it('student can delete own material', async () => {
     const create = await authed(studentToken)
       .post('/api/materials/upload')

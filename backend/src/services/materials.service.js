@@ -17,6 +17,17 @@ export async function listMaterials(user, query = {}) {
   return q;
 }
 
+/** Legacy client placeholders for "no subject". */
+const NO_SUBJECT_PLACEHOLDERS = new Set(['none', '-']);
+
+/** Trimmed subject value, or null when missing, empty or a legacy placeholder. */
+function optionalSubjectField(value) {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed || NO_SUBJECT_PLACEHOLDERS.has(trimmed.toLowerCase())) return null;
+  return trimmed;
+}
+
 export async function createMaterial(user, file, body) {
   const { title, subject_code, subject_title, category = 'lecture', description = null } = body;
 
@@ -37,14 +48,14 @@ export async function createMaterial(user, file, body) {
     id,
     group_id: user.group_id,
     uploader_id: user.id,
-    uploader_name: user.name || 'Студент',
-    subject_code: subject_code || 'py',
-    subject_title: subject_title || 'Introduction to Programming',
+    uploader_name: user.name,
+    subject_code: optionalSubjectField(subject_code),
+    subject_title: optionalSubjectField(subject_title),
     title: title.trim(),
     description: description ? description.trim() : null,
     file_name: originalName,
     file_path: file ? file.filename : `virtual_${id}.${ext}`,
-    file_size: file ? file.size : (Number(body.file_size) || 1024 * 1024),
+    file_size: file ? file.size : (Number(body.file_size) || 0),
     file_type: ext,
     category,
     created_at: now,
