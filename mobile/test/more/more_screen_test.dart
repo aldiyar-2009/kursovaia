@@ -13,6 +13,8 @@ import 'package:studyplan/features/main_shell/presentation/screens/main_shell_sc
 import 'package:studyplan/features/more/presentation/screens/more_screen.dart';
 import 'package:studyplan/l10n/generated/app_localizations.dart';
 
+import '../core/fake_sync_repository.dart';
+
 /// Pumps the shell (it provides the SyncBloc the More screen needs) and
 /// opens the «Ещё» tab.
 Future<AppDatabase> _pumpMore(WidgetTester tester, Size size) async {
@@ -39,6 +41,8 @@ Future<AppDatabase> _pumpMore(WidgetTester tester, Size size) async {
         settings: AppSettings(),
         user: const {'id': 'u1', 'name': 'Test User', 'email': 'u@example.com'},
         onLogout: () {},
+        // The shell syncs on start; a fake repository finishes at once.
+        syncRepository: FakeSyncRepository(db),
       ),
     ),
   );

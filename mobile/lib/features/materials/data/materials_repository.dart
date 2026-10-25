@@ -70,17 +70,53 @@ class MaterialsRepository {
     }
   }
 
+  /// Max length of `course_materials.subject_code` on the server.
+  static const subjectCodeMaxLength = 32;
+
+  /// Max length of `course_materials.subject_title` on the server.
+  static const subjectTitleMaxLength = 120;
+
+  /// Short, stable code for a subject title: lower-case letters and digits
+  /// joined by `-`, at most [subjectCodeMaxLength] characters. Never equal to
+  /// [GroupMaterial.noSubjectCode], which marks a material without subject.
+  static String subjectCodeFor(String subjectTitle) {
+    var code = subjectTitle
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^\p{L}\p{N}]+', unicode: true), '-')
+        .replaceAll(RegExp(r'^-+|-+$'), '');
+    if (code.length > subjectCodeMaxLength) {
+      code = code
+          .substring(0, subjectCodeMaxLength)
+          .replaceAll(RegExp(r'-+$'), '');
+    }
+    if (code.isEmpty) return 'subject';
+    if (code == GroupMaterial.noSubjectCode) return 'subject-$code';
+    return code;
+  }
+
+  /// The subject title cut to [subjectTitleMaxLength] characters.
+  static String subjectTitleFor(String subjectTitle) {
+    final title = subjectTitle.trim();
+    return title.length <= subjectTitleMaxLength
+        ? title
+        : title.substring(0, subjectTitleMaxLength).trimRight();
+  }
+
   Future<void> upload({
     required Uint8List bytes,
     required String fileName,
     required String title,
     String? subjectTitle,
   }) async {
+    final subject = subjectTitle?.trim();
+    final hasSubject = subject != null && subject.isNotEmpty;
     final form = FormData.fromMap({
       'title': title.trim(),
-      'subject_code': subjectTitle ?? GroupMaterial.noSubjectCode,
+      'subject_code':
+          hasSubject ? subjectCodeFor(subject) : GroupMaterial.noSubjectCode,
       // Never empty: the server replaces an empty subject with a default one.
-      'subject_title': subjectTitle ?? '-',
+      'subject_title': hasSubject ? subjectTitleFor(subject) : '-',
       'file': MultipartFile.fromBytes(bytes, filename: fileName),
     });
     try {

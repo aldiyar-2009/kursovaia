@@ -9,12 +9,17 @@ import 'package:studyplan/core/settings/app_settings.dart';
 import 'package:studyplan/core/theme/app_theme.dart';
 import 'package:studyplan/core/widgets/ui/segmented_toggle.dart';
 import 'package:studyplan/features/auth/presentation/screens/auth_screen.dart';
+import 'package:studyplan/core/sync/sync_bloc.dart';
 import 'package:studyplan/l10n/generated/app_localizations.dart';
+
+import '../group/group_test_utils.dart' show fakeApi;
 
 Future<AppDatabase> _pump(
   WidgetTester tester, {
   Size size = const Size(390, 900),
   ThemeData? theme,
+  ApiClient? apiClient,
+  VoidCallback? onLoginSuccess,
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
@@ -32,7 +37,12 @@ Future<AppDatabase> _pump(
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: AuthScreen(apiClient: ApiClient(), db: db, settings: AppSettings()),
+      home: AuthScreen(
+        apiClient: apiClient ?? ApiClient(),
+        db: db,
+        settings: AppSettings(),
+        onLoginSuccess: onLoginSuccess,
+      ),
     ),
   );
   await tester.pumpAndSettle();
@@ -107,6 +117,52 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(_inviteText(tester), 'ABC123');
+    await _dispose(tester, db);
+  });
+
+  testWidgets('sign-up with an invite code resets the sync cursor', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      AuthScreen.pendingInviteKey: 'ABC123',
+      kSyncCursorPrefsKey: 99999,
+    });
+    Map<String, dynamic>? body;
+    final api = fakeApi({
+      'POST /auth/register': (o) {
+        body = o.data as Map<String, dynamic>;
+        return {
+          'token': 'jwt',
+          'user': {'id': 'u9', 'name': 'New'},
+          'group': {'id': 'g1', 'title': 'BDA-2601'},
+        };
+      },
+    });
+    var signedIn = false;
+    final db = await _pump(
+      tester,
+      apiClient: api,
+      onLoginSuccess: () => signedIn = true,
+    );
+
+    await tester.tap(find.text('Регистрация'));
+    await tester.pumpAndSettle();
+    Finder field(String key) => find.descendant(
+          of: find.byKey(ValueKey(key)),
+          matching: find.byType(EditableText),
+        );
+    await tester.enterText(field('auth_name'), 'New');
+    await tester.enterText(field('auth_email'), 'new@example.com');
+    await tester.enterText(field('auth_password'), 'password123');
+    await tester.enterText(field('auth_confirm'), 'password123');
+    await tester.tap(find.text('Создать аккаунт'));
+    await tester.pumpAndSettle();
+
+    expect(signedIn, isTrue);
+    expect(body?['invite_code'], 'ABC123');
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getInt(kSyncCursorPrefsKey), 0);
+    expect(prefs.getString(AuthScreen.pendingInviteKey), isNull);
     await _dispose(tester, db);
   });
 

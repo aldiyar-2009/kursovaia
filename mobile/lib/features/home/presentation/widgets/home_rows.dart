@@ -7,6 +7,7 @@ import 'package:studyplan/core/widgets/ui/list_row.dart';
 import 'package:studyplan/core/widgets/ui/status_label.dart';
 import 'package:studyplan/features/grades/domain/grade_calculator.dart';
 import 'package:studyplan/features/grades/domain/grading_rules.dart';
+import 'package:studyplan/features/grades/presentation/grades_presentation.dart';
 import 'package:studyplan/features/home/domain/home_agenda.dart';
 
 String _localeTag(BuildContext context) =>
@@ -279,7 +280,8 @@ class GradeRow extends StatelessWidget {
       _ when grade.total >= kIncreasedScholarship => p.success,
       _ => p.textPrimary,
     };
-    final total = NumberFormat('0.0', _localeTag(context)).format(grade.total);
+    // Same format as the Grades tab (one decimal, dot, like the LMS).
+    final total = formatScore(grade.total);
     return ListRow(
       title: grade.title,
       onTap: onTap,

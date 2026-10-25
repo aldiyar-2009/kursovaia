@@ -199,7 +199,9 @@ void main() {
     expect(find.text('Оценки'), findsOneWidget);
     expect(find.text('Базы данных'), findsOneWidget);
     expect(find.text('A-'), findsOneWidget);
-    expect(find.text('91,5'), findsOneWidget);
+    // Same dot format as the Grades tab, even in the ru locale.
+    expect(find.text('91.5'), findsOneWidget);
+    expect(find.text('91,5'), findsNothing);
     expect(find.text('Без оценки'), findsNothing);
     await _dispose(tester, db);
   });

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:studyplan/core/database/app_database.dart';
 import 'package:studyplan/core/network/api_client.dart';
@@ -14,6 +13,7 @@ import 'package:studyplan/features/grades/presentation/screens/grades_screen.dar
 import 'package:studyplan/features/lms/presentation/lms_import_screen.dart';
 import 'package:studyplan/features/group/presentation/screens/group_screen.dart';
 import 'package:studyplan/features/home/presentation/screens/home_screen.dart';
+import 'package:studyplan/features/main_shell/data/session_cleanup.dart';
 import 'package:studyplan/features/more/presentation/screens/more_screen.dart';
 import 'package:studyplan/features/schedule/presentation/screens/schedule_screen.dart';
 import 'package:studyplan/features/tasks/presentation/screens/tasks_screen.dart';
@@ -34,6 +34,10 @@ class MainShellScreen extends StatefulWidget {
   final Map<String, dynamic>? group;
   final VoidCallback? onLogout;
 
+  /// Sync repository override (tests); built from [db] and [apiClient]
+  /// otherwise.
+  final SyncRepository? syncRepository;
+
   const MainShellScreen({
     super.key,
     required this.db,
@@ -42,13 +46,15 @@ class MainShellScreen extends StatefulWidget {
     required this.user,
     this.group,
     this.onLogout,
+    this.syncRepository,
   });
 
   @override
   State<MainShellScreen> createState() => _MainShellScreenState();
 }
 
-class _MainShellScreenState extends State<MainShellScreen> {
+class _MainShellScreenState extends State<MainShellScreen>
+    with WidgetsBindingObserver {
   AppTab _tab = AppTab.home;
   late final SyncRepository _syncRepo;
   late final SyncBloc _syncBloc;
@@ -60,17 +66,42 @@ class _MainShellScreenState extends State<MainShellScreen> {
     super.initState();
     _currentUser = Map<String, dynamic>.from(widget.user);
     _group = widget.group;
-    _syncRepo = SyncRepository(db: widget.db, apiClient: widget.apiClient);
+    _syncRepo = widget.syncRepository ??
+        SyncRepository(db: widget.db, apiClient: widget.apiClient);
     _syncBloc = SyncBloc(
       repository: _syncRepo,
       userId: _currentUser['id'] as String,
     );
+    WidgetsBinding.instance.addObserver(this);
+    // Sync as soon as the shell is on screen (fresh login, app start).
+    WidgetsBinding.instance.addPostFrameCallback((_) => _requestSync());
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _syncBloc.close();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _requestSync();
+  }
+
+  /// SyncBloc ignores the request while a sync is already running.
+  void _requestSync() {
+    if (!mounted || _syncBloc.isClosed) return;
+    _syncBloc.add(SyncTriggered());
+  }
+
+  /// Group joined, created or left (from Group, More or Materials): rows the
+  /// group published before the change are older than the sync cursor, so
+  /// the cursor is reset and a full sync runs.
+  void _onGroupChanged(Map<String, dynamic>? group) {
+    final changedGroup = group?['id'] != _group?['id'];
+    setState(() => _group = group);
+    if (changedGroup) resyncAfterGroupChange(_syncBloc);
   }
 
   /// Opens the Microsoft/LMS import flow; null where import is unavailable (web).
@@ -91,15 +122,14 @@ class _MainShellScreenState extends State<MainShellScreen> {
   }
 
   Future<void> _logout() async {
+    widget.apiClient.updateToken(null);
+    // Token, sync cursor, caches and the local database of this user.
+    // TODO(coordinator): pass `clearWebSession: clearLmsWebSession`.
+    await clearLocalSession(widget.db);
     if (widget.onLogout != null) {
       widget.onLogout!();
       return;
     }
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('jwt_token');
-    await prefs.remove('user_data');
-    await prefs.remove('group_data');
-    widget.apiClient.updateToken(null);
 
     if (!mounted) return;
     Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
@@ -142,7 +172,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
                 apiClient: widget.apiClient,
                 userId: userId,
                 group: _group,
-                onGroupChanged: (g) => setState(() => _group = g),
+                onGroupChanged: _onGroupChanged,
               ),
             ),
           ),
@@ -179,7 +209,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
           group: _group,
           onLogout: _logout,
           onUserUpdated: (updated) => setState(() => _currentUser = updated),
-          onGroupChanged: (g) => setState(() => _group = g),
+          onGroupChanged: _onGroupChanged,
           onImportLms: _lmsImportAction(userId),
         );
     }
