@@ -7,6 +7,7 @@ import morgan from 'morgan';
 import { env } from './config/env.js';
 import { errorHandler, notFoundHandler } from './middleware/error.js';
 import { router } from './routes/index.js';
+import { openAppPage, requestOrigin } from './utils/open-app.js';
 
 /** Flutter web build (`flutter build web`) next to the backend, if present. */
 function findWebDist() {
@@ -29,6 +30,14 @@ export function createApp({ webDist = findWebDist() } = {}) {
   if (!env.isTest) app.use(morgan('dev'));
 
   app.use('/api', router);
+
+  // Target of the startup QR code: Android opens the installed app (which picks up
+  // this server's address), other devices get the web version.
+  app.get('/open', (req, res) => {
+    const origin = requestOrigin(req);
+    if (!origin || !/android/i.test(req.get('user-agent') ?? '')) return res.redirect('/');
+    res.type('html').send(openAppPage(origin));
+  });
 
   if (webDist) {
     // `root` keeps send's dotfile check on the requested file only, not on the build directory path.

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:studyplan/core/database/app_database.dart';
 import 'package:studyplan/core/network/api_client.dart';
+import 'package:studyplan/core/services/connect_link.dart';
 import 'package:studyplan/core/settings/app_settings.dart';
 import 'package:studyplan/core/theme/theme_ext.dart';
 import 'package:studyplan/features/auth/presentation/screens/auth_screen.dart';
@@ -36,7 +37,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _initializeApp() async {
     final prefs = await SharedPreferences.getInstance();
-    final savedBaseUrl = prefs.getString('api_base_url')?.trim();
+    final savedBaseUrl = prefs.getString(kApiBaseUrlPrefsKey)?.trim();
     if (savedBaseUrl != null && savedBaseUrl.isNotEmpty) {
       final staleLocalhost = kIsWeb &&
           savedBaseUrl.contains('127.0.0.1') &&

@@ -50,6 +50,8 @@ dart run build_runner build --delete-conflicting-outputs   # regenerate app_data
 
 If `mobile/build/web` exists, the backend serves it statically at `/` (and `/join/:code` for invite links), so `flutter build web` + `npm start` gives a single-origin deployment.
 
+On start the server prints a QR code for `http://<LAN IP>:<port>/open`: on Android that page (`src/utils/open-app.js`) opens the installed app via an intent URL `studyplan://connect?server=<origin>` (handled in `MainActivity.kt` → `core/services/connect_link.dart`, which saves `<origin>/api` as the API address), falling back to the web version; other devices are redirected to `/`.
+
 ## Architecture
 
 ### Offline-first sync (the core design)

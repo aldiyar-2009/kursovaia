@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:studyplan/core/network/api_client.dart';
+import 'package:studyplan/core/services/connect_link.dart';
 import 'package:studyplan/core/theme/theme_ext.dart';
 import 'package:studyplan/core/widgets/ui/app_text_field.dart';
 
@@ -114,7 +115,7 @@ class _ServerConfigDialogState extends State<ServerConfigDialog> {
     }
     widget.apiClient.updateBaseUrl(newUrl);
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('api_base_url', newUrl);
+    await prefs.setString(kApiBaseUrlPrefsKey, newUrl);
     widget.onSaved?.call();
     if (!mounted) return;
     final messenger = ScaffoldMessenger.maybeOf(context);
