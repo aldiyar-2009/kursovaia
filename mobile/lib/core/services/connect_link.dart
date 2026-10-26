@@ -24,44 +24,57 @@ String? apiBaseUrlFromConnectLink(String link) {
 }
 
 /// Receives connect links from the server's startup QR code (Android only;
-/// see `MainActivity.kt`) and saves the server address, so the app is set up
-/// without typing the laptop's IP.
+/// see `MainActivity.kt`). Any page can open such a link, so a link is never
+/// applied on its own: it becomes [pending] and is saved only after the user
+/// confirms the shown address ([confirm]), see `ConnectLinkPrompt`.
 class ConnectLinkService {
   static const _channel = MethodChannel('studyplan/connect_link');
 
   final ApiClient apiClient;
 
-  /// Called after a link that arrived while the app was running is applied.
-  final VoidCallback? onApplied;
+  /// Base URL from the last link, waiting for confirmation.
+  final ValueNotifier<String?> pending = ValueNotifier(null);
 
-  ConnectLinkService({required this.apiClient, this.onApplied});
+  ConnectLinkService({required this.apiClient});
 
   static bool get isSupported =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
-  /// Applies the link the app was launched with (before the splash screen
-  /// reads the saved address) and listens for later ones.
+  /// Picks up the link the app was launched with and listens for later ones.
   Future<void> start() async {
     if (!isSupported) return;
     _channel.setMethodCallHandler((call) async {
       if (call.method == 'onLink' && call.arguments is String) {
-        if (await apply(call.arguments as String)) onApplied?.call();
+        receive(call.arguments as String);
       }
     });
     try {
       final initial = await _channel.invokeMethod<String>('getInitialLink');
-      if (initial != null) await apply(initial);
+      if (initial != null) receive(initial);
     } on PlatformException catch (_) {
     } on MissingPluginException catch (_) {}
   }
 
-  /// Saves the server from [link]; false when the link is not a connect link.
-  Future<bool> apply(String link) async {
+  /// Queues [link] for confirmation; false when it is not a connect link or
+  /// points at the server already in use.
+  bool receive(String link) {
     final baseUrl = apiBaseUrlFromConnectLink(link);
-    if (baseUrl == null) return false;
+    if (baseUrl == null || baseUrl == apiClient.dio.options.baseUrl) {
+      return false;
+    }
+    pending.value = baseUrl;
+    return true;
+  }
+
+  /// Saves the pending server as the API address.
+  Future<void> confirm() async {
+    final baseUrl = pending.value;
+    if (baseUrl == null) return;
+    pending.value = null;
     apiClient.updateBaseUrl(baseUrl);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(kApiBaseUrlPrefsKey, baseUrl);
-    return true;
   }
+
+  void dismiss() => pending.value = null;
 }

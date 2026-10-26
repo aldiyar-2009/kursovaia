@@ -476,6 +476,14 @@
   "profile_serverUnreachable": "Не удалось подключиться к серверу",
   "profile_serverInvalid": "Введите адрес, начинающийся с http:// или https://",
   "profile_serverSaved": "Адрес сервера сохранён",
+  "connect_title": "Подключиться к серверу?",
+  "connect_body": "{host}\n\nПодключайтесь только к серверу, которому доверяете: на него будут отправляться ваш пароль и данные.",
+  "@connect_body": {
+    "placeholders": {
+      "host": { "type": "String" }
+    }
+  },
+  "connect_confirm": "Подключиться",
   "grades_summaryNoTotals": "нет итоговых оценок",
   "grades_headerTotalAfterFinal": "Итог появится после финального экзамена",
   "home_stepGradesManual": "Добавить оценки",

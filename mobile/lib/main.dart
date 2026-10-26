@@ -6,6 +6,7 @@ import 'package:studyplan/core/network/api_client.dart';
 import 'package:studyplan/core/services/connect_link.dart';
 import 'package:studyplan/core/services/notification_service.dart';
 import 'package:studyplan/core/settings/app_settings.dart';
+import 'package:studyplan/core/widgets/connect_link_prompt.dart';
 import 'package:studyplan/core/theme/app_theme.dart';
 import 'package:studyplan/features/group/data/group_repository.dart';
 import 'package:studyplan/features/splash/presentation/screens/splash_screen.dart';
@@ -26,35 +27,31 @@ void main() async {
   final db = AppDatabase();
   final apiClient = ApiClient();
 
-  // Opened from the server's QR code: save the server address first.
-  await ConnectLinkService(
+  // Opened from the server's QR code: the address is saved after the user
+  // confirms it (ConnectLinkPrompt).
+  final connectLinks = ConnectLinkService(apiClient: apiClient);
+  await connectLinks.start();
+
+  runApp(StudyPlanApp(
+    db: db,
     apiClient: apiClient,
-    onApplied: () {
-      final messengerContext = _messengerKey.currentContext;
-      if (messengerContext == null) return;
-      _messengerKey.currentState?.showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(messengerContext).profile_serverSaved),
-        ),
-      );
-    },
-  ).start();
-
-  runApp(StudyPlanApp(db: db, apiClient: apiClient, settings: settings));
+    settings: settings,
+    connectLinks: connectLinks,
+  ));
 }
-
-final _messengerKey = GlobalKey<ScaffoldMessengerState>();
 
 class StudyPlanApp extends StatelessWidget {
   final AppDatabase db;
   final ApiClient apiClient;
   final AppSettings settings;
+  final ConnectLinkService? connectLinks;
 
   const StudyPlanApp({
     super.key,
     required this.db,
     required this.apiClient,
     required this.settings,
+    this.connectLinks,
   });
 
   @override
@@ -62,7 +59,10 @@ class StudyPlanApp extends StatelessWidget {
     return ListenableBuilder(
       listenable: settings,
       builder: (context, _) => MaterialApp(
-        scaffoldMessengerKey: _messengerKey,
+        builder: connectLinks == null
+            ? null
+            : (context, child) =>
+                ConnectLinkPrompt(service: connectLinks!, child: child!),
         onGenerateTitle: (context) => AppLocalizations.of(context).common_appName,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light(),
