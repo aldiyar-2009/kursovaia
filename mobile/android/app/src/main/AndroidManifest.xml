@@ -1,8 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Backend API, LMS import WebView and campus map tiles. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- usesCleartextTraffic: the backend is usually reached over plain HTTP on the
+         local network (http://<laptop-ip>:3000). Remove once it is served over HTTPS. -->
     <application
-        android:label="studyplan"
+        android:label="StudyPlan"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"
