@@ -11,9 +11,16 @@ export function requestOrigin(req) {
 }
 
 /**
- * Chrome intent URL: opens the installed app with `studyplan://connect?server=<origin>`
- * (the app saves `<origin>/api` as its API address), or falls back to the web
- * version at `origin` when the app is not installed.
+ * Link the installed app handles; the app asks to confirm, then saves
+ * `<origin>/api` as its API address. Used directly on iOS.
+ */
+export function connectLink(origin) {
+  return `studyplan://connect?server=${encodeURIComponent(origin)}`;
+}
+
+/**
+ * Chrome intent URL for the same link: opens the installed app, or falls back
+ * to the web version at `origin` when the app is not installed.
  */
 export function androidIntentUrl(origin) {
   const fallback = encodeURIComponent(`${origin}/`);
@@ -21,11 +28,19 @@ export function androidIntentUrl(origin) {
     + `#Intent;scheme=studyplan;package=${ANDROID_PACKAGE};S.browser_fallback_url=${fallback};end`;
 }
 
+/** `android`, `ios` or null (other devices get the web version). */
+export function mobilePlatform(userAgent = '') {
+  if (/android/i.test(userAgent)) return 'android';
+  if (/iphone|ipad|ipod/i.test(userAgent)) return 'ios';
+  return null;
+}
+
 const escapeHtml = (s) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
-/** Page served at `/open` on Android: tries the app right away, with buttons as a fallback. */
-export function openAppPage(origin) {
-  const intent = escapeHtml(androidIntentUrl(origin));
+/** Page served at `/open` on a phone: tries the app right away, with buttons as a fallback. */
+export function openAppPage(origin, platform) {
+  const appUrl = platform === 'ios' ? connectLink(origin) : androidIntentUrl(origin);
+  const intent = escapeHtml(appUrl);
   const web = escapeHtml(`${origin}/`);
   return `<!doctype html>
 <html lang="ru">
@@ -54,7 +69,7 @@ export function openAppPage(origin) {
   <a class="primary" href="${intent}">Открыть приложение</a>
   <a class="secondary" href="${web}">Открыть веб-версию</a>
 </main>
-<script>location.replace(${JSON.stringify(androidIntentUrl(origin)).replace(/</g, '\\u003c')});</script>
+<script>location.replace(${JSON.stringify(appUrl).replace(/</g, '\\u003c')});</script>
 </body>
 </html>`;
 }

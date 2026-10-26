@@ -7,7 +7,22 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Studyplan</string>
+	<string>StudyPlan</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.studyplan.connect</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>studyplan</string>
+			</array>
+		</dict>
+	</array>
+	<key>FlutterDeepLinkingEnabled</key>
+	<false/>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>StudyPlan connects to the StudyPlan server on your local Wi-Fi network.</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

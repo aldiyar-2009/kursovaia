@@ -27,10 +27,20 @@ test('GET /open on Android serves the open-app page for the requested host', asy
   assert.ok(res.text.includes('intent://connect?server=http%3A%2F%2F192.168.0.10%3A3000'));
 });
 
-test('GET /open elsewhere redirects to the web app', async () => {
+test('GET /open on iPhone opens the app through the studyplan:// link', async () => {
   const res = await request(createApp({ webDist: null }))
     .get('/open')
-    .set('User-Agent', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)');
+    .set('Host', '192.168.0.10:3000')
+    .set('User-Agent', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148');
+  assert.equal(res.status, 200);
+  assert.ok(res.text.includes('studyplan://connect?server=http%3A%2F%2F192.168.0.10%3A3000'));
+  assert.ok(!res.text.includes('intent://'));
+});
+
+test('GET /open on a computer redirects to the web app', async () => {
+  const res = await request(createApp({ webDist: null }))
+    .get('/open')
+    .set('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/130');
   assert.equal(res.status, 302);
   assert.equal(res.headers.location, '/');
 });

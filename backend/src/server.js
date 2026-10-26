@@ -42,7 +42,7 @@ async function main() {
 
     if (primary) {
       console.log(`\n  📸 Отсканируйте QR-код камерой смартфона:`);
-      console.log(`     откроется приложение StudyPlan (если установлен APK) или веб-версия`);
+      console.log(`     откроется приложение StudyPlan (Android или iPhone) или веб-версия`);
       qrcode.generate(`${primary.url}/open`, { small: true });
     }
     console.log(`  💡 Примечание: смартфон и ПК должны быть в одной Wi-Fi сети.\n`);

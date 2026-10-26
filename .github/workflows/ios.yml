@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - redesign
     paths:
       - 'mobile/**'
       - '.github/workflows/ios.yml'
@@ -29,6 +30,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          flutter-version: '3.47.2'
           cache: true
 
       - name: Verify Flutter Installation

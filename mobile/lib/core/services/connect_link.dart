@@ -23,8 +23,8 @@ String? apiBaseUrlFromConnectLink(String link) {
   return '${server.origin}/api';
 }
 
-/// Receives connect links from the server's startup QR code (Android only;
-/// see `MainActivity.kt`). Any page can open such a link, so a link is never
+/// Receives connect links from the server's startup QR code (Android and iOS;
+/// see `MainActivity.kt` and `ConnectLinkPlugin` in `AppDelegate.swift`). Any page can open such a link, so a link is never
 /// applied on its own: it becomes [pending] and is saved only after the user
 /// confirms the shown address ([confirm]), see `ConnectLinkPrompt`.
 class ConnectLinkService {
@@ -38,7 +38,9 @@ class ConnectLinkService {
   ConnectLinkService({required this.apiClient});
 
   static bool get isSupported =>
-      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS);
 
   /// Picks up the link the app was launched with and listens for later ones.
   Future<void> start() async {
