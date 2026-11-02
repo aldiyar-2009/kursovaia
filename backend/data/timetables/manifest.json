@@ -1,0 +1,9 @@
+{
+  "comment": "Источники расписания. Периоды — из «Графика учебного процесса Колледжа 2026-27». Лист действует с valid_from по valid_to включительно.",
+  "sources": [
+    { "file": "2026-27_s1_course2-3.xlsx", "sheet": "2 курс", "valid_from": "2026-09-01", "valid_to": "2026-11-23", "label": "II курс, I семестр" },
+    { "file": "2026-27_s1_course2-3.xlsx", "sheet": "3 курс", "valid_from": "2026-09-01", "valid_to": "2026-10-12", "label": "III курс, I семестр (теория)" },
+    { "file": "2026-27_s1_course3_po_production.xlsx", "sheet": "3 курс", "valid_from": "2026-10-13", "valid_to": "2026-11-09", "label": "III курс, производственное обучение" },
+    { "file": "2026-27_s1_course3_po_production.xlsx", "sheet": "ПО2511", "valid_from": "2026-10-13", "valid_to": "2026-11-09", "label": "ПО2511, производственное обучение" }
+  ]
+}

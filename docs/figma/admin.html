@@ -1,0 +1,85 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>StudyPlan admin</title><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font:14px/1.5 Inter,system-ui,sans-serif;background:#E9E9EC;color:#18181B;padding:40px;display:flex;flex-direction:column;gap:40px;-webkit-font-smoothing:antialiased}
+.screen{width:1280px;height:800px;background:#FFFFFF;position:relative;overflow:hidden}
+h1,h2,h3{font-weight:600}
+h1{font-size:20px;line-height:28px}h2{font-size:20px;line-height:28px}h3{font-size:16px;line-height:24px}
+.muted{color:#71717A}
+.hint{font-size:12px;color:#71717A;line-height:18px}
+.brand{font-weight:600;font-size:16px;line-height:24px}
+.brand span{color:#71717A;font-weight:400}
+.btn{display:inline-flex;align-items:center;justify-content:center;font-weight:500;border-radius:8px;padding:8px 14px;border:1px solid #E4E4E7;background:#FFFFFF;color:#18181B;line-height:20px;white-space:nowrap}
+.btn.primary{background:#18181B;color:#FFFFFF;border-color:#18181B;font-weight:600}
+.btn.ghost{background:transparent}
+.btn.small{padding:4px 10px;font-size:13px;line-height:18px}
+.btn.danger{color:#B91C1C}
+.btn.disabled{opacity:.5}
+.btn.center{width:100%}
+.login{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.login-card{width:360px;display:flex;flex-direction:column;gap:14px;padding:28px;border:1px solid #E4E4E7;border-radius:12px;background:#FFFFFF}
+.lbl{display:flex;flex-direction:column;gap:4px;font-weight:500;font-size:13px;line-height:18px}
+.input{min-height:38px;border:1px solid #E4E4E7;border-radius:8px;padding:8px 10px;font-size:14px;font-weight:400;line-height:20px;background:#FFFFFF;color:#18181B;display:flex;align-items:center}
+.input.ph{color:#71717A}
+.input.select{justify-content:space-between;width:180px;flex:none}
+.lbl .input.select{width:100%}
+.input.focus{border:2px solid #18181B}
+.input.textarea{height:136px;align-items:flex-start}
+.error-space{height:14px}
+.shell{display:flex;height:100%}
+.sidebar{width:220px;flex:none;border-right:1px solid #E4E4E7;padding:20px 12px;display:flex;flex-direction:column;gap:20px}
+.sidebar .brand{padding:0 8px}
+.sidebar nav{display:flex;flex-direction:column;gap:2px}
+.nav-item{padding:8px;border-radius:8px;line-height:20px}
+.nav-item.active{background:#F7F7F8;font-weight:600}
+.sidebar-footer{margin-top:auto;display:flex;flex-direction:column;gap:8px;padding:0 8px}
+.me{font-size:13px;color:#71717A;line-height:19px}
+.content{flex:1;padding:24px 32px;min-width:0}
+.view{display:flex;flex-direction:column;gap:16px;max-width:1100px}
+.view-head{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:38px}
+.toolbar{display:flex;gap:8px}
+.grow{flex:1}
+.stats{display:flex;flex-wrap:wrap;border:1px solid #E4E4E7;border-radius:8px;overflow:hidden}
+.stat{width:20%;padding:16px;border-right:1px solid #E4E4E7;border-bottom:1px solid #E4E4E7;min-height:94px}
+.stat:nth-child(5n){border-right:0}
+.stat:nth-child(n+6){border-bottom:0}
+.stat.empty-cell{border-right:0}
+.stat .value{font-size:28px;font-weight:600;line-height:36px}
+.stat .label{color:#71717A;font-size:13px;line-height:20px}
+.table-wrap{border:1px solid #E4E4E7;border-radius:8px;overflow:hidden}
+.tr{display:flex;align-items:center;border-bottom:1px solid #E4E4E7;min-height:49px}
+.tr.last{border-bottom:0}
+.tr>div{padding:10px;display:flex;align-items:center;gap:6px}
+.th{min-height:38px}
+.th>div{font-weight:500;color:#71717A;font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+.c1{width:171px}.c2{width:171px}.c3{width:132px}.c4{width:104px}.c5{width:89px}.c6{width:96px}.c7{flex:1;justify-content:flex-end}
+.badge{display:inline-flex;font-size:12px;font-weight:500;padding:1px 8px;border:1px solid #E4E4E7;border-radius:999px;line-height:18px}
+.badge.ok{color:#15803D}.badge.warn{color:#A16207}.badge.bad{color:#B91C1C}
+.rows{border:1px solid #E4E4E7;border-radius:8px}
+.row{padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.row-head{display:flex;align-items:center;gap:8px}
+.row-title{font-weight:600}
+.row-meta{font-size:12px;color:#71717A}
+.row-actions{display:flex;gap:6px}
+.overlay{position:absolute;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center}
+.dialog{width:440px;background:#FFFFFF;border:1px solid #E4E4E7;border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:12px}
+.dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+.check{display:flex;align-items:center;gap:8px;font-weight:500;font-size:13px}
+.box{width:13px;height:13px;border:1px solid #71717A;border-radius:3px}
+</style></head><body><section class="screen" id="Вход администратора"><div class="login"><div class="login-card"><div class="brand">StudyPlan</div><h1>Вход для администратора</h1><div class="lbl">Email<div class="input ">admin@studyplan.dev</div></div><div class="lbl">Пароль<div class="input ">••••••••••</div></div><div class="error-space"></div><div class="btn primary center">Войти</div><p class="hint">Доступ только для пользователей с ролью «Администратор».</p></div></div></section>
+<section class="screen" id="Сводка"><div class="shell"><aside class="sidebar"><div class="brand">StudyPlan <span>admin</span></div><nav><div class="nav-item active">Сводка</div><div class="nav-item">Пользователи</div><div class="nav-item">Объявления</div></nav><div class="sidebar-footer"><div class="me">Администратор · admin@studyplan.dev</div><div class="btn ghost center">Выйти</div></div></aside><main class="content"><div class="view"><header class="view-head"><h2>Сводка</h2></header><div class="stats"><div class="stat"><div class="value">2</div><div class="label">Пользователи</div></div><div class="stat"><div class="value">1</div><div class="label">Администраторы</div></div><div class="stat"><div class="value">0</div><div class="label">Заблокированы</div></div><div class="stat"><div class="value">1</div><div class="label">Демо-аккаунты</div></div><div class="stat"><div class="value">1</div><div class="label">Группы</div></div><div class="stat"><div class="value">6</div><div class="label">Задания</div></div><div class="stat"><div class="value">1</div><div class="label">Объявления</div></div><div class="stat"><div class="value">1</div><div class="label">Опубликовано</div></div><div class="stat empty-cell"></div><div class="stat empty-cell"></div></div></div></main></div></section>
+<section class="screen" id="Пользователи"><div class="shell"><aside class="sidebar"><div class="brand">StudyPlan <span>admin</span></div><nav><div class="nav-item">Сводка</div><div class="nav-item active">Пользователи</div><div class="nav-item">Объявления</div></nav><div class="sidebar-footer"><div class="me">Администратор · admin@studyplan.dev</div><div class="btn ghost center">Выйти</div></div></aside><main class="content"><div class="view"><header class="view-head"><h2>Пользователи</h2><div class="btn primary">Добавить пользователя</div></header>
+<div class="toolbar"><div class="input grow ph">Поиск по имени или email</div><div class="input select">Все роли<svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z" fill="#18181B"/></svg></div><div class="input select">Любой статус<svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z" fill="#18181B"/></svg></div></div>
+<div class="table-wrap"><div class="tr th"><div class="c1">Имя</div><div class="c2">Email</div><div class="c3">Роль</div><div class="c4">Группа</div><div class="c5">Статус</div><div class="c6">Создан</div><div class="c7"></div></div>
+<div class="tr"><div class="c1">Demo Student <span class="badge warn">демо</span></div><div class="c2">—</div><div class="c3">Пользователь</div><div class="c4">Demo group</div><div class="c5"><span class="badge ok">Активен</span></div><div class="c6">01.11.2026</div><div class="c7"><span class="btn small">Изменить</span><span class="btn small danger">Заблокировать</span></div></div>
+<div class="tr last"><div class="c1">Администратор</div><div class="c2">admin@studyplan.dev</div><div class="c3">Администратор</div><div class="c4">—</div><div class="c5"><span class="badge ok">Активен</span></div><div class="c6">01.11.2026</div><div class="c7"><span class="btn small">Изменить</span><span class="btn small danger disabled">Заблокировать</span></div></div></div></div></main></div></section>
+<section class="screen" id="Диалог пользователя"><div class="shell"><aside class="sidebar"><div class="brand">StudyPlan <span>admin</span></div><nav><div class="nav-item">Сводка</div><div class="nav-item active">Пользователи</div><div class="nav-item">Объявления</div></nav><div class="sidebar-footer"><div class="me">Администратор · admin@studyplan.dev</div><div class="btn ghost center">Выйти</div></div></aside><main class="content"><div class="view"><header class="view-head"><h2>Пользователи</h2><div class="btn primary">Добавить пользователя</div></header>
+<div class="toolbar"><div class="input grow ph">Поиск по имени или email</div><div class="input select">Все роли<svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z" fill="#18181B"/></svg></div><div class="input select">Любой статус<svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z" fill="#18181B"/></svg></div></div>
+<div class="table-wrap"><div class="tr th"><div class="c1">Имя</div><div class="c2">Email</div><div class="c3">Роль</div><div class="c4">Группа</div><div class="c5">Статус</div><div class="c6">Создан</div><div class="c7"></div></div>
+<div class="tr"><div class="c1">Demo Student <span class="badge warn">демо</span></div><div class="c2">—</div><div class="c3">Пользователь</div><div class="c4">Demo group</div><div class="c5"><span class="badge ok">Активен</span></div><div class="c6">01.11.2026</div><div class="c7"><span class="btn small">Изменить</span><span class="btn small danger">Заблокировать</span></div></div>
+<div class="tr last"><div class="c1">Администратор</div><div class="c2">admin@studyplan.dev</div><div class="c3">Администратор</div><div class="c4">—</div><div class="c5"><span class="badge ok">Активен</span></div><div class="c6">01.11.2026</div><div class="c7"><span class="btn small">Изменить</span><span class="btn small danger disabled">Заблокировать</span></div></div></div></div></main></div><div class="overlay"><div class="dialog"><h3>Новый пользователь</h3><div class="lbl">Имя<div class="input focus"></div></div><div class="lbl">Email<div class="input "></div></div><div class="lbl">Роль<div class="input select">Пользователь<svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z" fill="#18181B"/></svg></div></div><div class="lbl">Пароль<div class="input "></div></div><div class="dialog-actions"><span class="btn ghost">Отмена</span><span class="btn primary">Сохранить</span></div></div></div></section>
+<section class="screen" id="Объявления"><div class="shell"><aside class="sidebar"><div class="brand">StudyPlan <span>admin</span></div><nav><div class="nav-item">Сводка</div><div class="nav-item">Пользователи</div><div class="nav-item active">Объявления</div></nav><div class="sidebar-footer"><div class="me">Администратор · admin@studyplan.dev</div><div class="btn ghost center">Выйти</div></div></aside><main class="content"><div class="view"><header class="view-head"><h2>Объявления</h2><div class="btn primary">Новое объявление</div></header>
+<p class="muted">Опубликованные объявления показываются на главном экране мобильного приложения.</p>
+<div class="rows"><div class="row"><div class="row-head"><span class="row-title">Неделя рубежного контроля</span><span class="badge ok">Опубликовано</span></div><div class="row-body">С 10 ноября проходит Endterm. Проверьте расписание и дедлайны в приложении.</div><div class="row-meta">Автор: Администратор · создано 01.11.2026, 00:41 · опубликовано 01.11.2026, 00:41</div><div class="row-actions"><span class="btn small">Снять с публикации</span><span class="btn small">Изменить</span><span class="btn small danger">Удалить</span></div></div></div></div></main></div></section>
+<section class="screen" id="Диалог объявления"><div class="shell"><aside class="sidebar"><div class="brand">StudyPlan <span>admin</span></div><nav><div class="nav-item">Сводка</div><div class="nav-item">Пользователи</div><div class="nav-item active">Объявления</div></nav><div class="sidebar-footer"><div class="me">Администратор · admin@studyplan.dev</div><div class="btn ghost center">Выйти</div></div></aside><main class="content"><div class="view"><header class="view-head"><h2>Объявления</h2><div class="btn primary">Новое объявление</div></header>
+<p class="muted">Опубликованные объявления показываются на главном экране мобильного приложения.</p>
+<div class="rows"><div class="row"><div class="row-head"><span class="row-title">Неделя рубежного контроля</span><span class="badge ok">Опубликовано</span></div><div class="row-body">С 10 ноября проходит Endterm. Проверьте расписание и дедлайны в приложении.</div><div class="row-meta">Автор: Администратор · создано 01.11.2026, 00:41 · опубликовано 01.11.2026, 00:41</div><div class="row-actions"><span class="btn small">Снять с публикации</span><span class="btn small">Изменить</span><span class="btn small danger">Удалить</span></div></div></div></div></main></div><div class="overlay"><div class="dialog"><h3>Новое объявление</h3><div class="lbl">Заголовок<div class="input ">Изменение расписания</div></div><div class="lbl">Текст<div class="input textarea focus">Пары 5 ноября переносятся на 7 ноября.</div></div><div class="check"><span class="box"></span>Опубликовать сразу</div><div class="dialog-actions"><span class="btn ghost">Отмена</span><span class="btn primary">Сохранить</span></div></div></div></section></body></html>

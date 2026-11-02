@@ -10,6 +10,7 @@ import 'package:studyplan/core/widgets/ui/section_header.dart';
 import 'package:studyplan/features/grades/domain/grade_calculator.dart';
 import 'package:studyplan/features/grades/presentation/grades_presentation.dart';
 import 'package:studyplan/features/grades/presentation/screens/course_detail_screen.dart';
+import 'package:studyplan/features/grades/presentation/screens/grade_analytics_screen.dart';
 import 'package:studyplan/features/grades/presentation/widgets/course_form_sheet.dart';
 import 'package:studyplan/features/grades/presentation/widgets/course_row.dart';
 import 'package:studyplan/features/grades/presentation/widgets/grades_summary.dart';
@@ -65,6 +66,15 @@ class _GradesScreenState extends State<GradesScreen> {
     );
   }
 
+  void _openAnalytics() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            GradeAnalyticsScreen(db: widget.db, userId: widget.userId),
+      ),
+    );
+  }
+
   void _addManual() {
     CourseFormSheet.show(context, db: widget.db, userId: widget.userId);
   }
@@ -81,6 +91,13 @@ class _GradesScreenState extends State<GradesScreen> {
           appBar: ContentAppBar(
             title: Text(l10n.grades_title),
             actions: [
+              if (hasCourses)
+                IconButton(
+                  key: const ValueKey('grades_analytics'),
+                  tooltip: l10n.analytics_open,
+                  icon: const Icon(Icons.insights_outlined),
+                  onPressed: _openAnalytics,
+                ),
               if (hasCourses && _canImport)
                 IconButton(
                   tooltip: l10n.grades_refreshLms,

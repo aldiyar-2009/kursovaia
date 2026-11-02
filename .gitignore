@@ -49,3 +49,6 @@ mobile/lib/l10n/generated/
 
 # Agent worktrees
 .claude/worktrees/
+
+# Release APK copied for installing on a phone
+/StudyPlan.apk

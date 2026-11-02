@@ -4,11 +4,23 @@ import qrcode from 'qrcode-terminal';
 import { createApp } from './app.js';
 import { closeDb, db } from './config/db.js';
 import { env } from './config/env.js';
+import { refreshEvents } from './services/events.service.js';
+import { importIfEmpty } from './services/timetable.service.js';
+
+const EVENTS_REFRESH_MS = 30 * 60_000;
 
 async function main() {
   // Apply pending migrations automatically so `npm start` just works.
   const [, pending] = await db.migrate.latest();
   if (pending.length) console.log(`[db] applied migrations: ${pending.join(', ')}`);
+
+  // College timetable: imported from data/timetables on the first start.
+  try {
+    const imported = await importIfEmpty(db);
+    if (imported) console.log(`[timetable] imported lessons: ${imported}`);
+  } catch (err) {
+    console.error('[timetable] import failed:', err.message);
+  }
 
   const app = createApp();
   const server = http.createServer(app);
@@ -48,8 +60,17 @@ async function main() {
     console.log(`  💡 Примечание: смартфон и ПК должны быть в одной Wi-Fi сети.\n`);
   });
 
+  // University events from Telegram: 5 pages of history now, then the latest page
+  // every 30 minutes. Failures are only logged (refreshEvents never throws per channel).
+  const refreshQuietly = (pages) => refreshEvents({ pages })
+    .catch((err) => console.error('[events] refresh failed:', err.message));
+  refreshQuietly(5);
+  const eventsTimer = setInterval(() => refreshQuietly(1), EVENTS_REFRESH_MS);
+  eventsTimer.unref();
+
   const shutdown = async (signal) => {
     console.log(`\n[server] ${signal} received, shutting down...`);
+    clearInterval(eventsTimer);
     server.close();
     await closeDb();
     process.exit(0);

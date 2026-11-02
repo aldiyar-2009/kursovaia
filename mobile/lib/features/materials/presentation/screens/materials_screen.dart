@@ -44,6 +44,9 @@ class MaterialsScreen extends StatefulWidget {
   /// URL opener for LMS materials; the external browser by default.
   final OpenUrlFn? openUrl;
 
+  /// False in the college edition: only group materials, no LMS tab.
+  final bool showLms;
+
   const MaterialsScreen({
     super.key,
     required this.db,
@@ -53,6 +56,7 @@ class MaterialsScreen extends StatefulWidget {
     this.onGroupChanged,
     this.initialTab = 0,
     this.openUrl,
+    this.showLms = true,
   });
 
   @override
@@ -60,7 +64,7 @@ class MaterialsScreen extends StatefulWidget {
 }
 
 class _MaterialsScreenState extends State<MaterialsScreen> {
-  late int _tab = widget.initialTab.clamp(0, 1);
+  late int _tab = widget.showLms ? widget.initialTab.clamp(0, 1) : 0;
   late String? _groupId = widget.groupId;
   final _groupTabKey = GlobalKey<_GroupMaterialsTabState>();
 
@@ -88,19 +92,20 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ContentColumn(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: SegmentedToggle<int>(
-              key: const ValueKey('materials_tabs'),
-              expand: true,
-              segments: [
-                (0, l10n.group_materialsTabGroup),
-                (1, l10n.group_materialsTabLms),
-              ],
-              value: _tab,
-              onChanged: (tab) => setState(() => _tab = tab),
+          if (widget.showLms)
+            ContentColumn(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+              child: SegmentedToggle<int>(
+                key: const ValueKey('materials_tabs'),
+                expand: true,
+                segments: [
+                  (0, l10n.group_materialsTabGroup),
+                  (1, l10n.group_materialsTabLms),
+                ],
+                value: _tab,
+                onChanged: (tab) => setState(() => _tab = tab),
+              ),
             ),
-          ),
           Expanded(
             // IndexedStack keeps the group list (and its key for the upload
             // action) alive while the LMS tab is shown.

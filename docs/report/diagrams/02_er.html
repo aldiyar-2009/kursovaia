@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>ER-диаграмма</title>
+<link rel="stylesheet" href="diag.css"></head>
+<body><div id="d" style="width:1720px;height:2150px"></div>
+<script src="diag.js"></script>
+<script>
+const { root, arrow, text } = D;
+const ROW = 30, HEAD = 44, PAD = 10, W = 440;
+const COLS = [40, 640, 1240];
+
+// [key, name, type]
+const T = {
+  course_materials: [['PK', 'id', 'uuid'], ['FK', 'group_id', 'uuid'], ['FK', 'uploader_id', 'uuid'], ['', 'title', 'varchar(200)'], ['', 'subject_title', 'varchar(120)'], ['', 'file_name', 'varchar(255)'], ['', 'file_path', 'varchar(255)'], ['', 'file_size', 'int'], ['', 'category', 'varchar(32)'], ['', 'created_at, updated_at', 'bigint']],
+  subjects: [['PK', 'id', 'uuid'], ['FK', 'user_id', 'uuid'], ['', 'title', 'varchar(160)'], ['', 'teacher_name', 'varchar(160)'], ['', 'color_hex', 'varchar(9)'], ['', 'is_deleted', 'boolean'], ['', 'updated_at', 'bigint'], ['', 'server_updated_at', 'bigint']],
+  lessons: [['PK', 'id', 'uuid'], ['FK', 'subject_id', 'uuid'], ['FK', 'user_id', 'uuid'], ['', 'day_of_week', 'smallint'], ['', 'start_time, end_time', 'varchar(5)'], ['', 'classroom', 'varchar(64)'], ['', 'lesson_type', 'varchar(16)'], ['', 'is_even_week', 'boolean'], ['', 'specific_date', 'varchar(10)'], ['', 'is_cancelled', 'boolean'], ['', 'is_deleted', 'boolean'], ['', 'updated_at, server_updated_at', 'bigint']],
+  announcements: [['PK', 'id', 'uuid'], ['', 'title', 'varchar(200)'], ['', 'body', 'text'], ['', 'is_published', 'boolean'], ['', 'published_at', 'bigint'], ['FK', 'author_id', 'uuid'], ['', 'created_at, updated_at', 'bigint']],
+  groups: [['PK', 'id', 'uuid'], ['', 'title', 'varchar(64)'], ['', 'invite_code (UQ)', 'varchar(16)'], ['', 'semester', 'int'], ['', 'semester_start', 'varchar(10)'], ['', 'created_by', 'uuid'], ['', 'created_at, updated_at', 'bigint']],
+  users: [['PK', 'id', 'uuid'], ['', 'email (UQ)', 'varchar(255)'], ['', 'password_hash', 'varchar(255)'], ['', 'name', 'varchar(120)'], ['', 'role (user | admin)', 'varchar(16)'], ['', 'is_blocked', 'boolean'], ['', 'is_demo', 'boolean'], ['FK', 'group_id', 'uuid'], ['', 'created_at, updated_at', 'bigint']],
+  lms_courses: [['PK', 'id', 'uuid'], ['FK', 'user_id', 'uuid'], ['(FK)', 'subject_id', 'uuid'], ['', 'source', 'varchar(8)'], ['', 'lms_course_id', 'int'], ['', 'title', 'varchar(255)'], ['', 'credits', 'int'], ['', 'register_midterm', 'double'], ['', 'register_endterm', 'double'], ['', 'final_exam, total', 'double'], ['', 'grade_items_json', 'text'], ['', 'is_deleted', 'boolean'], ['', 'updated_at, server_updated_at', 'bigint']],
+  tasks: [['PK', 'id', 'uuid'], ['FK', 'user_id', 'uuid'], ['FK', 'group_id', 'uuid'], ['(FK)', 'subject_id', 'uuid'], ['', 'title', 'varchar(255)'], ['', 'description', 'text'], ['', 'due_date', 'bigint'], ['', 'priority', 'smallint'], ['', 'status', 'varchar(16)'], ['', 'is_group', 'boolean'], ['', 'is_deleted', 'boolean'], ['', 'updated_at, server_updated_at', 'bigint']],
+  subtasks: [['PK', 'id', 'uuid'], ['FK', 'task_id', 'uuid'], ['FK', 'user_id', 'uuid'], ['', 'title', 'varchar(255)'], ['', 'is_done', 'boolean'], ['', 'position', 'int'], ['', 'is_deleted', 'boolean'], ['', 'updated_at, server_updated_at', 'bigint']],
+  lms_events: [['PK', 'id', 'uuid'], ['FK', 'user_id', 'uuid'], ['', 'lms_event_id', 'int'], ['(FK)', 'lms_course_id', 'int'], ['', 'title', 'varchar(255)'], ['', 'event_type', 'varchar(16)'], ['', 'starts_at', 'bigint'], ['', 'url', 'varchar(1024)'], ['', 'is_done', 'boolean'], ['', 'is_deleted', 'boolean'], ['', 'updated_at, server_updated_at', 'bigint']],
+  lms_materials: [['PK', 'id', 'uuid'], ['FK', 'user_id', 'uuid'], ['', 'lms_module_id', 'int'], ['(FK)', 'lms_course_id', 'int'], ['', 'course_title', 'varchar(255)'], ['', 'title', 'varchar(255)'], ['', 'material_type', 'varchar(16)'], ['', 'url', 'varchar(1024)'], ['', 'is_deleted', 'boolean'], ['', 'updated_at, server_updated_at', 'bigint']],
+};
+const LAYOUT = [
+  ['course_materials', 'subjects', 'lessons', 'announcements'],
+  ['groups', 'users', 'lms_courses'],
+  ['tasks', 'subtasks', 'lms_events', 'lms_materials'],
+];
+const GAP = [60, 90, 60];
+const pos = {};
+LAYOUT.forEach((col, ci) => {
+  let y = ci === 1 ? 40 : 40;
+  for (const name of col) {
+    const rows = T[name];
+    const h = HEAD + rows.length * ROW + PAD;
+    const t = document.createElement('div');
+    t.className = 'tbl';
+    Object.assign(t.style, { left: COLS[ci] + 'px', top: y + 'px' });
+    t.innerHTML = `<div class="title">${name}</div>` +
+      rows.map(([k, n, ty]) => `<div class="row"><span class="k">${k}</span><span>${n}</span><span class="t">${ty}</span></div>`).join('') +
+      '<div class="pad"></div>';
+    root.appendChild(t);
+    pos[name] = { x: COLS[ci], y, h, col: ci };
+    y += h + GAP[ci] + (ci === 1 ? 140 : 0);
+  }
+});
+const fy = (tbl, field) => pos[tbl].y + HEAD + T[tbl].findIndex((r) => r[1] === field) * ROW + ROW / 2;
+const L = (t) => pos[t].x, R = (t) => pos[t].x + W;
+
+/** 1:N link from a field of `a` to a field of `b` via a vertical bus at x = bus. */
+function link(a, fa, b, fb, bus, opts = {}) {
+  const ya = fy(a, fa), yb = fy(b, fb);
+  const ax = pos[a].col < pos[b].col ? R(a) : L(a);
+  const bx = pos[a].col < pos[b].col ? L(b) : R(b);
+  arrow([[ax, ya], [bus, ya], [bus, yb], [bx, yb]], { dashed: opts.dashed });
+  const dir = bx > ax ? 1 : -1;
+  text(ax + (dir > 0 ? 6 : -26), ya - 32, '1', { cls: 'plain big' });
+  text(bx + (dir > 0 ? -26 : 6), yb - 32, 'N', { cls: 'plain big' });
+}
+/** Vertical 1:N link from the bottom of `a` to the top of `b` (same column). */
+function down(a, b, x, opts = {}) {
+  const y1 = pos[a].y + pos[a].h, y2 = pos[b].y;
+  arrow([[x, y1], [x, y2]], { dashed: opts.dashed });
+  text(x + 8, y1 + 4, '1', { cls: 'plain big' });
+  text(x + 8, y2 - 34, 'N', { cls: 'plain big' });
+}
+
+const LB = [530, 555, 580];   // buses in the left gap (col0 | col1)
+const RB = [1130, 1155, 1180]; // buses in the right gap (col1 | col2)
+down('groups', 'users', 760);
+down('users', 'lms_courses', 760);
+down('subjects', 'lessons', 160);
+down('tasks', 'subtasks', 1360);
+link('groups', 'id', 'course_materials', 'group_id', LB[2]);
+link('groups', 'id', 'tasks', 'group_id', RB[0]);
+link('users', 'id', 'course_materials', 'uploader_id', LB[0]);
+link('users', 'id', 'subjects', 'user_id', LB[0]);
+link('users', 'id', 'lessons', 'user_id', LB[0]);
+link('users', 'id', 'announcements', 'author_id', LB[0]);
+link('users', 'id', 'tasks', 'user_id', RB[1]);
+link('users', 'id', 'subtasks', 'user_id', RB[1]);
+link('users', 'id', 'lms_events', 'user_id', RB[1]);
+link('users', 'id', 'lms_materials', 'user_id', RB[1]);
+link('subjects', 'id', 'lms_courses', 'subject_id', LB[1], { dashed: true });
+link('lms_courses', 'lms_course_id', 'lms_events', 'lms_course_id', RB[2], { dashed: true });
+link('lms_courses', 'lms_course_id', 'lms_materials', 'lms_course_id', RB[2], { dashed: true });
+
+const bottom = Math.max(...Object.values(pos).map((p) => p.y + p.h)) + 50;
+document.getElementById('d').style.height = (bottom + 120) + 'px';
+D.svg.setAttribute('height', bottom + 120);
+D.line(40, bottom + 20, 130, bottom + 20, { width: 2 });
+text(140, bottom + 5, 'связь по внешнему ключу (1 : N)', { cls: 'plain' });
+D.line(640, bottom + 20, 730, bottom + 20, { width: 2, dashed: true });
+text(740, bottom + 5, 'логическая связь без ограничения FK (проверка в коде)', { cls: 'plain' });
+text(40, bottom + 50, 'PK — первичный ключ, FK — внешний ключ, (FK) — ссылка без ограничения, UQ — уникальное значение. Время хранится как bigint (миллисекунды).', { cls: 'plain', w: 1640 });
+</script></body></html>

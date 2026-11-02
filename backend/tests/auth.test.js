@@ -56,7 +56,7 @@ describe('groups', () => {
     const creator = await registerUser('Создатель');
     const created = await authed(creator.token).post('/api/groups').send({ title: 'ИВТ-21', semester: 3, semester_start: '2026-08-31' });
     assert.equal(created.status, 201);
-    assert.equal(created.body.user.role, 'student');
+    assert.equal(created.body.user.role, 'user');
     const code = created.body.group.invite_code;
     assert.match(code, /^[A-Z2-9]{6}$/);
 

@@ -1,0 +1,8 @@
+{
+  "name": "StudyPlan — доделать прототип",
+  "id": "studyplan-finish-prototype",
+  "api": "1.0.0",
+  "main": "code.js",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page"
+}

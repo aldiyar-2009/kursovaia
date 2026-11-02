@@ -8,7 +8,9 @@ import 'package:studyplan/core/network/api_client.dart';
 import 'package:studyplan/core/services/connect_link.dart';
 import 'package:studyplan/core/settings/app_settings.dart';
 import 'package:studyplan/core/theme/theme_ext.dart';
-import 'package:studyplan/features/auth/presentation/screens/auth_screen.dart';
+import 'package:studyplan/features/auth/data/session_service.dart';
+import 'package:studyplan/features/auth/presentation/account_actions.dart';
+import 'package:studyplan/features/auth/presentation/screens/edition_choice_screen.dart';
 import 'package:studyplan/features/main_shell/presentation/screens/main_shell_screen.dart';
 
 /// Wordmark on the page background while the saved session is restored.
@@ -39,7 +41,8 @@ class _SplashScreenState extends State<SplashScreen> {
     final prefs = await SharedPreferences.getInstance();
     final savedBaseUrl = prefs.getString(kApiBaseUrlPrefsKey)?.trim();
     if (savedBaseUrl != null && savedBaseUrl.isNotEmpty) {
-      final staleLocalhost = kIsWeb &&
+      final staleLocalhost =
+          kIsWeb &&
           savedBaseUrl.contains('127.0.0.1') &&
           !Uri.base.origin.contains('127.0.0.1');
       widget.apiClient.updateBaseUrl(
@@ -69,12 +72,27 @@ class _SplashScreenState extends State<SplashScreen> {
           group: group,
         ),
       );
-    } else {
+    } else if (prefs.getBool(kGuestModePrefsKey) == true &&
+        widget.settings.edition != null) {
+      // Chose «continue without signing in» earlier: every tab is available
+      // in guest mode, with a banner offering sign-in and demo mode.
       _navigateTo(
-        AuthScreen(
+        MainShellScreen(
+          db: widget.db,
           apiClient: widget.apiClient,
           settings: widget.settings,
-          db: widget.db,
+          user: guestUser(),
+        ),
+      );
+    } else {
+      // University or college first, then sign-in or demo mode.
+      _navigateTo(
+        EditionChoiceScreen(
+          deps: AppDeps(
+            db: widget.db,
+            apiClient: widget.apiClient,
+            settings: widget.settings,
+          ),
         ),
       );
     }

@@ -7,11 +7,16 @@ import 'package:studyplan/core/database/app_database.dart';
 import 'package:studyplan/core/database/lesson_dao.dart';
 import 'package:studyplan/core/database/subject_dao.dart';
 import 'package:studyplan/core/database/task_dao.dart';
+import 'package:studyplan/core/network/api_client.dart';
 import 'package:studyplan/core/theme/theme_ext.dart';
 import 'package:studyplan/core/utils/date_util.dart';
 import 'package:studyplan/core/widgets/ui/content_column.dart';
 import 'package:studyplan/core/widgets/ui/empty_state.dart';
 import 'package:studyplan/core/widgets/ui/list_row.dart';
+import 'package:studyplan/features/announcements/data/announcements_repository.dart';
+import 'package:studyplan/features/announcements/presentation/announcements_screen.dart';
+import 'package:studyplan/features/events/data/events_repository.dart';
+import 'package:studyplan/features/events/presentation/events_screen.dart';
 import 'package:studyplan/features/home/domain/home_agenda.dart';
 import 'package:studyplan/features/home/presentation/widgets/home_rows.dart';
 import 'package:studyplan/features/home/presentation/widgets/now_block.dart';
@@ -40,6 +45,13 @@ class HomeScreen extends StatefulWidget {
   /// entry instead. Defaults to `!kIsWeb`; injectable for tests.
   final bool? lmsImportAvailable;
 
+  /// Loads announcements published from the admin panel; the section is
+  /// hidden without it (tests) or when there are none.
+  final ApiClient? apiClient;
+
+  /// College edition: no LMS step (grades come from SmartNation).
+  final bool isCollege;
+
   const HomeScreen({
     super.key,
     required this.db,
@@ -49,6 +61,8 @@ class HomeScreen extends StatefulWidget {
     this.groupId,
     this.clock = DateTime.now,
     this.lmsImportAvailable,
+    this.apiClient,
+    this.isCollege = false,
   });
 
   @override
@@ -64,6 +78,8 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Task>? _tasks;
   List<LmsEvent>? _events;
   List<LmsCourse>? _courses;
+  List<Announcement> _announcements = const [];
+  List<CampusEvent> _campusEvents = const [];
 
   bool get _ready =>
       _subjects != null &&
@@ -72,10 +88,54 @@ class _HomeScreenState extends State<HomeScreen> {
       _events != null &&
       _courses != null;
 
+  AnnouncementsRepository? get _announcementsRepo => widget.apiClient == null
+      ? null
+      : AnnouncementsRepository(widget.apiClient!);
+
+  Future<void> _loadAnnouncements() async {
+    final repo = _announcementsRepo;
+    if (repo == null) return;
+    final result = await repo.load();
+    if (mounted) setState(() => _announcements = result.items);
+  }
+
+  Future<void> _loadEvents() async {
+    final api = widget.apiClient;
+    if (api == null) return;
+    final result = await EventsRepository(api).load(limit: 3);
+    if (mounted) setState(() => _campusEvents = result.events.take(3).toList());
+  }
+
+  void _openEvents() {
+    final api = widget.apiClient;
+    if (api == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => EventsScreen(
+          db: widget.db,
+          repository: EventsRepository(api),
+          userId: widget.userId,
+        ),
+      ),
+    );
+  }
+
+  void _openAnnouncements() {
+    final repo = _announcementsRepo;
+    if (repo == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => AnnouncementsScreen(repository: repo),
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
     _subscribe();
+    _loadAnnouncements();
+    _loadEvents();
     // Keeps «Сейчас / Далее» and the countdown current.
     _ticker = Timer.periodic(const Duration(minutes: 1), (_) {
       if (mounted) setState(() {});
@@ -105,9 +165,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final dayStart = DateTime(now.year, now.month, now.day);
 
     void listen<T>(Stream<T> stream, void Function(T) assign) {
-      _subs.add(stream.listen((value) {
-        if (mounted) setState(() => assign(value));
-      }));
+      _subs.add(
+        stream.listen((value) {
+          if (mounted) setState(() => assign(value));
+        }),
+      );
     }
 
     listen(SubjectDao(db).watchAllSubjects(userId), (v) => _subjects = v);
@@ -171,12 +233,17 @@ class _HomeScreenState extends State<HomeScreen> {
     final grades = recentGrades(_courses!);
     final steps = remainingFirstSteps(
       hasLessons: _lessons!.isNotEmpty,
-      hasCourses: _courses!.isNotEmpty,
+      // College grades come from SmartNation, there is nothing to import.
+      hasCourses: widget.isCollege || _courses!.isNotEmpty,
       hasGroup: widget.groupId != null && widget.groupId!.isNotEmpty,
     ).where((s) => s != FirstStep.group || widget.onOpenGroup != null).toList();
 
     final hasSections =
-        upcoming.isNotEmpty || deadlines.isNotEmpty || grades.isNotEmpty;
+        upcoming.isNotEmpty ||
+        deadlines.isNotEmpty ||
+        grades.isNotEmpty ||
+        _campusEvents.isNotEmpty ||
+        _announcements.isNotEmpty;
 
     if (!hasSections && steps.isEmpty) {
       return EmptyState(
@@ -201,6 +268,26 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ],
+      // News from the admin panel go first: they are rare and time-bound.
+      if (_announcements.isNotEmpty) ...[
+        HomeSectionHeader(
+          l10n.announcements_title,
+          trailing: SectionLink(
+            label: l10n.announcements_all,
+            onTap: _openAnnouncements,
+          ),
+        ),
+        ListGroup(
+          children: [
+            for (final a in _announcements.take(2))
+              AnnouncementRow(
+                announcement: a,
+                maxLines: 2,
+                onTap: _openAnnouncements,
+              ),
+          ],
+        ),
+      ],
       if (deadlines.isNotEmpty) ...[
         HomeSectionHeader(
           l10n.home_deadlines,
@@ -209,14 +296,23 @@ class _HomeScreenState extends State<HomeScreen> {
             onTap: () => widget.onOpenTab(AppTab.tasks),
           ),
         ),
-        ListGroup(children: [
-          for (final d in deadlines)
-            DeadlineRow(
-              deadline: d,
-              now: now,
-              onTap: () => widget.onOpenTab(AppTab.tasks),
-            ),
-        ]),
+        ListGroup(
+          children: [
+            for (final d in deadlines)
+              DeadlineRow(
+                deadline: d,
+                now: now,
+                onTap: () => widget.onOpenTab(AppTab.tasks),
+              ),
+          ],
+        ),
+      ],
+      if (_campusEvents.isNotEmpty) ...[
+        HomeSectionHeader(
+          l10n.events_homeSection,
+          trailing: SectionLink(label: l10n.events_all, onTap: _openEvents),
+        ),
+        EventList(db: widget.db, userId: widget.userId, events: _campusEvents),
       ],
       if (grades.isNotEmpty) ...[
         HomeSectionHeader(
@@ -226,13 +322,12 @@ class _HomeScreenState extends State<HomeScreen> {
             onTap: () => widget.onOpenTab(AppTab.grades),
           ),
         ),
-        ListGroup(children: [
-          for (final g in grades)
-            GradeRow(
-              grade: g,
-              onTap: () => widget.onOpenTab(AppTab.grades),
-            ),
-        ]),
+        ListGroup(
+          children: [
+            for (final g in grades)
+              GradeRow(grade: g, onTap: () => widget.onOpenTab(AppTab.grades)),
+          ],
+        ),
       ],
       if (steps.isNotEmpty)
         FirstSteps(

@@ -1,0 +1,37 @@
+@page { size: A4; margin: 16mm 16mm 18mm 18mm; }
+* { box-sizing: border-box; }
+body { font-family: "Segoe UI", Arial, sans-serif; font-size: 10.5pt; line-height: 1.4; color: #000; margin: 0; }
+h1 { font-size: 17pt; margin: 0 0 4px; }
+h2 { font-size: 12.5pt; margin: 18px 0 6px; border-bottom: 1px solid #000; padding-bottom: 2px; break-after: avoid; }
+h3 { font-size: 11pt; margin: 12px 0 4px; break-after: avoid; }
+p { margin: 4px 0 6px; }
+ul, ol { margin: 4px 0 6px; padding-left: 20px; }
+li { margin: 1px 0; }
+table { width: 100%; border-collapse: collapse; margin: 6px 0 10px; font-size: 9.5pt; }
+th, td { border: 1px solid #000; padding: 3px 5px; vertical-align: top; text-align: left; }
+th { background: #fff; font-weight: 700; border-bottom: 2px solid #000; }
+img { filter: grayscale(100%); }
+tr { break-inside: avoid; }
+.head { border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 10px; }
+.meta { font-size: 9.5pt; color: #000; }
+.fill { background: #fff; }
+.fill:empty::after { content: "____"; color: #000; }
+.note { font-size: 9pt; color: #000; border-left: 3px solid #000; padding: 2px 8px; margin: 6px 0; }
+.fig { text-align: center; margin: 8px 0 10px; break-inside: avoid; }
+.fig img, .fig svg { max-width: 100%; }
+.fig .cap { font-size: 9pt; color: #000; margin-top: 3px; }
+.flow { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; justify-content: center; margin: 6px 0; }
+.flow .s { border: 1px solid #000; border-radius: 4px; padding: 4px 6px; font-size: 8.5pt; width: 112px; min-height: 52px; background: #fff; }
+.flow .s b { display: block; font-size: 8pt; }
+.flow .s.bad { border: 2px dashed #000; }
+.flow .s.ok { border: 3px double #000; }
+.flow .a { font-size: 13pt; color: #000; }
+.two { display: flex; gap: 10px; }
+.two > div { flex: 1; }
+.card { break-inside: avoid; }
+.card td:first-child { width: 26%; font-weight: 600; }
+.shots { display: flex; gap: 10px; justify-content: center; break-inside: avoid; }
+.shots figure { margin: 0; text-align: center; font-size: 8.5pt; }
+.shots img { height: 300px; border: 1px solid #000; display: block; margin-bottom: 2px; }
+.shots img.wide { height: 200px; }
+.small { font-size: 9pt; }

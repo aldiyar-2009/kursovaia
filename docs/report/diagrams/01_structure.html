@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Структурная схема</title>
+<link rel="stylesheet" href="diag.css"></head>
+<body><div id="d" style="width:1800px;height:1150px"></div>
+<script src="diag.js"></script>
+<script>
+const { box, text, arrow } = D;
+// Mobile client
+box(40, 40, 760, 560, 'Мобильное приложение (Flutter: Android, iOS, Windows, Web)', [], { outer: true });
+box(70, 100, 700, 130, 'Слой представления', [
+  'Экраны: гостевой режим, вход, демо-режим, Главная,',
+  'Расписание, Задания, Оценки, Ещё; SyncBloc — синхронизация',
+]);
+box(70, 260, 700, 110, 'Слой предметной области', [
+  'правила оценивания, учебные недели, фильтры заданий',
+]);
+box(70, 400, 700, 175, 'Слой данных', [
+  'Drift DAO — локальная база; SyncRepository — POST /api/sync',
+  'ApiClient (Dio): JWT, обработка 401 / 403 USER_BLOCKED',
+  'AnnouncementsRepository; импорт из LMS',
+]);
+// Admin panel
+box(1000, 40, 760, 250, 'Веб-панель администратора (HTML, CSS, JavaScript) — /admin', [
+  'Вход администратора (только роль admin)',
+  'Пользователи: список, поиск, добавление, изменение, роль, блокировка',
+  'Объявления: создание, изменение, удаление, публикация',
+  'Сводка: статистика по пользователям и контенту',
+]);
+// Server
+box(1000, 370, 760, 530, 'Сервер (Node.js, Express 5)', [], { outer: true });
+box(1030, 430, 700, 90, 'Промежуточное ПО', ['helmet, cors, requireAuth, requireAdmin, rateLimit'], { center: true });
+box(1030, 550, 700, 120, 'Маршруты /api', [
+  '/auth, /auth/demo, /groups, /sync, /materials, /files,',
+  '/announcements, /admin/users, /admin/announcements, /admin/stats',
+], { center: true });
+box(1030, 695, 700, 95, 'Сервисы', ['auth, demo, group, sync (LWW), materials, admin'], { center: true });
+box(1030, 812, 700, 66, null, ['Knex: запросы, транзакции, миграции; ошибки в формате JSON'], { center: true });
+// Storage
+box(1000, 980, 360, 120, 'PostgreSQL (Supabase)', ['рабочая база данных, RLS'], { center: true });
+box(1400, 980, 360, 120, 'SQLite', ['разработка и тесты'], { center: true });
+box(560, 980, 360, 120, 'Файловое хранилище', ['материалы группы: data/uploads'], { center: true });
+box(40, 680, 360, 120, 'Локальная БД (Drift)', ['SQLite на устройстве,', 'поле sync_status'], { center: true });
+box(440, 680, 360, 120, 'LMS Moodle', ['lms.astanait.edu.kz,', 'вход через Microsoft'], { center: true, dashed: true });
+
+// Arrows
+arrow([[770, 490], [890, 490], [890, 610], [1030, 610]], { double: true });
+text(806, 420, 'HTTP / REST, JSON<br>JWT (Bearer)', { w: 190, cls: 'plain' });
+arrow([[1700, 290], [1700, 430]], { double: true });
+text(1370, 315, 'fetch, JSON, JWT (роль admin)');
+arrow([[220, 575], [220, 680]], { double: true });
+text(235, 610, 'чтение / запись');
+arrow([[620, 575], [620, 680]], { double: true });
+text(635, 610, 'встроенный браузер');
+arrow([[1180, 900], [1180, 980]], { double: true });
+arrow([[1580, 900], [1580, 980]], { double: true });
+text(1225, 925, 'Knex: DB_CLIENT = pg | sqlite');
+arrow([[1000, 860], [740, 860], [740, 980]], { double: true });
+text(760, 890, 'загрузка файлов');
+text(40, 860, 'Мобильное приложение и панель администратора работают с данными только через REST API сервера; база данных напрямую недоступна.', { cls: 'note plain', w: 490 });
+</script></body></html>

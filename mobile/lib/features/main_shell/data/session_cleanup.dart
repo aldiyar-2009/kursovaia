@@ -13,6 +13,12 @@ const kSessionPrefsKeys = <String>[
   'lms.profile',
   'group_members_cache',
   'pending_invite_code',
+  'guest_mode',
+  'college.snapshot',
+  'college.timetable_ids',
+  'college.group',
+  'events.cache.upcoming',
+  'events.cache.past',
 ];
 
 /// Prefix of the per-group materials caches (`group_materials_cache_<id>`).

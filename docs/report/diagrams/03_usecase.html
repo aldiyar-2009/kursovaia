@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Варианты использования</title>
+<link rel="stylesheet" href="diag.css">
+<style>
+.uc { position: absolute; border: 2px solid #000; border-radius: 50%; background: #fff; z-index: 3;
+  display: flex; align-items: center; justify-content: center; text-align: center; font-size: 21px; padding: 0 22px; box-sizing: border-box; }
+.actor { position: absolute; z-index: 3; text-align: center; font-size: 22px; width: 190px; }
+</style></head>
+<body><div id="d" style="width:1800px;height:1120px"></div>
+<script src="diag.js"></script>
+<script>
+const { root, box, line, arrow, text } = D;
+function actor(cx, top, name) {
+  const s = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  s.innerHTML = `<circle cx="${cx}" cy="${top + 18}" r="18" fill="#fff" stroke="#000" stroke-width="2"/>
+    <line x1="${cx}" y1="${top + 36}" x2="${cx}" y2="${top + 86}" stroke="#000" stroke-width="2"/>
+    <line x1="${cx - 30}" y1="${top + 54}" x2="${cx + 30}" y2="${top + 54}" stroke="#000" stroke-width="2"/>
+    <line x1="${cx}" y1="${top + 86}" x2="${cx - 24}" y2="${top + 122}" stroke="#000" stroke-width="2"/>
+    <line x1="${cx}" y1="${top + 86}" x2="${cx + 24}" y2="${top + 122}" stroke="#000" stroke-width="2"/>`;
+  D.svg.appendChild(s);
+  const a = document.createElement('div');
+  a.className = 'actor';
+  a.style.left = (cx - 95) + 'px';
+  a.style.top = (top + 128) + 'px';
+  a.innerHTML = name;
+  root.appendChild(a);
+  return { x: cx, y: top + 60 };
+}
+const UC = {};
+function uc(id, x, y, w, h, label) {
+  const e = document.createElement('div');
+  e.className = 'uc';
+  Object.assign(e.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' });
+  e.innerHTML = label;
+  root.appendChild(e);
+  UC[id] = { l: x, r: x + w, cy: y + h / 2 };
+}
+box(300, 30, 1180, 1060, 'Система StudyPlan', [], { outer: true });
+text(330, 85, 'Мобильное приложение', { cls: 'plain big' });
+text(1060, 85, 'Веб-панель администратора', { cls: 'plain big' });
+
+const W1 = 520, H = 72, X1 = 340;
+const mob = [
+  ['view', 'Просматривать все разделы приложения'],
+  ['local', 'Вести расписание, задания и оценки на устройстве'],
+  ['ann', 'Читать объявления'],
+  ['auth', 'Войти или зарегистрироваться'],
+  ['demo', 'Открыть демо-режим'],
+  ['sync', 'Синхронизировать данные с сервером'],
+  ['lms', 'Импортировать данные из LMS'],
+  ['group', 'Работать в группе и с материалами'],
+  ['clear', 'Очистить демо-данные'],
+];
+mob.forEach(([id, label], i) => uc(id, X1, 130 + i * 102, W1, H, label));
+const X2 = 1010, W2 = 440;
+const adm = [
+  ['alogin', 'Войти в панель администратора'],
+  ['users', 'Просматривать и искать пользователей'],
+  ['uedit', 'Добавлять и редактировать пользователей, назначать роль'],
+  ['block', 'Блокировать и разблокировать пользователей'],
+  ['acrud', 'Создавать, изменять и удалять объявления'],
+  ['pub', 'Публиковать и снимать с публикации'],
+  ['stats', 'Просматривать сводку'],
+];
+adm.forEach(([id, label], i) => uc(id, X2, 130 + i * 128, W2, 84, label));
+
+const guest = actor(150, 120, 'Гость');
+const user = actor(150, 470, 'Пользователь');
+const demo = actor(150, 840, 'Демо-пользователь');
+const admin = actor(1650, 420, 'Администратор');
+const to = (a, id) => line(a.x + 34, a.y, UC[id].l, UC[id].cy);
+['view', 'local', 'ann', 'auth', 'demo'].forEach((id) => to(guest, id));
+['view', 'local', 'ann', 'sync', 'lms', 'group'].forEach((id) => to(user, id));
+to(demo, 'clear');
+adm.forEach(([id]) => line(admin.x - 34, admin.y, UC[id].r, UC[id].cy));
+// Generalisation: demo user is a user
+const g = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+g.setAttribute('points', `${demo.x},${demo.y - 64} ${user.x},${user.y + 168}`);
+g.setAttribute('stroke', '#000'); g.setAttribute('stroke-width', 2); g.setAttribute('fill', 'none');
+D.svg.appendChild(g);
+const tri = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+const ty = user.y + 168;
+tri.setAttribute('points', `${user.x},${ty} ${user.x - 12},${ty + 22} ${user.x + 12},${ty + 22}`);
+tri.setAttribute('fill', '#fff'); tri.setAttribute('stroke', '#000'); tri.setAttribute('stroke-width', 2);
+D.svg.appendChild(tri);
+</script></body></html>

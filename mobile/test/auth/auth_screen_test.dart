@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -75,7 +76,8 @@ void main() {
     expect(find.text('Регистрация'), findsOneWidget);
     expect(find.text('Войти'), findsOneWidget);
     expect(find.text('Настройки сервера'), findsOneWidget);
-    for (final demo in ['headman', 'student@', 'password123', 'Демо', 'демо']) {
+    // Demo mode is a button that creates a server account, never shared credentials.
+    for (final demo in ['headman', 'student@', 'password123']) {
       expect(find.textContaining(demo), findsNothing);
     }
     for (final field in tester.widgetList<EditableText>(
@@ -84,6 +86,53 @@ void main() {
       expect(field.controller.text, isEmpty);
     }
     expect(tester.takeException(), isNull);
+    await _dispose(tester, db);
+  });
+
+  testWidgets('demo mode and guest mode are offered next to sign-in', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final log = <String>[];
+    final api = fakeApi({}, log: log);
+    final db = await _pump(tester, size: const Size(360, 900), apiClient: api);
+
+    expect(find.byKey(const ValueKey('auth_demo')), findsOneWidget);
+    expect(find.text('Попробовать демо-режим'), findsOneWidget);
+    expect(find.text('Продолжить без входа'), findsOneWidget);
+
+    // Server answers with an error: explained in a snackbar, button usable again.
+    await tester.ensureVisible(find.byKey(const ValueKey('auth_demo')));
+    await tester.tap(find.byKey(const ValueKey('auth_demo')));
+    await tester.pumpAndSettle();
+    expect(log, contains('POST /auth/demo'));
+    expect(find.text('Не удалось открыть демо-режим. Проверьте адрес сервера.'), findsOneWidget);
+    expect(
+      tester.widget<OutlinedButton>(find.byKey(const ValueKey('auth_demo'))).onPressed,
+      isNotNull,
+    );
+    await _dispose(tester, db);
+  });
+
+  testWidgets('blocked account gets its own error message', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final api = fakeApi({
+      'POST /auth/login': (o) => throw DioException(
+            requestOptions: o,
+            type: DioExceptionType.badResponse,
+            response: Response(
+              requestOptions: o,
+              statusCode: 403,
+              data: {'error': {'code': 'USER_BLOCKED', 'message': 'blocked'}},
+            ),
+          ),
+    });
+    final db = await _pump(tester, apiClient: api);
+    await tester.enterText(find.byKey(const ValueKey('auth_email')), 'a@b.kz');
+    await tester.enterText(find.byKey(const ValueKey('auth_password')), 'secret1');
+    await tester.tap(find.byKey(const ValueKey('auth_submit')));
+    await tester.pumpAndSettle();
+    expect(find.text('Аккаунт заблокирован администратором'), findsOneWidget);
     await _dispose(tester, db);
   });
 

@@ -30,12 +30,21 @@ class ScheduleScreen extends StatefulWidget {
   /// Overrides "today" (tests); defaults to the current date.
   final DateTime? today;
 
+  /// College edition: loads / refreshes the group timetable; the academic
+  /// calendar of AITU is hidden.
+  final VoidCallback? onImportTimetable;
+
+  /// Opens «Обмен расписанием» (JSON export / import).
+  final VoidCallback? onOpenExchange;
+
   const ScheduleScreen({
     super.key,
     required this.db,
     required this.userId,
     this.semesterStart,
     this.today,
+    this.onImportTimetable,
+    this.onOpenExchange,
   });
 
   @override
@@ -50,6 +59,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   _Mode _mode = _Mode.lessons;
 
   DateTime get _today => dayOnly(widget.today ?? DateTime.now());
+
+  /// The academic calendar is AITU's; the college edition has none.
+  bool get _showCalendar => widget.onImportTimetable == null;
 
   @override
   void initState() {
@@ -102,6 +114,23 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               onPressed: _addLesson,
               icon: const Icon(Icons.add),
             ),
+          if (widget.onImportTimetable != null || widget.onOpenExchange != null)
+            PopupMenuButton<VoidCallback>(
+              key: const ValueKey('schedule-menu'),
+              onSelected: (action) => action(),
+              itemBuilder: (context) => [
+                if (widget.onImportTimetable != null)
+                  PopupMenuItem(
+                    value: widget.onImportTimetable!,
+                    child: Text(l10n.college_timetableRefresh),
+                  ),
+                if (widget.onOpenExchange != null)
+                  PopupMenuItem(
+                    value: widget.onOpenExchange!,
+                    child: Text(l10n.exchange_title),
+                  ),
+              ],
+            ),
         ],
       ),
       body: LayoutBuilder(
@@ -112,27 +141,28 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Padding(
-                padding: EdgeInsets.fromLTRB(inset, 0, inset, 8),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 360),
-                    child: SegmentedToggle<_Mode>(
-                      key: const ValueKey('schedule-mode-toggle'),
-                      expand: true,
-                      segments: [
-                        (_Mode.lessons, l10n.schedule_tabLessons),
-                        (_Mode.calendar, l10n.schedule_tabCalendar),
-                      ],
-                      value: _mode,
-                      onChanged: (m) => setState(() => _mode = m),
+              if (_showCalendar)
+                Padding(
+                  padding: EdgeInsets.fromLTRB(inset, 0, inset, 8),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 360),
+                      child: SegmentedToggle<_Mode>(
+                        key: const ValueKey('schedule-mode-toggle'),
+                        expand: true,
+                        segments: [
+                          (_Mode.lessons, l10n.schedule_tabLessons),
+                          (_Mode.calendar, l10n.schedule_tabCalendar),
+                        ],
+                        value: _mode,
+                        onChanged: (m) => setState(() => _mode = m),
+                      ),
                     ),
                   ),
                 ),
-              ),
               Expanded(
-                child: _mode == _Mode.lessons
+                child: _mode == _Mode.lessons || !_showCalendar
                     ? _lessonsBody(context, inset)
                     : AcademicCalendarView(today: _today),
               ),
@@ -158,6 +188,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             }
             if (lessons.isEmpty && classes.isEmpty) {
               final l10n = context.l10n;
+              if (widget.onImportTimetable != null) {
+                return EmptyState(
+                  title: l10n.schedule_emptyTitle,
+                  message: l10n.college_timetableHint,
+                  actionLabel: l10n.college_timetableImport,
+                  onAction: widget.onImportTimetable,
+                  secondaryLabel: l10n.schedule_addLesson,
+                  onSecondary: _addLesson,
+                );
+              }
               return EmptyState(
                 title: l10n.schedule_emptyTitle,
                 message: l10n.schedule_emptyMessage,

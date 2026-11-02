@@ -480,7 +480,9 @@
   "connect_body": "{host}\n\nПодключайтесь только к серверу, которому доверяете: на него будут отправляться ваш пароль и данные.",
   "@connect_body": {
     "placeholders": {
-      "host": { "type": "String" }
+      "host": {
+        "type": "String"
+      }
     }
   },
   "connect_confirm": "Подключиться",
@@ -707,5 +709,282 @@
   "tasks_saved": "Задание сохранено",
   "tasks_deleteTask": "Удалить задание",
   "tasks_deleted": "Задание удалено",
-  "tasks_readOnlyHint": "Изменить задание может только его автор."
+  "tasks_readOnlyHint": "Изменить задание может только его автор.",
+  "guest_name": "Гость",
+  "guest_bannerTitle": "Вы не вошли в аккаунт",
+  "guest_bannerMessage": "Войдите или откройте демо-режим, чтобы данные сохранялись на сервере.",
+  "guest_signIn": "Войти",
+  "guest_demo": "Демо-режим",
+  "guest_requiredTitle": "Нужен аккаунт",
+  "guest_requiredMessage": "Группа и общие материалы хранятся на сервере. Войдите или откройте демо-режим.",
+  "guest_profileRow": "Войти или зарегистрироваться",
+  "guest_demoFailed": "Не удалось открыть демо-режим. Проверьте адрес сервера.",
+  "demo_bannerMessage": "Данные примерные: их можно удалить в профиле или добавить свои.",
+  "demo_section": "Демо-аккаунт",
+  "demo_clear": "Очистить демо-данные",
+  "demo_clearHint": "Удалить примерные данные и продолжить с пустым аккаунтом",
+  "demo_clearTitle": "Очистить демо-данные?",
+  "demo_clearMessage": "Расписание, задания, оценки и материалы демо-аккаунта будут удалены.",
+  "demo_clearConfirm": "Очистить",
+  "demo_cleared": "Демо-данные удалены",
+  "demo_clearFailed": "Не удалось очистить данные. Проверьте подключение к серверу.",
+  "demo_exit": "Выйти из демо-режима",
+  "auth_tryDemo": "Попробовать демо-режим",
+  "auth_demoHint": "Готовый аккаунт с примерами расписания, оценок и файлов",
+  "auth_continueAsGuest": "Продолжить без входа",
+  "auth_errorBlocked": "Аккаунт заблокирован администратором",
+  "session_expired": "Сессия истекла. Войдите снова.",
+  "session_blocked": "Аккаунт заблокирован администратором.",
+  "nav_materials": "Материалы",
+  "nav_lmsImport": "Импорт из LMS",
+  "nav_lmsImportHint": "Курсы, оценки и дедлайны из lms.astanait.edu.kz",
+  "nav_lmsImportWeb": "Доступно в приложении для Android, iOS и Windows",
+  "nav_announcements": "Объявления",
+  "announcements_title": "Объявления",
+  "announcements_all": "Все",
+  "announcements_emptyTitle": "Объявлений пока нет",
+  "announcements_emptyMessage": "Здесь появятся новости, которые публикует администратор.",
+  "announcements_offline": "Нет связи с сервером, показаны сохранённые объявления.",
+  "edition_question": "Где вы учитесь?",
+  "edition_university": "Студент университета",
+  "edition_universityHint": "LMS AITU: курсы, оценки, кредиты и GPA",
+  "edition_college": "Студент колледжа",
+  "edition_collegeHint": "SmartNation: оценки, задания и расписание группы",
+  "edition_switchToUniversity": "Я студент университета",
+  "edition_switchToCollege": "Я студент колледжа",
+  "edition_row": "Учебное заведение",
+  "college_signInTitle": "Вход через SmartNation",
+  "college_signInHint": "Логин и пароль от college.smartnation.kz",
+  "college_login": "ИИН или логин",
+  "college_errorLoginRequired": "Введите ИИН или логин",
+  "college_errorCredentials": "Неверный логин или пароль SmartNation",
+  "college_errorPortal": "SmartNation сейчас недоступен. Попробуйте позже",
+  "college_passwordNote": "Пароль хранится на сервере StudyPlan в зашифрованном виде: так оценки обновляются без повторного входа.",
+  "college_demoHint": "Готовый аккаунт колледжа с оценками, заданиями и расписанием",
+  "events_title": "События",
+  "events_refresh": "Обновить",
+  "events_upcoming": "Скоро",
+  "events_past": "Прошедшие",
+  "events_emptyTitle": "Ближайших событий нет",
+  "events_emptyPastTitle": "Прошедших событий нет",
+  "events_emptyMessage": "События берутся из Telegram-канала студентов и обновляются каждые 30 минут.",
+  "events_offline": "Нет связи с сервером, показан сохранённый список",
+  "events_addToPlan": "В мой план",
+  "events_inPlan": "В плане",
+  "events_added": "Событие добавлено в задания",
+  "events_alreadyAdded": "Это событие уже в заданиях",
+  "events_register": "Регистрация",
+  "events_openPost": "Пост в Telegram",
+  "events_homeSection": "События",
+  "events_all": "Все события",
+  "analytics_title": "Аналитика оценок",
+  "analytics_open": "Аналитика",
+  "analytics_scopeCurrent": "Текущий семестр",
+  "analytics_scopeAll": "Все курсы",
+  "analytics_emptyTitle": "Пока нечего анализировать",
+  "analytics_emptyMessage": "Импортируйте курсы из LMS или добавьте оценки вручную.",
+  "analytics_credits": "Кредиты сданы",
+  "analytics_components": "Средний балл по этапам",
+  "analytics_trendUp": "После Midterm баллы выросли на {delta}",
+  "@analytics_trendUp": {
+    "placeholders": {
+      "delta": {
+        "type": "String"
+      }
+    }
+  },
+  "analytics_trendDown": "После Midterm баллы снизились на {delta}",
+  "@analytics_trendDown": {
+    "placeholders": {
+      "delta": {
+        "type": "String"
+      }
+    }
+  },
+  "analytics_midterm": "Midterm",
+  "analytics_endterm": "Endterm",
+  "analytics_final": "Финальный экзамен",
+  "analytics_byCourse": "Итог по курсам",
+  "analytics_letters": "Буквенные оценки",
+  "analytics_attention": "Требуют внимания",
+  "analytics_attentionHint": "Допуск {admission} · итог {total}",
+  "@analytics_attentionHint": {
+    "placeholders": {
+      "admission": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "analytics_finalPlan": "Сколько нужно на финале",
+  "analytics_finalPlanHint": "Балл финального экзамена, чтобы итог стал 50, 80 или 90",
+  "analytics_reached": "уже есть",
+  "analytics_unreachable": "недостижимо",
+  "college_refresh": "Обновить из SmartNation",
+  "college_gradesGuestTitle": "Оценки из SmartNation",
+  "college_gradesGuestMessage": "Войдите через SmartNation или откройте демо-режим, чтобы видеть оценки, пропуски и задания колледжа.",
+  "college_gradesEmptyTitle": "Оценок пока нет",
+  "college_gradesEmptyMessage": "Сервер ещё загружает журнал из SmartNation. Обновите через минуту.",
+  "college_course": "{course} курс",
+  "@college_course": {
+    "placeholders": {
+      "course": {
+        "type": "int"
+      }
+    }
+  },
+  "college_average": "Средний балл",
+  "college_excellent": "Оценок 90+",
+  "college_retakes": "Ниже 50",
+  "college_absences": "Пропуски",
+  "college_updatedAt": "Обновлено {time}",
+  "@college_updatedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "college_offline": "нет связи, показаны сохранённые данные",
+  "college_atRisk": "Под угрозой",
+  "college_atRiskHint": "Средний балл ниже 70",
+  "college_byMonth": "Средний балл по месяцам",
+  "college_trendUp": "За последний месяц +{delta}",
+  "@college_trendUp": {
+    "placeholders": {
+      "delta": {
+        "type": "String"
+      }
+    }
+  },
+  "college_trendDown": "За последний месяц −{delta}",
+  "@college_trendDown": {
+    "placeholders": {
+      "delta": {
+        "type": "String"
+      }
+    }
+  },
+  "college_bands": "Распределение оценок",
+  "college_gradesCount": "{count, plural, one{{count} оценка} few{{count} оценки} many{{count} оценок} other{{count} оценки}}",
+  "@college_gradesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "college_absencesBySubject": "Пропуски по предметам",
+  "college_subjects": "Предметы",
+  "college_noSubjects": "В журнале пока нет предметов",
+  "college_recent": "Последние 5",
+  "college_journal": "Журнал",
+  "college_noGrades": "Оценок по предмету пока нет",
+  "college_exam": "Экзамен",
+  "college_lesson": "Занятие",
+  "college_absentMark": "Н",
+  "college_assignmentAdded": "Задание добавлено в мои задачи",
+  "college_assignmentExists": "Это задание уже в задачах",
+  "college_addToTasks": "В мои задачи",
+  "college_dueAt": "Сдать до {time}",
+  "@college_dueAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "college_givenAt": "Выдано {time}",
+  "@college_givenAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "college_result": "Результат: {result}",
+  "@college_result": {
+    "placeholders": {
+      "result": {
+        "type": "String"
+      }
+    }
+  },
+  "college_openInSmartNation": "Открыть в SmartNation",
+  "college_overdue": "Просрочено",
+  "college_assignmentsEmpty": "Заданий нет",
+  "college_assignmentsCurrent": "Текущие ({count})",
+  "@college_assignmentsCurrent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "college_assignmentsPast": "Прошлые ({count})",
+  "@college_assignmentsPast": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "college_inTasks": "в задачах",
+  "tasks_filterCollege": "Колледж",
+  "college_timetable": "Расписание группы",
+  "college_timetableImport": "Загрузить расписание группы",
+  "college_timetableRefresh": "Обновить расписание группы",
+  "college_timetableGroup": "Группа",
+  "college_timetablePick": "Выберите группу",
+  "college_timetableDone": "Расписание группы {group} загружено: {count} пар",
+  "@college_timetableDone": {
+    "placeholders": {
+      "group": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "college_timetableFailed": "Не удалось загрузить расписание. Проверьте связь с сервером",
+  "college_timetableEmptyGroup": "Для группы {group} расписания нет",
+  "@college_timetableEmptyGroup": {
+    "placeholders": {
+      "group": {
+        "type": "String"
+      }
+    }
+  },
+  "college_timetableHint": "Пары из расписания колледжа (Excel) со временем звонков",
+  "exchange_title": "Обмен расписанием",
+  "exchange_export": "Экспорт",
+  "exchange_import": "Импорт",
+  "exchange_exportHint": "Ваши предметы и пары в формате JSON. Отправьте файл одногруппнику — он импортирует расписание у себя.",
+  "exchange_copy": "Скопировать",
+  "exchange_share": "Поделиться",
+  "exchange_copied": "Скопировано",
+  "exchange_importHint": "Вставьте JSON, полученный от одногруппника. Предметы с тем же названием объединятся.",
+  "exchange_jsonLabel": "JSON расписания",
+  "exchange_validFrom": "Действует с {date}",
+  "@exchange_validFrom": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "exchange_importAction": "Импортировать",
+  "exchange_imported": "Импортировано пар: {count}",
+  "@exchange_imported": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "exchange_invalid": "Это не похоже на файл расписания StudyPlan",
+  "exchange_empty": "Пока нечего экспортировать: добавьте пары в расписание"
 }

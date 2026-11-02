@@ -7,6 +7,7 @@ import 'package:studyplan/core/database/app_database.dart';
 import 'package:studyplan/core/network/api_client.dart';
 import 'package:studyplan/core/settings/app_settings.dart';
 import 'package:studyplan/core/theme/app_theme.dart';
+import 'package:studyplan/features/auth/data/session_service.dart';
 import 'package:studyplan/features/main_shell/presentation/screens/main_shell_screen.dart';
 import 'package:studyplan/features/more/presentation/screens/more_screen.dart';
 import 'package:studyplan/l10n/generated/app_localizations.dart';
@@ -24,6 +25,7 @@ Future<AppDatabase> _pumpShell(
   ApiClient? apiClient,
   VoidCallback? onLogout,
   Future<void> Function(AppDatabase db)? seed,
+  Map<String, dynamic> user = const {'id': 'u1', 'name': 'Test User', 'email': 'u@example.com'},
 }) async {
   SharedPreferences.setMockInitialValues(prefs);
   tester.view.physicalSize = size;
@@ -47,7 +49,7 @@ Future<AppDatabase> _pumpShell(
       db: db,
       apiClient: apiClient ?? ApiClient(),
       settings: AppSettings(),
-      user: const {'id': 'u1', 'name': 'Test User', 'email': 'u@example.com'},
+      user: user,
       onLogout: onLogout ?? () {},
       syncRepository: _repo,
     ),
@@ -64,6 +66,37 @@ Future<void> _dispose(WidgetTester tester, AppDatabase db) async {
 }
 
 void main() {
+  testWidgets('guest mode shows every tab under a sign-in / demo banner and never syncs',
+      (tester) async {
+    final db = await _pumpShell(tester, const Size(400, 800), user: guestUser());
+
+    expect(find.byKey(const ValueKey('guest_banner')), findsOneWidget);
+    expect(find.text('Вы не вошли в аккаунт'), findsOneWidget);
+    expect(find.byKey(const ValueKey('account_banner_primary')), findsOneWidget);
+    expect(find.byType(NavigationDestination), findsNWidgets(5));
+
+    await tester.tap(find.text('Ещё'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('more_sign_in')), findsOneWidget);
+    expect(find.byKey(const ValueKey('more_materials')), findsOneWidget);
+    expect(find.byKey(const ValueKey('more_lms_import')), findsOneWidget);
+    expect(find.text('Синхронизация'), findsNothing);
+    expect(_repo.syncCalls, 0);
+    expect(tester.takeException(), isNull);
+    await _dispose(tester, db);
+  });
+
+  testWidgets('demo account shows the demo banner', (tester) async {
+    final db = await _pumpShell(
+      tester,
+      const Size(400, 800),
+      user: const {'id': 'd1', 'name': 'Demo Student', 'email': null, 'is_demo': true},
+    );
+    expect(find.byKey(const ValueKey('demo_banner')), findsOneWidget);
+    expect(find.byKey(const ValueKey('guest_banner')), findsNothing);
+    await _dispose(tester, db);
+  });
+
   testWidgets('phone width shows a bottom bar with 5 destinations',
       (tester) async {
     final db = await _pumpShell(tester, const Size(400, 800));

@@ -1,5 +1,7 @@
 node_modules/
 .env
-data/
+# Local DB and uploads are ignored; the college timetables (data/timetables/) are committed.
+data/*
+!data/timetables/
 *.sqlite3
 coverage/

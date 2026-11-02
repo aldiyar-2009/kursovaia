@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:studyplan/core/settings/app_edition.dart';
+
+export 'package:studyplan/core/settings/app_edition.dart';
 
 /// Locales the app ships with. Russian is the source language.
 const kSupportedLocales = <Locale>[Locale('ru'), Locale('en'), Locale('kk')];
@@ -37,14 +40,19 @@ Future<Locale> currentAppLocale() async {
 class AppSettings extends ChangeNotifier {
   static const themeModeKey = 'settings.theme_mode';
   static const localeKey = 'settings.locale';
+  static const editionKey = 'settings.edition';
 
   ThemeMode _themeMode = ThemeMode.system;
   Locale? _locale;
+  AppEdition? _edition;
 
   ThemeMode get themeMode => _themeMode;
 
   /// Explicit app language, or `null` to follow the device.
   Locale? get locale => _locale;
+
+  /// University or college, chosen on the first screen; `null` until then.
+  AppEdition? get edition => _edition;
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -54,7 +62,20 @@ class AppSettings extends ChangeNotifier {
       _ => ThemeMode.system,
     };
     _locale = _supported(prefs.getString(localeKey) ?? '');
+    final edition = prefs.getString(editionKey);
+    _edition = edition == null || edition.isEmpty
+        ? null
+        : AppEdition.fromName(edition);
     notifyListeners();
+  }
+
+  /// `null` sends the user back to the edition choice.
+  Future<void> setEdition(AppEdition? edition) async {
+    if (edition == _edition) return;
+    _edition = edition;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(editionKey, edition?.name ?? '');
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {

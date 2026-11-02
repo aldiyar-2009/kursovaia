@@ -1,4 +1,5 @@
 import * as authService from '../services/auth.service.js';
+import * as demoService from '../services/demo.service.js';
 import * as groupService from '../services/group.service.js';
 import { asyncHandler } from '../utils/http-error.js';
 
@@ -16,6 +17,14 @@ export const me = asyncHandler(async (req, res) => {
 
 export const updateMe = asyncHandler(async (req, res) => {
   res.json(await authService.updateMe(req.user, req.body ?? {}));
+});
+
+export const createDemo = asyncHandler(async (req, res) => {
+  res.status(201).json(await demoService.createDemoAccount({ edition: req.body?.edition }));
+});
+
+export const clearDemo = asyncHandler(async (req, res) => {
+  res.json(await demoService.clearDemoData(req.user));
 });
 
 

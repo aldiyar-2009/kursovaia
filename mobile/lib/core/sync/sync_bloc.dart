@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -41,6 +42,10 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
   /// Delay between a local change and the automatic sync it schedules.
   final Duration pendingDebounce;
 
+  /// Guest mode: no account, so nothing is sent to the server; changes stay
+  /// pending until the guest signs in and they are adopted by the account.
+  final bool localOnly;
+
   StreamSubscription? _connectivitySubscription;
   StreamSubscription? _localChangesSubscription;
   Timer? _debounceTimer;
@@ -59,6 +64,7 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
     required this.repository,
     required this.userId,
     this.pendingDebounce = const Duration(seconds: 5),
+    this.localOnly = false,
     bool listenToConnectivity = true,
     bool watchLocalChanges = true,
   }) : super(const SyncState()) {
@@ -79,13 +85,12 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
   bool get isSyncing => _syncing;
 
   void _initConnectivityListener() {
-    _connectivitySubscription = Connectivity().onConnectivityChanged.listen(
-      (results) {
-        final isOnline = results.any((r) => r != ConnectivityResult.none);
-        if (isOnline) add(SyncTriggered());
-      },
-      onError: (_) {},
-    );
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((
+      results,
+    ) {
+      final isOnline = results.any((r) => r != ConnectivityResult.none);
+      if (isOnline) add(SyncTriggered());
+    }, onError: (_) {});
   }
 
   /// Recounts pending rows after every local database write.
@@ -103,7 +108,12 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
     final increased = event.count > _lastPendingCount;
     _lastPendingCount = event.count;
     if (event.count > 0 && state.status == SyncStatusState.synced) {
-      emit(state.copyWith(status: SyncStatusState.offlinePending, pendingCount: event.count));
+      emit(
+        state.copyWith(
+          status: SyncStatusState.offlinePending,
+          pendingCount: event.count,
+        ),
+      );
     } else {
       emit(state.copyWith(pendingCount: event.count));
     }
@@ -118,23 +128,35 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
     });
   }
 
-  Future<void> _onCheckRequested(SyncCheckRequested event, Emitter<SyncState> emit) async {
+  Future<void> _onCheckRequested(
+    SyncCheckRequested event,
+    Emitter<SyncState> emit,
+  ) async {
     try {
       final count = await repository.getPendingChangesCount(userId);
       _lastPendingCount = count;
       if (_syncing) return;
       if (count > 0) {
-        emit(state.copyWith(status: SyncStatusState.offlinePending, pendingCount: count));
+        emit(
+          state.copyWith(
+            status: SyncStatusState.offlinePending,
+            pendingCount: count,
+          ),
+        );
       } else {
         emit(state.copyWith(status: SyncStatusState.synced, pendingCount: 0));
       }
     } catch (_) {}
   }
 
-  Future<void> _onSyncTriggered(SyncTriggered event, Emitter<SyncState> emit) async {
+  Future<void> _onSyncTriggered(
+    SyncTriggered event,
+    Emitter<SyncState> emit,
+  ) async {
     // A single sync at a time: triggers that arrive meanwhile are dropped
     // (the running sync already pushes what was pending when it started;
     // later changes schedule their own debounced sync).
+    if (localOnly) return;
     if (_syncing) {
       _triggerDropped = true;
       return;
@@ -151,20 +173,28 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
       final result = await repository.syncWithServer(userId);
       final count = await _pendingCountOrZero();
       _lastPendingCount = count;
-      emit(state.copyWith(
-        status: count > 0 ? SyncStatusState.offlinePending : SyncStatusState.synced,
-        pendingCount: count,
-        lastSyncedAt: DateTime.fromMillisecondsSinceEpoch(result.serverTime),
-        errorMessage: null,
-      ));
+      emit(
+        state.copyWith(
+          status: count > 0
+              ? SyncStatusState.offlinePending
+              : SyncStatusState.synced,
+          pendingCount: count,
+          lastSyncedAt: DateTime.fromMillisecondsSinceEpoch(result.serverTime),
+          errorMessage: null,
+        ),
+      );
     } catch (e) {
       final count = await _pendingCountOrZero();
       _lastPendingCount = count;
-      emit(state.copyWith(
-        status: count > 0 ? SyncStatusState.offlinePending : SyncStatusState.error,
-        pendingCount: count,
-        errorMessage: e.toString(),
-      ));
+      emit(
+        state.copyWith(
+          status: count > 0
+              ? SyncStatusState.offlinePending
+              : SyncStatusState.error,
+          pendingCount: count,
+          errorMessage: e.toString(),
+        ),
+      );
     } finally {
       _syncing = false;
     }

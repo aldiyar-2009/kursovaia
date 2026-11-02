@@ -34,3 +34,16 @@ describe('web build hosting', () => {
     assert.equal((await request(app).get('/api/health')).status, 200);
   });
 });
+
+describe('admin panel hosting', () => {
+  test('GET /admin redirects to /admin/ which serves the panel', async () => {
+    const app = createApp({ webDist: null });
+    const redirect = await request(app).get('/admin');
+    assert.equal(redirect.status, 302);
+    assert.equal(redirect.headers.location, '/admin/');
+    const page = await request(app).get('/admin/');
+    assert.equal(page.status, 200);
+    assert.match(page.text, /Вход для администратора/);
+    assert.equal((await request(app).get('/admin/app.js')).status, 200);
+  });
+});

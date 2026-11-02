@@ -1,0 +1,21 @@
+body { margin: 0; background: #fff; }
+#d { position: relative; background: #fff; font-family: 'Times New Roman', Times, serif; color: #000; }
+#d svg { position: absolute; left: 0; top: 0; z-index: 2; pointer-events: none; }
+.box { position: absolute; border: 2px solid #000; background: #fff; box-sizing: border-box; z-index: 1; }
+.box.dashed { border-style: dashed; }
+.box.outer { background: transparent; z-index: 0; }
+.box .title { background: #e6e6e6; border-bottom: 2px solid #000; font-weight: bold; font-size: 23px; text-align: center; padding: 8px 10px; }
+.box.outer > .title { background: #e6e6e6; }
+.box .body { font-size: 22px; line-height: 1.45; padding: 12px 16px; }
+.box .body.center { text-align: center; }
+.label { position: absolute; font-size: 21px; z-index: 3; background: #fff; padding: 0 4px; }
+.label.plain { background: transparent; }
+.label.note { font-style: italic; }
+.label.big { font-size: 24px; font-weight: bold; }
+/* ER tables */
+.tbl { position: absolute; border: 2px solid #000; background: #fff; box-sizing: border-box; z-index: 1; width: 440px; }
+.tbl .title { background: #e6e6e6; border-bottom: 2px solid #000; font-weight: bold; font-size: 23px; text-align: center; height: 44px; line-height: 44px; }
+.tbl .row { display: grid; grid-template-columns: 62px 1fr auto; height: 30px; line-height: 30px; font-size: 21px; padding: 0 12px; }
+.tbl .row .k { font-weight: bold; }
+.tbl .row .t { color: #333; }
+.tbl .pad { height: 10px; }

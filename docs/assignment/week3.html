@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Неделя 3</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<div class="head">
+  <h1>StudyPlan. Неделя 3: архитектура и безопасность</h1>
+  <div class="meta">Модуль ПМ05 · Студент: ____________ · Группа: ________ · Версия 1.0 · Дата: __.__.2026</div>
+</div>
+
+<h2>1. Выбор архитектуры</h2>
+<p>Выбрана <b>клиент-серверная архитектура с offline-first клиентом</b>: у приложения своя база на устройстве, а сервер только принимает и раздаёт изменения. Альтернатива — обычный «тонкий» клиент, который каждый раз берёт данные с сервера.</p>
+<table>
+  <tr><th>Критерий</th><th>Offline-first клиент + сервер (выбрано)</th><th>Тонкий клиент + сервер</th></tr>
+  <tr><td>Работа без сети (П1, FR-15)</td><td>Полная</td><td>Нет — пустой экран</td></tr>
+  <tr><td>Скорость открытия экрана</td><td>Мгновенно, из локальной базы</td><td>Зависит от сети</td></tr>
+  <tr><td>Сложность разработки</td><td>Выше: нужна синхронизация и разрешение конфликтов</td><td>Ниже</td></tr>
+  <tr><td>Нагрузка на сервер и трафик</td><td>Меньше: передаются только изменения пачкой</td><td>Больше: каждый экран — запрос</td></tr>
+</table>
+<p><b>Почему так:</b> главная потребность из исследования — работа в цоколе без связи. Тонкий клиент её не решает, поэтому усложнение ради синхронизации оправдано. Микросервисы не нужны: нагрузка небольшая, один сервер справится.</p>
+
+<h2>2. Схема архитектуры</h2>
+<div class="fig">
+<svg viewBox="0 0 900 525" width="100%" font-family="Segoe UI, Arial" font-size="12">
+  <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#000"/></marker></defs>
+  <!-- roles -->
+  <rect x="20" y="10" width="200" height="44" rx="6" fill="#fff" stroke="#000"/><text x="120" y="30" text-anchor="middle" font-weight="bold">Гость / Пользователь</text><text x="120" y="46" text-anchor="middle" font-size="10">студенты, староста</text>
+  <rect x="660" y="10" width="200" height="44" rx="6" fill="#fff" stroke="#000"/><text x="760" y="30" text-anchor="middle" font-weight="bold">Администратор</text><text x="760" y="46" text-anchor="middle" font-size="10">веб-браузер</text>
+  <!-- client -->
+  <rect x="10" y="80" width="400" height="330" rx="8" fill="#fff" stroke="#000"/>
+  <text x="20" y="98" font-weight="bold" fill="#000">Приложение Flutter (Android, iOS, Windows, Web)</text>
+  <rect x="30" y="110" width="360" height="50" fill="#fff" stroke="#000"/><text x="210" y="130" text-anchor="middle" font-weight="bold">К1. Интерфейс</text><text x="210" y="148" text-anchor="middle" font-size="10">Главная, Расписание, Задачи, Оценки, Группа</text>
+  <rect x="30" y="185" width="170" height="60" fill="#fff" stroke="#000"/><text x="115" y="207" text-anchor="middle" font-weight="bold">К2. Логика</text><text x="115" y="223" text-anchor="middle" font-size="10">неделя, статусы пар,</text><text x="115" y="236" text-anchor="middle" font-size="10">оценки, фильтры</text>
+  <rect x="220" y="185" width="170" height="60" fill="#fff" stroke="#000"/><text x="305" y="207" text-anchor="middle" font-weight="bold">К4. Синхронизация</text><text x="305" y="223" text-anchor="middle" font-size="10">SyncBloc + репозиторий,</text><text x="305" y="236" text-anchor="middle" font-size="10">статус сети</text>
+  <rect x="30" y="270" width="170" height="60" fill="#fff" stroke="#000"/><text x="115" y="292" text-anchor="middle" font-weight="bold">К3. Локальная база</text><text x="115" y="308" text-anchor="middle" font-size="10">Drift / SQLite,</text><text x="115" y="321" text-anchor="middle" font-size="10">метка syncStatus</text>
+  <rect x="220" y="270" width="170" height="60" fill="#fff" stroke="#000"/><text x="305" y="292" text-anchor="middle" font-weight="bold">К5. API-клиент</text><text x="305" y="308" text-anchor="middle" font-size="10">Dio, токен JWT,</text><text x="305" y="321" text-anchor="middle" font-size="10">401 / 403 → выход</text>
+  <rect x="30" y="345" width="360" height="50" fill="#fff" stroke="#000"/><text x="210" y="365" text-anchor="middle" font-weight="bold">К6. Импорт из LMS (предметный модуль)</text><text x="210" y="382" text-anchor="middle" font-size="10">WebView → Moodle → курсы, сроки, оценки</text>
+  <!-- admin panel -->
+  <rect x="660" y="80" width="200" height="60" fill="#fff" stroke="#000"/><text x="760" y="102" text-anchor="middle" font-weight="bold">К12. Админ-панель</text><text x="760" y="120" text-anchor="middle" font-size="10">HTML/JS, /admin</text>
+  <!-- server -->
+  <rect x="470" y="170" width="420" height="250" rx="8" fill="#fff" stroke="#000"/>
+  <text x="480" y="188" font-weight="bold" fill="#000">Сервер Node.js + Express</text>
+  <rect x="490" y="200" width="380" height="40" fill="#fff" stroke="#000"/><text x="680" y="216" text-anchor="middle" font-weight="bold">К7. Защита запросов</text><text x="680" y="231" text-anchor="middle" font-size="10">helmet, CORS, проверка токена, роль admin, лимит запросов</text>
+  <rect x="490" y="255" width="180" height="55" fill="#fff" stroke="#000"/><text x="580" y="277" text-anchor="middle" font-weight="bold">К8. Авторизация</text><text x="580" y="295" text-anchor="middle" font-size="10">bcrypt, JWT, группы</text>
+  <rect x="690" y="255" width="180" height="55" fill="#fff" stroke="#000"/><text x="780" y="277" text-anchor="middle" font-weight="bold">К9. Сервис sync</text><text x="780" y="295" text-anchor="middle" font-size="10">LWW, проверка владельца</text>
+  <rect x="490" y="325" width="180" height="55" fill="#fff" stroke="#000"/><text x="580" y="347" text-anchor="middle" font-weight="bold">К10. Материалы</text><text x="580" y="365" text-anchor="middle" font-size="10">файлы группы ≤ 10 МБ</text>
+  <rect x="690" y="325" width="180" height="55" fill="#fff" stroke="#000"/><text x="780" y="347" text-anchor="middle" font-weight="bold">К11. Администрирование</text><text x="780" y="365" text-anchor="middle" font-size="10">пользователи, объявления</text>
+  <!-- storage -->
+  <rect x="490" y="460" width="230" height="55" fill="#fff" stroke="#000"/><text x="605" y="482" text-anchor="middle" font-weight="bold">К13. БД PostgreSQL (Supabase)</text><text x="605" y="500" text-anchor="middle" font-size="10">данные всех пользователей, RLS</text>
+  <rect x="740" y="460" width="150" height="55" fill="#fff" stroke="#000"/><text x="815" y="482" text-anchor="middle" font-weight="bold">Хранилище</text><text x="815" y="500" text-anchor="middle" font-size="10">файлы материалов</text>
+  <rect x="30" y="460" width="200" height="55" fill="#fff" stroke="#000" stroke-dasharray="4"/><text x="130" y="482" text-anchor="middle" font-weight="bold">LMS вуза (внешняя)</text><text x="130" y="500" text-anchor="middle" font-size="10">lms.astanait.edu.kz</text>
+  <!-- arrows -->
+  <line x1="120" y1="54" x2="120" y2="108" stroke="#000" marker-end="url(#ar)"/><text x="126" y="76" font-size="10">касания, ввод</text>
+  <line x1="760" y1="54" x2="760" y2="78" stroke="#000" marker-end="url(#ar)"/>
+  <line x1="115" y1="160" x2="115" y2="183" stroke="#000" marker-end="url(#ar)"/>
+  <line x1="115" y1="245" x2="115" y2="268" stroke="#000" marker-end="url(#ar)"/><text x="120" y="262" font-size="10">чтение/запись</text>
+  <line x1="200" y1="300" x2="218" y2="215" stroke="#000" marker-end="url(#ar)"/>
+  <line x1="305" y1="245" x2="305" y2="268" stroke="#000" marker-end="url(#ar)"/>
+  <line x1="390" y1="300" x2="488" y2="225" stroke="#000" marker-end="url(#ar)"/><text x="395" y="270" font-size="10">HTTPS + JWT:</text><text x="395" y="283" font-size="10">изменения</text>
+  <line x1="488" y1="235" x2="392" y2="312" stroke="#000" marker-end="url(#ar)"/><text x="420" y="330" font-size="10" fill="#000">новые данные</text>
+  <line x1="760" y1="140" x2="760" y2="198" stroke="#000" marker-end="url(#ar)"/><text x="766" y="170" font-size="10">HTTPS + JWT</text>
+  <line x1="130" y1="458" x2="130" y2="397" stroke="#000" stroke-dasharray="4" marker-end="url(#ar)"/><text x="136" y="430" font-size="10">курсы, сроки (в браузере)</text>
+  <line x1="605" y1="420" x2="605" y2="458" stroke="#000" marker-end="url(#ar)"/><text x="610" y="442" font-size="10">SQL (Knex)</text>
+  <line x1="815" y1="420" x2="815" y2="458" stroke="#000" marker-end="url(#ar)"/>
+</svg>
+<div class="cap">Рис. 1. Архитектура StudyPlan: 13 логических компонентов и потоки данных</div>
+</div>
+<p class="small">Пароли от LMS через наш сервер не идут: студент входит в LMS прямо во встроенном браузере, приложение только читает уже открытую страницу.</p>
+
+<h2>3. Карточки компонентов</h2>
+
+<table class="card"><tr><td>Название</td><td><b>К3. Локальная база (Drift / SQLite)</b></td></tr>
+<tr><td>Назначение</td><td>Хранит все данные пользователя на устройстве: предметы, пары, задачи, подзадачи, курсы LMS</td></tr>
+<tr><td>Вход / выход</td><td>Вход: записи от интерфейса и от синхронизации. Выход: потоки данных для экранов, список несинхронизированных записей</td></tr>
+<tr><td>Зависимости</td><td>Нет внешних, работает без сети</td></tr>
+<tr><td>Ошибки</td><td>Ошибка записи — показать сообщение, данные не теряются; изменение схемы — миграция версии базы</td></tr>
+<tr><td>Требования</td><td>FR-10, FR-15, NFR-06, NFR-07</td></tr></table>
+
+<table class="card"><tr><td>Название</td><td><b>К4. Модуль синхронизации</b></td></tr>
+<tr><td>Назначение</td><td>Отправляет изменённые записи на сервер и забирает новые, показывает статус</td></tr>
+<tr><td>Вход / выход</td><td>Вход: записи со статусом «pending», время последней синхронизации. Выход: обновлённая локальная база, статус (ок / нет сети / ошибка)</td></tr>
+<tr><td>Зависимости</td><td>К3, К5, сервер POST /api/sync</td></tr>
+<tr><td>Ошибки</td><td>Нет сети — ждать и повторить позже, записи остаются «pending»; 401 — выход из аккаунта</td></tr>
+<tr><td>Требования</td><td>FR-12, FR-16, FR-17, NFR-04, NFR-10</td></tr></table>
+
+<table class="card"><tr><td>Название</td><td><b>К5. API-клиент</b></td></tr>
+<tr><td>Назначение</td><td>Все HTTP-запросы к серверу, подставляет токен</td></tr>
+<tr><td>Вход / выход</td><td>Вход: запрос от модулей. Выход: JSON-ответ или ошибка</td></tr>
+<tr><td>Зависимости</td><td>Dio, адрес сервера из настроек</td></tr>
+<tr><td>Ошибки</td><td>Таймаут — ошибка «нет сети»; 401 и 403 USER_BLOCKED — сигнал выйти в гостевой режим</td></tr>
+<tr><td>Требования</td><td>FR-02, NFR-02</td></tr></table>
+
+<table class="card"><tr><td>Название</td><td><b>К6. Импорт из LMS</b></td></tr>
+<tr><td>Назначение</td><td>Загружает курсы, сроки сдачи и оценки из Moodle вуза</td></tr>
+<tr><td>Вход / выход</td><td>Вход: открытая страница LMS после входа студента. Выход: курсы и события в локальной базе</td></tr>
+<tr><td>Зависимости</td><td>WebView (нет в веб-версии), разборщик ответов Moodle, К3</td></tr>
+<tr><td>Ошибки</td><td>LMS недоступна или изменился формат — импорт прерывается, старые данные остаются, ручные курсы не трогаются</td></tr>
+<tr><td>Требования</td><td>FR-10, FR-15</td></tr></table>
+
+<table class="card"><tr><td>Название</td><td><b>К8. Сервис авторизации</b></td></tr>
+<tr><td>Назначение</td><td>Регистрация, вход, профиль, группы и коды приглашения</td></tr>
+<tr><td>Вход / выход</td><td>Вход: почта, пароль, имя, код группы. Выход: JWT-токен, профиль, данные группы</td></tr>
+<tr><td>Зависимости</td><td>bcrypt, jsonwebtoken, К13</td></tr>
+<tr><td>Ошибки</td><td>Неверный пароль — 401 (без уточнения, что именно неверно); занятая почта — 409; заблокирован — 403</td></tr>
+<tr><td>Требования</td><td>FR-01, FR-02, FR-04, NFR-01</td></tr></table>
+
+<table class="card"><tr><td>Название</td><td><b>К9. Сервис синхронизации (сервер)</b></td></tr>
+<tr><td>Назначение</td><td>Принимает пачку изменений, решает конфликты, отдаёт новое</td></tr>
+<tr><td>Вход / выход</td><td>Вход: изменения по таблицам + last_synced_at. Выход: записи, изменённые с этого времени (свои и группы), новое время</td></tr>
+<tr><td>Зависимости</td><td>К7, К13, список разрешённых полей (schema.js)</td></tr>
+<tr><td>Ошибки</td><td>Чужая запись или чужая группа — отклонить; любая ошибка — откат всей транзакции, клиент повторит</td></tr>
+<tr><td>Требования</td><td>FR-12, FR-16, NFR-03, NFR-05, NFR-10</td></tr></table>
+
+<table class="card"><tr><td>Название</td><td><b>К10. Материалы группы</b></td></tr>
+<tr><td>Назначение</td><td>Загрузка, список и скачивание файлов группы</td></tr>
+<tr><td>Вход / выход</td><td>Вход: файл, название, предмет. Выход: запись о материале, файл по ссылке</td></tr>
+<tr><td>Зависимости</td><td>multer, файловое хранилище, К13</td></tr>
+<tr><td>Ошибки</td><td>Файл больше 10 МБ — 400 UPLOAD_ERROR; нет группы — 400; чужой материал или нет файла — 404; удаление чужого — 403</td></tr>
+<tr><td>Требования</td><td>FR-14</td></tr></table>
+
+<p class="small">Кратко об остальных: <b>К1</b> — экраны, только показывают данные и передают действия; <b>К2</b> — чистые функции (неделя, статус пары, расчёт оценки), покрыты тестами; <b>К7</b> — проверка каждого запроса до сервисов; <b>К11/К12</b> — управление пользователями и объявлениями; <b>К13</b> — серверная база.</p>
+
+<h2>4. Сквозные сценарии</h2>
+<table class="small">
+  <tr><th style="width:4%">№</th><th style="width:18%">Сценарий</th><th style="width:10%">Тип</th><th>Ход</th></tr>
+  <tr><td>1</td><td>Публикация задания для группы</td><td>Основной</td><td>К1 → К3 (запись, pending) → К4 → К5 → К7 (токен) → К9 (проверка group_id, сохранение) → К13. У второго участника: К4 → К9 отдаёт задачу → К3 → К1.</td></tr>
+  <tr><td>2</td><td>Отметка задачи без сети</td><td>Альтернативный</td><td>К1 → К3 (pending). К4 видит, что сети нет, статус «нет сети». При появлении сети К4 отправляет отметку, статус «синхронизировано».</td></tr>
+  <tr><td>3</td><td>Конфликт правок</td><td>Альтернативный</td><td>Два устройства изменили одну задачу офлайн. К9 сравнивает updated_at, оставляет более позднюю правку, второе устройство получает её при следующей синхронизации.</td></tr>
+  <tr><td>4</td><td>Истёк токен / пользователь заблокирован</td><td>Ошибочный</td><td>К5 получает 401 или 403 → приложение выходит в гостевой режим, локальные данные остаются на устройстве.</td></tr>
+  <tr><td>5</td><td>Попытка записать задачу в чужую группу</td><td>Ошибочный</td><td>К9 видит, что group_id не совпадает с группой пользователя → запись отклонена, остальные данные не сохраняются (откат транзакции).</td></tr>
+  <tr><td>6</td><td>Импорт из LMS</td><td>Основной</td><td>Студент входит в LMS в К6 → скрипт читает курсы и сроки → К3 → К4 отправляет на сервер.</td></tr>
+</table>
+
+<h2>5. Концептуальная модель данных</h2>
+<table class="small">
+  <tr><th style="width:16%">Сущность</th><th>Ключевые атрибуты</th><th style="width:30%">Связи</th></tr>
+  <tr><td>Пользователь</td><td>id, email, имя, хеш пароля, роль (user/admin), заблокирован</td><td>входит в 0..1 группу</td></tr>
+  <tr><td>Группа</td><td>id, название, код приглашения, начало семестра</td><td>1 группа — много пользователей</td></tr>
+  <tr><td>Предмет</td><td>id, название, преподаватель, цвет</td><td>принадлежит пользователю</td></tr>
+  <tr><td>Пара</td><td>id, день недели, время, кабинет, тип, чётная неделя, отменена</td><td>относится к предмету</td></tr>
+  <tr><td>Задача</td><td>id, название, срок, важность, статус, «для группы»</td><td>пользователя; может быть связана с предметом и группой</td></tr>
+  <tr><td>Подзадача</td><td>id, название, выполнена, порядок</td><td>много подзадач у задачи</td></tr>
+  <tr><td>Материал</td><td>id, название, файл, размер, категория</td><td>группы; загрузил пользователь</td></tr>
+  <tr><td>Курс LMS</td><td>id, название, кредиты, оценки</td><td>пользователя; может быть связан с предметом</td></tr>
+  <tr><td>Событие LMS</td><td>id, название, срок, тип</td><td>относится к курсу</td></tr>
+  <tr><td>Объявление</td><td>id, заголовок, текст, опубликовано</td><td>автор — администратор</td></tr>
+</table>
+<p class="small">У всех синхронизируемых сущностей есть <b>updated_at</b> (для LWW) и <b>is_deleted</b> (мягкое удаление). id создаёт само устройство (UUID), поэтому записи можно создавать без сети.</p>
+<div class="fig"><img src="../report/figures/fig_2_2_er.png" style="max-height:520px"><div class="cap">Рис. 2. ER-диаграмма серверной базы</div></div>
+
+<h2>6. Матрица прав доступа</h2>
+<div class="shots">
+  <figure><img src="../screenshots/app/00_auth.png">Вход / гостевой режим</figure>
+  <figure><img src="../screenshots/app/08_group.png">Группа: участники, код</figure>
+  <figure><img src="../screenshots/app/09_materials.png">Материалы группы</figure>
+</div>
+<div class="shots" style="margin-top:8px">
+  <figure><img class="wide" src="../screenshots/admin/03_users.png">Админ-панель: пользователи, блокировка</figure>
+</div>
+<div class="fig"><div class="cap">Рис. 3. Экраны для трёх ролей: гость, пользователь, администратор</div></div>
+<table class="small">
+  <tr><th>Действие</th><th>Гость</th><th>Пользователь</th><th>Администратор</th></tr>
+  <tr><td>Свои пары и задачи на устройстве</td><td>Да</td><td>Да</td><td>Да</td></tr>
+  <tr><td>Синхронизация с сервером</td><td>Нет</td><td>Да (только свои данные)</td><td>Да (только свои данные)</td></tr>
+  <tr><td>Вступить в группу, видеть участников</td><td>Нет</td><td>Да</td><td>Да</td></tr>
+  <tr><td>Опубликовать задачу для группы</td><td>Нет</td><td>Только в своей группе</td><td>Только в своей группе</td></tr>
+  <tr><td>Загрузить / скачать материалы</td><td>Нет</td><td>Только своей группы</td><td>Только своей группы</td></tr>
+  <tr><td>Удалить материал</td><td>Нет</td><td>Только свой</td><td>Только свой</td></tr>
+  <tr><td>Читать объявления</td><td>Да</td><td>Да</td><td>Да</td></tr>
+  <tr><td>Создавать и публиковать объявления</td><td>Нет</td><td>Нет</td><td>Да</td></tr>
+  <tr><td>Список пользователей, блокировка</td><td>Нет</td><td>Нет</td><td>Да</td></tr>
+</table>
+
+<h2>7. Угрозы и меры защиты</h2>
+<table class="small">
+  <tr><th>№</th><th>Угроза</th><th>Мера</th></tr>
+  <tr><td>1</td><td>Утечка паролей из базы</td><td>Хеш bcrypt, открытые пароли не хранятся</td></tr>
+  <tr><td>2</td><td>Подбор пароля</td><td>Одинаковый ответ на неверную почту и пароль; лимит запросов</td></tr>
+  <tr><td>3</td><td>Доступ без входа</td><td>Проверка JWT на каждом закрытом маршруте</td></tr>
+  <tr><td>4</td><td>Чтение или правка чужих данных</td><td>Сервер проверяет владельца каждой записи в транзакции</td></tr>
+  <tr><td>5</td><td>Запись задачи в чужую группу</td><td>group_id сверяется с группой пользователя</td></tr>
+  <tr><td>6</td><td>Обычный пользователь в админ-панели</td><td>Проверка роли admin на сервере, а не только в интерфейсе</td></tr>
+  <tr><td>7</td><td>Заблокированный пользователь продолжает работать</td><td>Флаг is_blocked проверяется при каждом запросе (403)</td></tr>
+  <tr><td>8</td><td>Перехват трафика</td><td>HTTPS, SSL к базе с проверкой сертификата</td></tr>
+  <tr><td>9</td><td>Загрузка огромных файлов</td><td>Лимит 10 МБ на файл, 1 файл за запрос</td></tr>
+  <tr><td>10</td><td>Подмена полей при синхронизации</td><td>Сервер принимает только поля из белого списка</td></tr>
+  <tr><td>11</td><td>Доступ к базе через REST API Supabase</td><td>Включён RLS без политик — внешний API ничего не отдаёт</td></tr>
+  <tr><td>12</td><td>Кража пароля от LMS</td><td>Пароль вводится только на сайте LMS, через наш сервер не идёт</td></tr>
+  <tr><td>13</td><td>Массовое создание демо-аккаунтов</td><td>Лимит 30 запросов в час с одного IP</td></tr>
+</table>
+
+<h2>8. Чек-лист безопасности</h2>
+<table class="small">
+  <tr><th>№</th><th>Проверка</th><th style="width:12%">Результат</th></tr>
+  <tr><td>1</td><td>В таблице users нет открытых паролей</td><td>☐</td></tr>
+  <tr><td>2</td><td>Запрос без токена к /api/sync возвращает 401</td><td>☐</td></tr>
+  <tr><td>3</td><td>Запрос с испорченным токеном возвращает 401</td><td>☐</td></tr>
+  <tr><td>4</td><td>Обычный пользователь получает 403 на /api/admin/users</td><td>☐</td></tr>
+  <tr><td>5</td><td>Заблокированный пользователь не может войти (403)</td><td>☐</td></tr>
+  <tr><td>6</td><td>Нельзя изменить чужую задачу через sync</td><td>☐</td></tr>
+  <tr><td>7</td><td>Нельзя опубликовать задачу в чужую группу</td><td>☐</td></tr>
+  <tr><td>8</td><td>Нельзя скачать материал чужой группы</td><td>☐</td></tr>
+  <tr><td>9</td><td>Файл больше 10 МБ не загружается</td><td>☐</td></tr>
+  <tr><td>10</td><td>Лишние поля в sync игнорируются</td><td>☐</td></tr>
+  <tr><td>11</td><td>При неверном пароле ответ не говорит, существует ли почта</td><td>☐</td></tr>
+  <tr><td>12</td><td>Сервер отдаёт заголовки безопасности (helmet)</td><td>☐</td></tr>
+  <tr><td>13</td><td>Подключение к базе только по SSL с проверкой сертификата</td><td>☐</td></tr>
+  <tr><td>14</td><td>Секрет JWT и пароль базы не лежат в репозитории (.env в .gitignore)</td><td>☐</td></tr>
+  <tr><td>15</td><td>Таблицы Supabase не видны через REST API (RLS)</td><td>☐</td></tr>
+  <tr><td>16</td><td>31-й запрос демо-аккаунта за час получает 429</td><td>☐</td></tr>
+</table>
+<p class="small">Пункты 2, 4–10, 16 покрыты автотестами сервера (npm test).</p>
+
+<h2>Контрольный вопрос</h2>
+<p><b>Что будет, если компонент станет недоступен?</b></p>
+<ul>
+  <li><b>Сервер или база (К7–К13)</b> — приложение работает дальше на локальной базе. Изменения копятся со статусом «pending» и уйдут, когда сервер вернётся. Не работают только вход, вступление в группу и материалы.</li>
+  <li><b>LMS вуза</b> — не работает только импорт, ранее загруженные курсы и сроки остаются.</li>
+  <li><b>Интернет у пользователя</b> — то же, что падение сервера: значок «нет сети», всё остальное работает.</li>
+  <li><b>Локальная база</b> (например, удалили приложение) — данные вернутся с сервера после входа. У гостя данных на сервере нет, поэтому гостю предлагается войти.</li>
+</ul>
+</body></html>

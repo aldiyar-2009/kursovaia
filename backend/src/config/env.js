@@ -140,4 +140,17 @@ export const env = {
   uploadMaxBytes: int('UPLOAD_MAX_MB', 10) * 1024 * 1024,
 
   syncMaxBatch: int('SYNC_MAX_BATCH', 2000),
+
+  // College edition: SmartNation portal (college.smartnation.kz).
+  smartnation: {
+    baseUrl: str('SN_BASE_URL', 'https://college.smartnation.kz'),
+    region: str('SN_REGION', 'tko'),
+    // Key for the stored SmartNation credentials (AES-256-GCM); falls back to the JWT secret.
+    encKey: str('SN_ENC_KEY', '') || resolveJwtSecret(process.env),
+  },
+  // Public Telegram channels with university events (comma separated).
+  eventSources: str('EVENT_SOURCES', 'DSVR_News')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean),
 };

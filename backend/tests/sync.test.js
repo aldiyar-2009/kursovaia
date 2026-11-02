@@ -139,7 +139,7 @@ describe('POST /api/sync', () => {
     const g = await authed(creator.token).post('/api/groups').send({ title: 'G-1' });
     const groupId = g.body.group.id;
     const student = await registerUser('Student', { invite_code: g.body.group.invite_code });
-    assert.equal(student.user.role, 'student');
+    assert.equal(student.user.role, 'user');
 
     const groupTask = {
       id: uuid(), title: 'Лаба №3', priority: 1, status: 'inbox', is_group: true, group_id: groupId,

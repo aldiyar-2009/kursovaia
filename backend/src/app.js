@@ -4,10 +4,12 @@ import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import { env } from './config/env.js';
+import { env, ROOT_DIR } from './config/env.js';
 import { errorHandler, notFoundHandler } from './middleware/error.js';
 import { router } from './routes/index.js';
 import { mobilePlatform, openAppPage, requestOrigin } from './utils/open-app.js';
+
+const ADMIN_DIR = path.join(ROOT_DIR, 'admin');
 
 /** Flutter web build (`flutter build web`) next to the backend, if present. */
 function findWebDist() {
@@ -30,6 +32,13 @@ export function createApp({ webDist = findWebDist() } = {}) {
   if (!env.isTest) app.use(morgan('dev'));
 
   app.use('/api', router);
+
+  // Admin panel (plain HTML + JS over /api/admin/*).
+  app.get('/admin', (req, res, next) => (req.path === '/admin' ? res.redirect('/admin/') : next()));
+  app.use('/admin', express.static(ADMIN_DIR, {
+    // Always revalidate so an updated panel is picked up right away.
+    setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache'),
+  }));
 
   // Target of the startup QR code: Android and iOS open the installed app (which
   // picks up this server's address), other devices get the web version.

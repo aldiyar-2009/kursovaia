@@ -34,6 +34,10 @@ class TasksScreen extends StatefulWidget {
   /// Source of "now" for grouping and due labels; injectable for tests.
   final DateTime Function() clock;
 
+  /// College edition: the «LMS» filter becomes «Колледж» and shows this
+  /// view (SmartNation assignments) instead of the task list.
+  final Widget? collegeAssignments;
+
   const TasksScreen({
     super.key,
     required this.db,
@@ -41,6 +45,7 @@ class TasksScreen extends StatefulWidget {
     this.group,
     this.onOpenGroup,
     this.clock = DateTime.now,
+    this.collegeAssignments,
   });
 
   @override
@@ -91,17 +96,20 @@ class _TasksScreenState extends State<TasksScreen> {
   // Streams are cached so rebuilds do not resubscribe (and flash empty).
   Stream<List<Task>>? _tasksStream;
   String? _tasksStreamGroupId;
-  late final Stream<List<LmsEvent>> _lmsDeadlines =
-      widget.db.lmsDao.watchEvents(widget.userId, type: 'deadline');
-  late final Stream<List<Subtask>> _subtasks =
-      (widget.db.select(widget.db.subtasks)..where((t) => t.isDeleted.equals(false)))
-          .watch();
+  late final Stream<List<LmsEvent>> _lmsDeadlines = widget.db.lmsDao
+      .watchEvents(widget.userId, type: 'deadline');
+  late final Stream<List<Subtask>> _subtasks = (widget.db.select(
+    widget.db.subtasks,
+  )..where((t) => t.isDeleted.equals(false))).watch();
 
   Stream<List<Task>> get _tasks {
     final groupId = _group?.id;
     if (_tasksStream == null || _tasksStreamGroupId != groupId) {
       _tasksStreamGroupId = groupId;
-      _tasksStream = _taskDao.watchTasks(userId: widget.userId, groupId: groupId);
+      _tasksStream = _taskDao.watchTasks(
+        userId: widget.userId,
+        groupId: groupId,
+      );
     }
     return _tasksStream!;
   }
@@ -126,13 +134,15 @@ class _TasksScreenState extends State<TasksScreen> {
     if (!mounted || wasDone) return;
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
-    messenger.showSnackBar(SnackBar(
-      content: Text(context.l10n.tasks_doneSnack),
-      action: SnackBarAction(
-        label: context.l10n.tasks_undo,
-        onPressed: () => _setDone(item, false),
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(context.l10n.tasks_doneSnack),
+        action: SnackBarAction(
+          label: context.l10n.tasks_undo,
+          onPressed: () => _setDone(item, false),
+        ),
       ),
-    ));
+    );
   }
 
   Future<void> _setDone(TaskListItem item, bool done) {
@@ -195,7 +205,12 @@ class _TasksScreenState extends State<TasksScreen> {
                     (TaskFilter.all, l10n.tasks_filterAll),
                     (TaskFilter.mine, l10n.tasks_filterMine),
                     (TaskFilter.group, l10n.tasks_filterGroup),
-                    (TaskFilter.lms, l10n.tasks_filterLms),
+                    (
+                      TaskFilter.lms,
+                      widget.collegeAssignments != null
+                          ? l10n.tasks_filterCollege
+                          : l10n.tasks_filterLms,
+                    ),
                     (TaskFilter.done, l10n.tasks_filterDone),
                   ],
                   value: _filter,
@@ -213,11 +228,15 @@ class _TasksScreenState extends State<TasksScreen> {
 
   Widget _buildBody(BuildContext context, double width) {
     final l10n = context.l10n;
+    final college = widget.collegeAssignments;
+    if (_filter == TaskFilter.lms && college != null) return college;
     if (_filter == TaskFilter.group && _group == null) {
       return EmptyState(
         title: l10n.tasks_noGroupTitle,
         message: l10n.tasks_noGroupMessage,
-        actionLabel: widget.onOpenGroup != null ? l10n.tasks_noGroupAction : null,
+        actionLabel: widget.onOpenGroup != null
+            ? l10n.tasks_noGroupAction
+            : null,
         onAction: widget.onOpenGroup,
       );
     }
@@ -237,7 +256,12 @@ class _TasksScreenState extends State<TasksScreen> {
                   for (final t in taskSnap.data!) TaskListItem.task(t),
                   for (final e in lmsSnap.data!) TaskListItem.lms(e),
                 ];
-                return _buildList(context, all, subSnap.data ?? const [], width);
+                return _buildList(
+                  context,
+                  all,
+                  subSnap.data ?? const [],
+                  width,
+                );
               },
             );
           },
@@ -253,7 +277,9 @@ class _TasksScreenState extends State<TasksScreen> {
     double width,
   ) {
     final now = widget.clock();
-    final visible = all.where((i) => i.matches(_filter, widget.userId)).toList();
+    final visible = all
+        .where((i) => i.matches(_filter, widget.userId))
+        .toList();
     if (visible.isEmpty) return _emptyFor(context, all);
 
     final Map<String, List<TaskListItem>> sections;
@@ -277,7 +303,10 @@ class _TasksScreenState extends State<TasksScreen> {
     final progress = <String, ({int done, int total})>{};
     for (final s in subtasks) {
       final cur = progress[s.taskId] ?? (done: 0, total: 0);
-      progress[s.taskId] = (done: cur.done + (s.isDone ? 1 : 0), total: cur.total + 1);
+      progress[s.taskId] = (
+        done: cur.done + (s.isDone ? 1 : 0),
+        total: cur.total + 1,
+      );
     }
 
     return ListView(
@@ -407,8 +436,9 @@ class _SectionHeader extends StatelessWidget {
               header: true,
               child: Text(
                 title,
-                style: context.text.labelMedium!
-                    .copyWith(color: context.palette.textSecondary),
+                style: context.text.labelMedium!.copyWith(
+                  color: context.palette.textSecondary,
+                ),
               ),
             ),
           ),

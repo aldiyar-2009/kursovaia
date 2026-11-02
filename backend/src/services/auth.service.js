@@ -3,10 +3,13 @@ import jwt from 'jsonwebtoken';
 import { db } from '../config/db.js';
 import { env } from '../config/env.js';
 import { normalizeUser } from '../db/schema.js';
-import { badRequest, conflict, unauthorized } from '../utils/http-error.js';
-import { isNonEmptyString, newId } from '../utils/validators.js';
+import { badRequest, conflict, HttpError, unauthorized } from '../utils/http-error.js';
+import { isNonEmptyString, newId, toBool } from '../utils/validators.js';
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** 403 with its own code so clients can tell "blocked" from other permission errors. */
+export const userBlocked = () => new HttpError(403, 'USER_BLOCKED', 'Account is blocked by an administrator');
 
 export function signToken(user) {
   return jwt.sign({ sub: user.id, role: user.role }, env.jwt.secret, { expiresIn: env.jwt.expiresIn });
@@ -57,7 +60,8 @@ export async function register({ email, password, name, invite_code: inviteCode 
     email: normalizedEmail,
     password_hash: await bcrypt.hash(password, env.bcryptRounds),
     name: name.trim(),
-    role: 'student',
+    role: 'user',
+    edition: 'university',
     group_id: groupId,
     created_at: now,
     updated_at: now,
@@ -72,6 +76,7 @@ export async function login({ email, password }) {
   if (!user || !user.password_hash || !(await bcrypt.compare(password, user.password_hash))) {
     throw unauthorized('Wrong email or password');
   }
+  if (toBool(user.is_blocked)) throw userBlocked();
   return buildSession(user);
 }
 

@@ -37,8 +37,8 @@ export async function seed(knex) {
   });
 
   await knex('users').insert([
-    { id: headmanId, email: 'headman@studyplan.dev', password_hash: passwordHash, name: 'Староста', role: 'headman', group_id: groupId, created_at: now, updated_at: now },
-    { id: studentId, email: 'student@studyplan.dev', password_hash: passwordHash, name: 'Студент', role: 'student', group_id: groupId, created_at: now, updated_at: now },
+    { id: headmanId, email: 'headman@studyplan.dev', password_hash: passwordHash, name: 'Староста', role: 'user', group_id: groupId, created_at: now, updated_at: now },
+    { id: studentId, email: 'student@studyplan.dev', password_hash: passwordHash, name: 'Студент', role: 'user', group_id: groupId, created_at: now, updated_at: now },
   ]);
 
   const SUBJECTS = [

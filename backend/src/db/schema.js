@@ -164,6 +164,9 @@ export function normalizeRow(table, row) {
 
 export function normalizeUser(row) {
   if (!row) return null;
-  const { password_hash: _ignored, ...rest } = row;
+  // Credentials never leave the server (SmartNation ones are stored encrypted).
+  const { password_hash: _hash, sn_credentials_enc: _snCredentials, ...rest } = row;
+  if ('is_blocked' in rest) rest.is_blocked = toBool(rest.is_blocked);
+  if ('is_demo' in rest) rest.is_demo = toBool(rest.is_demo);
   return rest;
 }

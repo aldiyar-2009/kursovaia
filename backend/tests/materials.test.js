@@ -176,7 +176,7 @@ describe('University course materials API', () => {
     assert.equal(create.status, 201);
     const matId = create.body.material.id;
 
-    // The seeded "headman" account has role=headman in the DB; roles no longer grant anything.
+    // The seeded "headman" account has role=user in the DB; roles no longer grant anything.
     const other = await authed(headmanToken).delete(`/api/materials/${matId}`);
     assert.equal(other.status, 403);
     assert.ok(fs.existsSync(path.join(env.uploadDir, create.body.material.file_path)), 'file kept on forbidden delete');
